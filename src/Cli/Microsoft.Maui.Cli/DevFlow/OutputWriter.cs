@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 
 namespace Microsoft.Maui.Cli.DevFlow;
 
@@ -8,27 +8,13 @@ namespace Microsoft.Maui.Cli.DevFlow;
 /// JSON mode: raw data on stdout, structured errors on stderr.
 /// Human mode: formatted text on stdout, plain errors on stderr.
 /// </summary>
-static class OutputWriter
+class DevFlowOutputWriter : IDevFlowOutputWriter
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
-    private static readonly JsonSerializerOptions s_compactJsonOptions = new()
-    {
-        WriteIndented = false,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     /// <summary>
     /// Resolves whether JSON output mode is active.
     /// Priority: --no-json flag > --json flag > MAUIDEVFLOW_OUTPUT env var > TTY auto-detection.
     /// </summary>
-    public static bool ResolveJsonMode(bool jsonFlag, bool noJsonFlag)
+    public bool ResolveJsonMode(bool jsonFlag, bool noJsonFlag)
     {
         if (noJsonFlag) return false;
         if (jsonFlag) return true;
@@ -47,11 +33,11 @@ static class OutputWriter
     /// Write a successful result to stdout.
     /// In JSON mode, serializes the data. In human mode, calls the humanFormatter.
     /// </summary>
-    public static void WriteResult<T>(T data, bool json, Action<T>? humanFormatter = null)
+    public void WriteResult<T>(T data, bool json, Action<T>? humanFormatter = null)
     {
         if (json)
         {
-            Console.WriteLine(JsonSerializer.Serialize(data, s_jsonOptions));
+            Console.WriteLine(CliJson.SerializeUntyped(data, indented: true));
         }
         else if (humanFormatter != null)
         {
@@ -59,22 +45,23 @@ static class OutputWriter
         }
         else
         {
-            Console.WriteLine(JsonSerializer.Serialize(data, s_jsonOptions));
+            Console.WriteLine(CliJson.SerializeUntyped(data, indented: true));
         }
     }
 
     /// <summary>
     /// Write raw JSON string to stdout (for data already serialized or from HTTP responses).
     /// </summary>
-    public static void WriteRawJson(string jsonString)
+    public void WriteRawJson(string jsonString)
     {
         Console.WriteLine(jsonString);
     }
 
     /// <summary>
-    /// Write a JsonElement to stdout with indentation.
+    /// Write a <see cref="JsonElement"/> to stdout.
+    /// In JSON mode, writes the element's raw JSON text. In human mode, writes indented JSON.
     /// </summary>
-    public static void WriteJsonElement(JsonElement element, bool json)
+    public void WriteJsonElement(JsonElement element, bool json)
     {
         if (json)
         {
@@ -82,19 +69,23 @@ static class OutputWriter
         }
         else
         {
-            Console.WriteLine(JsonSerializer.Serialize(element, s_jsonOptions));
+            Console.WriteLine(CliJson.PrettyPrint(element));
         }
     }
 
     /// <summary>
     /// Write a simple success action result (for tap, fill, clear, etc.).
     /// </summary>
-    public static void WriteActionResult(bool success, string action, string? elementId, bool json, string? humanMessage = null)
+    public void WriteActionResult(bool success, string action, string? elementId, bool json, string? humanMessage = null)
     {
         if (json)
         {
-            var result = new ActionResult { Success = success, Action = action, ElementId = elementId };
-            Console.WriteLine(JsonSerializer.Serialize(result, s_compactJsonOptions));
+            Console.WriteLine(CliJson.SerializeUntyped(new JsonObject
+            {
+                ["success"] = success,
+                ["action"] = action,
+                ["elementId"] = elementId
+            }, indented: false));
         }
         else
         {
@@ -106,19 +97,26 @@ static class OutputWriter
     /// Write a structured error to stderr and set error state.
     /// In JSON mode, outputs structured error JSON. In human mode, plain text.
     /// </summary>
-    public static void WriteError(string message, bool json, string errorType = "RuntimeError",
+    public void WriteError(string message, bool json, string errorType = "RuntimeError",
         bool retryable = false, string[]? suggestions = null)
     {
         if (json)
         {
-            var error = new ErrorResult
+            var error = new JsonObject
             {
-                Error = message,
-                Type = errorType,
-                Retryable = retryable,
-                Suggestions = suggestions
+                ["error"] = message,
+                ["type"] = errorType,
+                ["retryable"] = retryable
             };
-            Console.Error.WriteLine(JsonSerializer.Serialize(error, s_compactJsonOptions));
+            if (suggestions is { Length: > 0 })
+            {
+                var suggestionArray = new JsonArray();
+                foreach (var suggestion in suggestions)
+                    suggestionArray.Add((JsonNode?)JsonValue.Create(suggestion));
+                error["suggestions"] = suggestionArray;
+            }
+
+            Console.Error.WriteLine(CliJson.SerializeUntyped(error, indented: false));
         }
         else
         {
@@ -129,45 +127,16 @@ static class OutputWriter
     /// <summary>
     /// Write a single JSONL line (for streaming commands).
     /// </summary>
-    public static void WriteJsonLine<T>(T data)
+    public void WriteJsonLine<T>(T data)
     {
-        Console.WriteLine(JsonSerializer.Serialize(data, s_compactJsonOptions));
+        Console.WriteLine(CliJson.SerializeUntyped(data, indented: false));
     }
 
     /// <summary>
     /// Serialize an object to indented JSON string.
     /// </summary>
-    public static string FormatJson<T>(T data)
+    public string FormatJson<T>(T data)
     {
-        return JsonSerializer.Serialize(data, s_jsonOptions);
-    }
-
-    // DTOs for structured output
-
-    private class ActionResult
-    {
-        [JsonPropertyName("success")]
-        public bool Success { get; set; }
-
-        [JsonPropertyName("action")]
-        public string? Action { get; set; }
-
-        [JsonPropertyName("elementId")]
-        public string? ElementId { get; set; }
-    }
-
-    private class ErrorResult
-    {
-        [JsonPropertyName("error")]
-        public string? Error { get; set; }
-
-        [JsonPropertyName("type")]
-        public string? Type { get; set; }
-
-        [JsonPropertyName("retryable")]
-        public bool Retryable { get; set; }
-
-        [JsonPropertyName("suggestions")]
-        public string[]? Suggestions { get; set; }
+        return CliJson.SerializeUntyped(data, indented: true);
     }
 }

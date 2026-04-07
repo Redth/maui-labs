@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Cli.DevFlow;
 using Microsoft.Maui.Cli.Output;
 using Microsoft.Maui.Cli.Providers.Android;
 using Microsoft.Maui.Cli.Services;
@@ -37,6 +38,9 @@ public static class ServiceConfiguration
 		services.AddSingleton<IDoctorService, DoctorService>();
 		services.AddSingleton<IDeviceManager, DeviceManager>();
 
+		// DevFlow output
+		services.AddSingleton<IDevFlowOutputWriter, DevFlowOutputWriter>();
+
 		// Version services
 		services.AddSingleton<INuGetVersionService, NuGetVersionService>();
 		services.AddSingleton<IProjectVersionService, ProjectVersionService>();
@@ -54,6 +58,7 @@ public static class ServiceConfiguration
 		IJdkManager? jdkManager = null,
 		IDoctorService? doctorService = null,
 		IDeviceManager? deviceManager = null,
+		IDevFlowOutputWriter? devFlowOutputWriter = null,
 		INuGetVersionService? nugetVersionService = null,
 		IProjectVersionService? projectVersionService = null)
 	{
@@ -79,6 +84,11 @@ public static class ServiceConfiguration
 			services.AddSingleton(deviceManager);
 		else
 			services.AddSingleton<IDeviceManager, DeviceManager>();
+
+		if (devFlowOutputWriter != null)
+			services.AddSingleton(devFlowOutputWriter);
+		else
+			services.AddSingleton<IDevFlowOutputWriter, DevFlowOutputWriter>();
 
 		if (nugetVersionService != null)
 			services.AddSingleton(nugetVersionService);

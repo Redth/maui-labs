@@ -4,6 +4,9 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui.Cli.Utils;
 
 namespace Microsoft.Maui.Cli.DevFlow;
 
@@ -14,7 +17,10 @@ namespace Microsoft.Maui.Cli.DevFlow;
 public class DevFlowCommands
 {
     private static Command? _devflowCommand;
-    [ThreadStatic] private static bool _errorOccurred;
+    private static bool _errorOccurred;
+    private static IDevFlowOutputWriter? s_output;
+
+    private static IDevFlowOutputWriter Output => s_output ?? throw new InvalidOperationException("DevFlowCommands not initialized. Call CreateDevFlowCommand first.");
 
     /// <summary>
     /// Creates the "devflow" command with all subcommands for integration into the MAUI CLI.
@@ -22,6 +28,8 @@ public class DevFlowCommands
     /// <param name="parentJsonOption">The parent CLI's --json option (recursive/global). Used instead of a local --json to avoid duplicates.</param>
     public static Command CreateDevFlowCommand(Option<bool> parentJsonOption)
     {
+        var output = Program.Services.GetRequiredService<IDevFlowOutputWriter>();
+        s_output = output;
         var devflowCommand = new Command("devflow", "Automate MAUI apps via Agent API and Blazor WebViews via CDP");
         
         // Alias parent's --json so all existing handler bindings work
@@ -242,7 +250,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await CdpWebViewsAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson));
+            await CdpWebViewsAsync(host, port, output.ResolveJsonMode(json, noJson));
         });
         cdpCommand.Add(webviewsCmd);
 
@@ -274,7 +282,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var window = ctx.GetValue(windowOption);
-            await MauiStatusAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), window);
+            await MauiStatusAsync(host, port, output.ResolveJsonMode(json, noJson), window);
         });
         mauiCommand.Add(mauiStatusCmd);
 
@@ -293,7 +301,7 @@ public class DevFlowCommands
             var window = ctx.GetValue(windowOption);
             var fields = ctx.GetValue(treeFieldsOption);
             var format = ctx.GetValue(treeFormatOption);
-            await MauiTreeAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), depth, window, fields, format);
+            await MauiTreeAsync(host, port, output.ResolveJsonMode(json, noJson), depth, window, fields, format);
         });
         mauiCommand.Add(mauiTreeCmd);
 
@@ -301,7 +309,7 @@ public class DevFlowCommands
         var queryTypeOption = new Option<string?>("--type") { Description = "Filter by element type" };
         var queryAutoIdOption = new Option<string?>("--automationId") { Description = "Filter by AutomationId" };
         var queryTextOption = new Option<string?>("--text") { Description = "Filter by text content" };
-        var querySelectorOption = new Option<string?>("--selector", "CSS selector (e.g. 'Button:visible', 'StackLayout > Label[Text^=\"Hello\"]')");
+        var querySelectorOption = new Option<string?>("--selector") { Description = "CSS selector (e.g. 'Button:visible', 'StackLayout > Label[Text^=\"Hello\"]')" };
         var queryFieldsOption = new Option<string?>("--fields") { Description = "Comma-separated fields to include (e.g. id,type,text,automationId,bounds)" };
         var queryFormatOption = new Option<string?>("--format") { Description = "Output format: compact (id,type,text,automationId,bounds only)" };
         var queryWaitUntilOption = new Option<string?>("--wait-until") { Description = "Wait condition: exists or gone" };
@@ -311,7 +319,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(
+            var isJson = output.ResolveJsonMode(
                 ctx.GetValue(jsonOption),
                 ctx.GetValue(noJsonOption));
             var type = ctx.GetValue(queryTypeOption);
@@ -339,7 +347,7 @@ public class DevFlowCommands
             var x = ctx.GetValue(hitTestXArg);
             var y = ctx.GetValue(hitTestYArg);
             var window = ctx.GetValue(windowOption);
-            await MauiHitTestAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), x, y, window);
+            await MauiHitTestAsync(host, port, output.ResolveJsonMode(json, noJson), x, y, window);
         });
         mauiCommand.Add(mauiHitTestCmd);
 
@@ -360,7 +368,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var id = ctx.GetValue(tapIdArg);
             var autoId = ctx.GetValue(resolveAutoIdOption);
             var type = ctx.GetValue(resolveTypeOption);
@@ -385,7 +393,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var id = ctx.GetValue(fillIdArg);
             var fillText = ctx.GetValue(fillTextArg2)!;
             var autoId = ctx.GetValue(resolveAutoIdOption);
@@ -410,7 +418,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var id = ctx.GetValue(clearIdArg);
             var autoId = ctx.GetValue(resolveAutoIdOption);
             var type = ctx.GetValue(resolveTypeOption);
@@ -439,7 +447,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             await MauiScreenshotAsync(host, port, isJson,
                 ctx.GetValue(screenshotOutputOption),
                 ctx.GetValue(windowOption),
@@ -496,7 +504,7 @@ public class DevFlowCommands
             var noJson = ctx.GetValue(noJsonOption);
             var id = ctx.GetValue(propIdArg)!;
             var name = ctx.GetValue(propNameArg)!;
-            await MauiPropertyAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), id, name);
+            await MauiPropertyAsync(host, port, output.ResolveJsonMode(json, noJson), id, name);
         });
         mauiCommand.Add(mauiPropertyCmd);
 
@@ -514,7 +522,7 @@ public class DevFlowCommands
             var id = ctx.GetValue(setPropIdArg)!;
             var name = ctx.GetValue(setPropNameArg)!;
             var value = ctx.GetValue(setPropValueArg)!;
-            await MauiSetPropertyAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), id, name, value);
+            await MauiSetPropertyAsync(host, port, output.ResolveJsonMode(json, noJson), id, name, value);
         });
         mauiCommand.Add(mauiSetPropertyCmd);
 
@@ -528,7 +536,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var id = ctx.GetValue(elementIdArg)!;
-            await MauiElementAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), id);
+            await MauiElementAsync(host, port, output.ResolveJsonMode(json, noJson), id);
         });
         mauiCommand.Add(mauiElementCmd);
 
@@ -542,7 +550,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var route = ctx.GetValue(navRouteArg)!;
-            await MauiNavigateAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), route);
+            await MauiNavigateAsync(host, port, output.ResolveJsonMode(json, noJson), route);
         });
         mauiCommand.Add(mauiNavigateCmd);
 
@@ -559,7 +567,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             await MauiScrollAsync(host, port, isJson,
                 ctx.GetValue(scrollElementIdOption),
                 ctx.GetValue(scrollDeltaXOption),
@@ -579,7 +587,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var id = ctx.GetValue(focusIdArg);
             var autoId = ctx.GetValue(resolveAutoIdOption);
             var type = ctx.GetValue(resolveTypeOption);
@@ -604,7 +612,7 @@ public class DevFlowCommands
             var w = ctx.GetValue(resizeWidthArg);
             var h = ctx.GetValue(resizeHeightArg);
             var window = ctx.GetValue(windowOption);
-            await MauiResizeAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), w, h, window);
+            await MauiResizeAsync(host, port, output.ResolveJsonMode(json, noJson), w, h, window);
         });
         mauiCommand.Add(mauiResizeCmd);
 
@@ -623,7 +631,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await AlertDetectAsync(udid, pid, host, port, OutputWriter.ResolveJsonMode(json, noJson));
+            await AlertDetectAsync(udid, pid, host, port, output.ResolveJsonMode(json, noJson));
         });
         alertCommand.Add(alertDetectCmd);
 
@@ -641,7 +649,7 @@ public class DevFlowCommands
             var button = ctx.GetValue(dismissButtonArg);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await AlertDismissAsync(udid, pid, host, port, button, OutputWriter.ResolveJsonMode(json, noJson));
+            await AlertDismissAsync(udid, pid, host, port, button, output.ResolveJsonMode(json, noJson));
         });
         alertCommand.Add(alertDismissCmd);
 
@@ -657,7 +665,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await AlertTreeAsync(udid, pid, host, port, OutputWriter.ResolveJsonMode(json, noJson));
+            await AlertTreeAsync(udid, pid, host, port, output.ResolveJsonMode(json, noJson));
         });
         alertCommand.Add(alertTreeCmd);
 
@@ -673,7 +681,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var id = ctx.GetValue(assertIdOption);
             var autoId = ctx.GetValue(assertAutoIdOption);
             var prop = ctx.GetValue(assertPropertyArg)!;
@@ -694,7 +702,8 @@ public class DevFlowCommands
             var udid = ctx.GetValue(permGrantUdid);
             var bundleId = ctx.GetValue(permGrantBundle);
             var service = ctx.GetValue(permGrantServiceArg)!;
-            await PermissionAsync("grant", udid, bundleId, service);
+            var isJson = Output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            await PermissionAsync("grant", udid, bundleId, service, isJson);
         });
         permissionCommand.Add(permGrantCmd);
 
@@ -707,7 +716,8 @@ public class DevFlowCommands
             var udid = ctx.GetValue(permRevokeUdid);
             var bundleId = ctx.GetValue(permRevokeBundle);
             var service = ctx.GetValue(permRevokeServiceArg)!;
-            await PermissionAsync("revoke", udid, bundleId, service);
+            var isJson = Output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            await PermissionAsync("revoke", udid, bundleId, service, isJson);
         });
         permissionCommand.Add(permRevokeCmd);
 
@@ -720,7 +730,8 @@ public class DevFlowCommands
             var udid = ctx.GetValue(permResetUdid);
             var bundleId = ctx.GetValue(permResetBundle);
             var service = ctx.GetValue(permResetServiceArg)!;
-            await PermissionAsync("reset", udid, bundleId, service);
+            var isJson = Output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            await PermissionAsync("reset", udid, bundleId, service, isJson);
         });
         permissionCommand.Add(permResetCmd);
 
@@ -737,7 +748,7 @@ public class DevFlowCommands
         {
             var host = ctx.GetValue(agentHostOption)!;
             var port = ctx.GetValue(agentPortOption);
-            var isJson = OutputWriter.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
+            var isJson = output.ResolveJsonMode(ctx.GetValue(jsonOption), ctx.GetValue(noJsonOption));
             var follow = ctx.GetValue(logsFollowOption);
             if (follow)
                 await MauiLogsFollowAsync(host, port, ctx.GetValue(logsSourceOption), isJson, ctx.GetValue(logsReplayOption));
@@ -763,7 +774,7 @@ public class DevFlowCommands
             var limit = ctx.GetValue(networkLimitOption);
             var filterHost = ctx.GetValue(networkHostOption);
             var filterMethod = ctx.GetValue(networkMethodOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             if (isJson)
                 await MauiNetworkMonitorAsync(host, port, isJson, limit, filterHost, filterMethod);
             else
@@ -783,7 +794,7 @@ public class DevFlowCommands
             var limit = ctx.GetValue(networkLimitOption);
             var filterHost = ctx.GetValue(networkHostOption);
             var filterMethod = ctx.GetValue(networkMethodOption);
-            await MauiNetworkListAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), limit, filterHost, filterMethod);
+            await MauiNetworkListAsync(host, port, output.ResolveJsonMode(json, noJson), limit, filterHost, filterMethod);
         });
         networkCommand.Add(networkListCmd);
 
@@ -796,7 +807,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var id = ctx.GetValue(networkDetailId)!;
-            await MauiNetworkDetailAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson), id);
+            await MauiNetworkDetailAsync(host, port, output.ResolveJsonMode(json, noJson), id);
         });
         networkCommand.Add(networkDetailCmd);
 
@@ -807,7 +818,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await MauiNetworkClearAsync(host, port, OutputWriter.ResolveJsonMode(json, noJson));
+            await MauiNetworkClearAsync(host, port, output.ResolveJsonMode(json, noJson));
         });
         networkCommand.Add(networkClearCmd);
 
@@ -826,7 +837,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var sharedName = ctx.GetValue(prefsSharedNameOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var qs = sharedName != null ? $"?sharedName={Uri.EscapeDataString(sharedName)}" : "";
             await SimpleGetAsync(host, port, $"/api/preferences{qs}", isJson);
         });
@@ -844,7 +855,7 @@ public class DevFlowCommands
             var key = ctx.GetValue(prefsGetKeyArg)!;
             var type = ctx.GetValue(prefsGetTypeOption)!;
             var sharedName = ctx.GetValue(prefsSharedNameOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var qs = $"?type={Uri.EscapeDataString(type)}";
             if (sharedName != null) qs += $"&sharedName={Uri.EscapeDataString(sharedName)}";
             await SimpleGetAsync(host, port, $"/api/preferences/{Uri.EscapeDataString(key)}{qs}", isJson);
@@ -866,8 +877,13 @@ public class DevFlowCommands
             var value = ctx.GetValue(prefsSetValueArg)!;
             var type = ctx.GetValue(prefsSetTypeOption)!;
             var sharedName = ctx.GetValue(prefsSetSharedNameOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
-            var body = new { value, type, sharedName };
+            var isJson = output.ResolveJsonMode(json, noJson);
+            var body = new JsonObject
+            {
+                ["value"] = value,
+                ["type"] = type,
+                ["sharedName"] = sharedName
+            };
             await SimplePostAsync(host, port, $"/api/preferences/{Uri.EscapeDataString(key)}", body, isJson);
         });
         prefsCommand.Add(prefsSetCmd);
@@ -883,7 +899,7 @@ public class DevFlowCommands
             var noJson = ctx.GetValue(noJsonOption);
             var key = ctx.GetValue(prefsDeleteKeyArg)!;
             var sharedName = ctx.GetValue(prefsDeleteSharedNameOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var qs = sharedName != null ? $"?sharedName={Uri.EscapeDataString(sharedName)}" : "";
             await SimpleDeleteAsync(host, port, $"/api/preferences/{Uri.EscapeDataString(key)}{qs}", isJson);
         });
@@ -898,7 +914,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var sharedName = ctx.GetValue(prefsClearSharedNameOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var qs = sharedName != null ? $"?sharedName={Uri.EscapeDataString(sharedName)}" : "";
             await SimplePostAsync(host, port, $"/api/preferences/clear{qs}", null, isJson);
         });
@@ -918,7 +934,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var key = ctx.GetValue(secureGetKeyArg)!;
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimpleGetAsync(host, port, $"/api/secure-storage/{Uri.EscapeDataString(key)}", isJson);
         });
         secureCommand.Add(secureGetCmd);
@@ -934,8 +950,11 @@ public class DevFlowCommands
             var noJson = ctx.GetValue(noJsonOption);
             var key = ctx.GetValue(secureSetKeyArg)!;
             var value = ctx.GetValue(secureSetValueArg)!;
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
-            await SimplePostAsync(host, port, $"/api/secure-storage/{Uri.EscapeDataString(key)}", new { value }, isJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
+            await SimplePostAsync(host, port, $"/api/secure-storage/{Uri.EscapeDataString(key)}", new JsonObject
+            {
+                ["value"] = value
+            }, isJson);
         });
         secureCommand.Add(secureSetCmd);
 
@@ -948,7 +967,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var key = ctx.GetValue(secureDeleteKeyArg)!;
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimpleDeleteAsync(host, port, $"/api/secure-storage/{Uri.EscapeDataString(key)}", isJson);
         });
         secureCommand.Add(secureDeleteCmd);
@@ -960,7 +979,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimplePostAsync(host, port, "/api/secure-storage/clear", null, isJson);
         });
         secureCommand.Add(secureClearCmd);
@@ -977,7 +996,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/app-info", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/app-info", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformAppInfoCmd);
 
@@ -988,7 +1007,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/device-info", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/device-info", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformDeviceInfoCmd);
 
@@ -999,7 +1018,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/device-display", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/device-display", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformDisplayCmd);
 
@@ -1010,7 +1029,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/battery", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/battery", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformBatteryCmd);
 
@@ -1021,7 +1040,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/connectivity", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/connectivity", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformConnectivityCmd);
 
@@ -1032,7 +1051,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/platform/version-tracking", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/platform/version-tracking", output.ResolveJsonMode(json, noJson));
         });
         platformCommand.Add(platformVersionTrackingCmd);
 
@@ -1045,7 +1064,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var permName = ctx.GetValue(platformPermsNameArg);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var path = permName != null
             ? $"/api/platform/permissions/{Uri.EscapeDataString(permName)}"
             : "/api/platform/permissions";
@@ -1064,7 +1083,7 @@ public class DevFlowCommands
             var noJson = ctx.GetValue(noJsonOption);
             var accuracy = ctx.GetValue(platformGeoAccuracyOption)!;
             var timeout = ctx.GetValue(platformGeoTimeoutOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimpleGetAsync(host, port, $"/api/platform/geolocation?accuracy={Uri.EscapeDataString(accuracy)}&timeout={timeout}", isJson);
         });
         platformCommand.Add(platformGeoCmd);
@@ -1081,7 +1100,7 @@ public class DevFlowCommands
             var port = ctx.GetValue(agentPortOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await SimpleGetAsync(host, port, "/api/sensors", OutputWriter.ResolveJsonMode(json, noJson));
+            await SimpleGetAsync(host, port, "/api/sensors", output.ResolveJsonMode(json, noJson));
         });
         sensorsCommand.Add(sensorsListCmd);
 
@@ -1096,7 +1115,7 @@ public class DevFlowCommands
             var noJson = ctx.GetValue(noJsonOption);
             var sensor = ctx.GetValue(sensorsStartSensorArg)!;
             var speed = ctx.GetValue(sensorsStartSpeedOption)!;
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimplePostAsync(host, port, $"/api/sensors/{Uri.EscapeDataString(sensor)}/start?speed={Uri.EscapeDataString(speed)}", null, isJson);
         });
         sensorsCommand.Add(sensorsStartCmd);
@@ -1110,7 +1129,7 @@ public class DevFlowCommands
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
             var sensor = ctx.GetValue(sensorsStopSensorArg)!;
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SimplePostAsync(host, port, $"/api/sensors/{Uri.EscapeDataString(sensor)}/stop", null, isJson);
         });
         sensorsCommand.Add(sensorsStopCmd);
@@ -1130,7 +1149,7 @@ public class DevFlowCommands
             var speed = ctx.GetValue(sensorsStreamSpeedOption)!;
             var duration = ctx.GetValue(sensorsStreamDurationOption);
             var throttle = ctx.GetValue(sensorsStreamThrottleOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             await SensorStreamAsync(host, port, sensor, speed, duration, throttle, isJson);
         });
         sensorsCommand.Add(sensorsStreamCmd);
@@ -1192,7 +1211,7 @@ public class DevFlowCommands
         {
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await BrokerStatusAsync(OutputWriter.ResolveJsonMode(json, noJson));
+            await BrokerStatusAsync(output.ResolveJsonMode(json, noJson));
         });
         brokerCommand.Add(brokerStatusCmd);
 
@@ -1208,7 +1227,7 @@ public class DevFlowCommands
         {
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await ListAgentsCommandAsync(OutputWriter.ResolveJsonMode(json, noJson));
+            await ListAgentsCommandAsync(output.ResolveJsonMode(json, noJson));
         });
         devflowCommand.Add(listCmd);
 
@@ -1218,7 +1237,7 @@ public class DevFlowCommands
         {
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await DiagnoseCommandAsync(OutputWriter.ResolveJsonMode(json, noJson));
+            await DiagnoseCommandAsync(output.ResolveJsonMode(json, noJson));
         });
         devflowCommand.Add(diagnoseCmd);
 
@@ -1237,7 +1256,7 @@ public class DevFlowCommands
             var waitPlatform = ctx.GetValue(waitPlatformOption);
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            await WaitForAgentCommandAsync(timeout, project, waitPlatform, OutputWriter.ResolveJsonMode(json, noJson));
+            await WaitForAgentCommandAsync(timeout, project, waitPlatform, output.ResolveJsonMode(json, noJson));
         });
         devflowCommand.Add(waitCmd);
 
@@ -1276,9 +1295,9 @@ public class DevFlowCommands
         {
             var json = ctx.GetValue(jsonOption);
             var noJson = ctx.GetValue(noJsonOption);
-            var isJson = OutputWriter.ResolveJsonMode(json, noJson);
+            var isJson = output.ResolveJsonMode(json, noJson);
             var cmds = GetCommandDescriptions();
-            OutputWriter.WriteResult(cmds, isJson, list =>
+            output.WriteResult(cmds, isJson, list =>
             {
                 Console.WriteLine($"{"Command",-35} {"Mutating",-10} {"Description"}");
                 Console.WriteLine(new string('-', 85));
@@ -1300,22 +1319,19 @@ public class DevFlowCommands
     
     // ===== CDP Helper: Send command via AgentClient =====
 
-    private static async Task<JsonElement?> SendCdpCommandAsync(string host, int port, string method, object? parameters = null, string? webview = null)
+    private static async Task<JsonElement?> SendCdpCommandAsync(string host, int port, string method, JsonNode? parameters = null, string? webview = null)
     {
         using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
-        JsonElement? paramsEl = parameters != null
-            ? JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(parameters))
-            : null;
-        var result = await client.SendCdpCommandAsync(method, paramsEl, webview);
+        var result = await client.SendCdpCommandAsync(method, parameters, webview);
         return result;
     }
 
     private static async Task<string> CdpEvaluateAsync(string host, int port, string expression, string? webview = null)
     {
-        var result = await SendCdpCommandAsync(host, port, "Runtime.evaluate", new
+        var result = await SendCdpCommandAsync(host, port, "Runtime.evaluate", new JsonObject
         {
-            expression,
-            returnByValue = true
+            ["expression"] = expression,
+            ["returnByValue"] = true
         }, webview);
 
         if (result == null) return "null";
@@ -1330,7 +1346,7 @@ public class DevFlowCommands
                     if (value.ValueKind == JsonValueKind.String)
                         return value.GetString() ?? "null";
                     if (value.ValueKind == JsonValueKind.Object || value.ValueKind == JsonValueKind.Array)
-                        return JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+                        return CliJson.PrettyPrint(value);
                     return value.ToString();
                 }
             }
@@ -1390,7 +1406,7 @@ public class DevFlowCommands
         {
             var result = await CdpEvaluateAsync(host, port, $@"
                 JSON.stringify((function() {{
-                    const el = document.querySelector({JsonSerializer.Serialize(selector)}, webview);
+                    const el = document.querySelector({CliJson.SerializeUntyped(selector, indented: false)}, webview);
                     if (!el) return null;
                     return {{
                         tagName: el.tagName.toLowerCase(),
@@ -1411,7 +1427,7 @@ public class DevFlowCommands
         {
             var result = await CdpEvaluateAsync(host, port, $@"
                 JSON.stringify((function() {{
-                    const els = document.querySelectorAll({JsonSerializer.Serialize(selector)}, webview);
+                    const els = document.querySelectorAll({CliJson.SerializeUntyped(selector, indented: false)}, webview);
                     return Array.from(els).map((el, i) => ({{
                         index: i,
                         tagName: el.tagName.toLowerCase(),
@@ -1430,7 +1446,7 @@ public class DevFlowCommands
     {
         try
         {
-            var result = await CdpEvaluateAsync(host, port, $@"document.querySelector({JsonSerializer.Serialize(selector)})?.outerHTML || null", webview);
+            var result = await CdpEvaluateAsync(host, port, $@"document.querySelector({CliJson.SerializeUntyped(selector, indented: false)})?.outerHTML || null", webview);
             Console.WriteLine(result);
         }
         catch (Exception ex) { WriteError(ex.Message); }
@@ -1442,7 +1458,10 @@ public class DevFlowCommands
     {
         try
         {
-            await SendCdpCommandAsync(host, port, "Page.navigate", new { url }, webview);
+            await SendCdpCommandAsync(host, port, "Page.navigate", new JsonObject
+            {
+                ["url"] = url
+            }, webview);
             Console.WriteLine($"Navigated to: {url}");
         }
         catch (Exception ex) { WriteError(ex.Message); }
@@ -1485,7 +1504,7 @@ public class DevFlowCommands
         {
             var result = await CdpEvaluateAsync(host, port, $@"
                 (function() {{
-                    const el = document.querySelector({JsonSerializer.Serialize(selector)}, webview);
+                    const el = document.querySelector({CliJson.SerializeUntyped(selector, indented: false)}, webview);
                     if (!el) return 'Error: Element not found';
                     el.click();
                     return 'Clicked: ' + el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
@@ -1500,7 +1519,10 @@ public class DevFlowCommands
     {
         try
         {
-            var result = await SendCdpCommandAsync(host, port, "Input.insertText", new { text }, webview);
+            await SendCdpCommandAsync(host, port, "Input.insertText", new JsonObject
+            {
+                ["text"] = text
+            }, webview);
             Console.WriteLine($"Inserted: {text.Length} characters");
         }
         catch (Exception ex) { WriteError(ex.Message); }
@@ -1512,10 +1534,10 @@ public class DevFlowCommands
         {
             var result = await CdpEvaluateAsync(host, port, $@"
                 (function() {{
-                    const el = document.querySelector({JsonSerializer.Serialize(selector)}, webview);
+                    const el = document.querySelector({CliJson.SerializeUntyped(selector, indented: false)}, webview);
                     if (!el) return 'Error: Element not found';
                     
-                    const text = {JsonSerializer.Serialize(text)};
+                    const text = {CliJson.SerializeUntyped(text, indented: false)};
                     if (el.isContentEditable) {{
                         el.textContent = text;
                     }} else {{
@@ -1672,7 +1694,7 @@ public class DevFlowCommands
     
     private static string FormatJson(JsonElement element)
     {
-        return JsonSerializer.Serialize(element, new JsonSerializerOptions { WriteIndented = true });
+        return CliJson.PrettyPrint(element);
     }
 
     // ===== Generic agent HTTP helpers (for preferences, platform, sensors, etc.) =====
@@ -1693,8 +1715,7 @@ public class DevFlowCommands
             {
                 try
                 {
-                    var doc = JsonDocument.Parse(body);
-                    Console.WriteLine(JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }));
+                    Console.WriteLine(CliJson.PrettyPrint(body));
                 }
                 catch
                 {
@@ -1705,12 +1726,12 @@ public class DevFlowCommands
         }
         catch (Exception ex)
         {
-            OutputWriter.WriteError(ex.Message, json);
+            Output.WriteError(ex.Message, json);
             _errorOccurred = true;
         }
     }
 
-    private static async Task SimplePostAsync(string host, int port, string path, object? bodyObj, bool json)
+    private static async Task SimplePostAsync(string host, int port, string path, JsonNode? bodyObj, bool json)
     {
         try
         {
@@ -1719,8 +1740,8 @@ public class DevFlowCommands
             HttpResponseMessage response;
             if (bodyObj != null)
             {
-                var content = new StringContent(
-                    JsonSerializer.Serialize(bodyObj),
+                using var content = new StringContent(
+                    CliJson.SerializeUntyped(bodyObj, indented: false),
                     Encoding.UTF8,
                     "application/json");
                 response = await http.PostAsync($"http://{host}:{port}{path}", content);
@@ -1735,7 +1756,7 @@ public class DevFlowCommands
         }
         catch (Exception ex)
         {
-            OutputWriter.WriteError(ex.Message, json);
+            Output.WriteError(ex.Message, json);
             _errorOccurred = true;
         }
     }
@@ -1753,7 +1774,7 @@ public class DevFlowCommands
         }
         catch (Exception ex)
         {
-            OutputWriter.WriteError(ex.Message, json);
+            Output.WriteError(ex.Message, json);
             _errorOccurred = true;
         }
     }
@@ -1789,7 +1810,7 @@ public class DevFlowCommands
         }
         catch (Exception ex)
         {
-            OutputWriter.WriteError(ex.Message, json);
+            Output.WriteError(ex.Message, json);
             _errorOccurred = true;
         }
     }
@@ -1813,7 +1834,7 @@ public class DevFlowCommands
         // Need at least one resolution option
         if (string.IsNullOrWhiteSpace(automationId) && string.IsNullOrWhiteSpace(type) && string.IsNullOrWhiteSpace(text))
         {
-            OutputWriter.WriteError("Provide an element ID or use --automationId, --type, or --text to resolve", json, "InvocationError");
+            Output.WriteError("Provide an element ID or use --automationId, --type, or --text to resolve", json, "InvocationError");
             _errorOccurred = true;
             return null;
         }
@@ -1829,7 +1850,7 @@ public class DevFlowCommands
                 if (automationId != null) criteria.Add($"automationId=\"{automationId}\"");
                 if (type != null) criteria.Add($"type=\"{type}\"");
                 if (text != null) criteria.Add($"text=\"{text}\"");
-                OutputWriter.WriteError($"No elements found matching {string.Join(", ", criteria)}", json,
+                Output.WriteError($"No elements found matching {string.Join(", ", criteria)}", json,
                     suggestions: new[] { "Run 'MAUI tree' to see available elements", "Check automationId spelling" });
                 _errorOccurred = true;
                 return null;
@@ -1837,7 +1858,7 @@ public class DevFlowCommands
 
             if (index >= results.Count)
             {
-                OutputWriter.WriteError($"Index {index} out of range (found {results.Count} element(s))", json, "RuntimeError",
+                Output.WriteError($"Index {index} out of range (found {results.Count} element(s))", json, "RuntimeError",
                     suggestions: new[] { $"Use --index 0 through {results.Count - 1}" });
                 _errorOccurred = true;
                 return null;
@@ -1847,7 +1868,7 @@ public class DevFlowCommands
         }
         catch (Exception ex)
         {
-            OutputWriter.WriteError(ex.Message, json);
+            Output.WriteError(ex.Message, json);
             _errorOccurred = true;
             return null;
         }
@@ -1860,14 +1881,14 @@ public class DevFlowCommands
     {
         if (id.Any(c => c < 0x20))
         {
-            OutputWriter.WriteError($"Element ID contains control characters: '{id}'", json, "InvocationError",
+            Output.WriteError($"Element ID contains control characters: '{id}'", json, "InvocationError",
                 suggestions: new[] { "Element IDs should not contain control characters", "Run 'MAUI tree' to get valid IDs" });
             _errorOccurred = true;
             return;
         }
         if (id.Contains('?') || id.Contains('#'))
         {
-            OutputWriter.WriteError($"Element ID contains '?' or '#': '{id}' — this looks like a URL fragment, not an element ID", json, "InvocationError",
+            Output.WriteError($"Element ID contains '?' or '#': '{id}' — this looks like a URL fragment, not an element ID", json, "InvocationError",
                 suggestions: new[] { "Run 'MAUI tree' to get valid element IDs" });
             _errorOccurred = true;
             return;
@@ -1909,7 +1930,14 @@ public class DevFlowCommands
             var passed = string.Equals(actualValue, expectedValue, StringComparison.Ordinal);
             if (json)
             {
-                OutputWriter.WriteResult(new { passed, property = propertyName, expected = expectedValue, actual = actualValue, elementId = resolvedId }, json);
+                Output.WriteResult(new JsonObject
+                {
+                    ["passed"] = passed,
+                    ["property"] = propertyName,
+                    ["expected"] = expectedValue,
+                    ["actual"] = actualValue,
+                    ["elementId"] = resolvedId
+                }, json);
             }
             else
             {
@@ -1923,12 +1951,10 @@ public class DevFlowCommands
             }
             if (!passed) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     // ===== Command Descriptions (Schema Discovery) =====
-
-    private record CommandDescription(string Command, string Description, bool Mutating);
 
     private static List<CommandDescription> GetCommandDescriptions() => new()
     {
@@ -2104,15 +2130,14 @@ public class DevFlowCommands
             var sha = await GetRemoteSkillCommitShaAsync(http, branch);
             if (sha == null) return;
 
-            var versionInfo = new
+            var versionInfo = new JsonObject
             {
-                commit = sha,
-                updatedAt = DateTime.UtcNow.ToString("o"),
-                branch
+                ["commit"] = sha,
+                ["updatedAt"] = DateTime.UtcNow.ToString("o"),
+                ["branch"] = branch
             };
             var versionPath = Path.Combine(destBase, ".skill-version");
-            await File.WriteAllTextAsync(versionPath,
-                JsonSerializer.Serialize(versionInfo, new JsonSerializerOptions { WriteIndented = true }));
+            await File.WriteAllTextAsync(versionPath, CliJson.SerializeUntyped(versionInfo, indented: true));
         }
         catch { /* non-fatal — version tracking is best-effort */ }
     }
@@ -2121,7 +2146,7 @@ public class DevFlowCommands
     {
         var url = $"https://api.github.com/repos/{SkillRepo}/commits?path={SkillBasePath}&sha={branch}&per_page=1";
         var json = await http.GetStringAsync(url);
-        var commits = JsonSerializer.Deserialize<JsonElement>(json);
+        var commits = CliJson.ParseElement(json);
         foreach (var commit in commits.EnumerateArray())
             return commit.GetProperty("sha").GetString();
         return null;
@@ -2142,7 +2167,7 @@ public class DevFlowCommands
             try
             {
                 var json = await File.ReadAllTextAsync(versionPath);
-                var doc = JsonSerializer.Deserialize<JsonElement>(json);
+                var doc = CliJson.ParseElement(json);
                 localSha = doc.TryGetProperty("commit", out var c) ? c.GetString() : null;
                 localDate = doc.TryGetProperty("updatedAt", out var d) ? d.GetString() : null;
                 localBranch = doc.TryGetProperty("branch", out var b) ? b.GetString() : null;
@@ -2200,7 +2225,7 @@ public class DevFlowCommands
         var apiPath = string.IsNullOrEmpty(relativePath) ? basePath : $"{basePath}/{relativePath}";
         var url = $"https://api.github.com/repos/{SkillRepo}/contents/{apiPath}?ref={branch}";
         var json = await http.GetStringAsync(url);
-        var items = JsonSerializer.Deserialize<JsonElement>(json);
+        var items = CliJson.ParseElement(json);
 
         foreach (var item in items.EnumerateArray())
         {
@@ -2225,11 +2250,11 @@ public class DevFlowCommands
             var status = await client.GetStatusAsync(window);
             if (status == null)
             {
-                OutputWriter.WriteError($"Cannot connect to agent at {host}:{port}", json);
+                Output.WriteError($"Cannot connect to agent at {host}:{port}", json);
                 _errorOccurred = true;
                 return;
             }
-            OutputWriter.WriteResult(status, json, s =>
+            Output.WriteResult(status, json, s =>
             {
                 Console.WriteLine($"Agent: {s.Agent} v{s.Version}");
                 Console.WriteLine($"Platform: {s.Platform}");
@@ -2237,7 +2262,7 @@ public class DevFlowCommands
                 Console.WriteLine($"App: {s.AppName}");
             });
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiTreeAsync(string host, int port, bool json, int depth, int? window, string? fields, string? format)
@@ -2249,14 +2274,14 @@ public class DevFlowCommands
             if (json)
             {
                 var projected = ProjectElements(tree, fields, format);
-                Console.WriteLine(JsonSerializer.Serialize(projected, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+                Console.WriteLine(CliJson.SerializeUntyped(projected, indented: true));
             }
             else
             {
                 PrintTree(tree, 0);
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiQueryAsync(string host, int port, bool json, string? type, string? autoId, string? text, string? selector, string? fields, string? format, string? waitUntil, int timeout)
@@ -2270,7 +2295,7 @@ public class DevFlowCommands
                 var condition = waitUntil.ToLowerInvariant();
                 if (condition != "exists" && condition != "gone")
                 {
-                    OutputWriter.WriteError("--wait-until must be 'exists' or 'gone'", json, "InvocationError");
+                    Output.WriteError("--wait-until must be 'exists' or 'gone'", json, "InvocationError");
                     _errorOccurred = true;
                     return;
                 }
@@ -2289,7 +2314,7 @@ public class DevFlowCommands
                     if (condition == "gone" && results.Count == 0) break;
                     if (DateTime.UtcNow >= deadline)
                     {
-                        OutputWriter.WriteError(
+                        Output.WriteError(
                             $"Timeout after {timeout}s: condition '{waitUntil}' not met",
                             json, "RuntimeError", retryable: true,
                             suggestions: new[] { "Increase --timeout", "Check element identifiers with 'MAUI tree'" });
@@ -2312,7 +2337,7 @@ public class DevFlowCommands
 
             WriteQueryResults(queryResults, json, fields, format);
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static void WriteQueryResults(List<Microsoft.Maui.DevFlow.Driver.ElementInfo> results, bool json, string? fields, string? format)
@@ -2320,7 +2345,7 @@ public class DevFlowCommands
         if (json)
         {
             var projected = ProjectElements(results, fields, format);
-            Console.WriteLine(JsonSerializer.Serialize(projected, new JsonSerializerOptions { WriteIndented = true, DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+            Console.WriteLine(CliJson.SerializeUntyped(projected, indented: true));
         }
         else
         {
@@ -2352,7 +2377,7 @@ public class DevFlowCommands
             else
                 Console.WriteLine(result);
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiTapAsync(string host, int port, bool json, string elementId)
@@ -2361,11 +2386,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.TapAsync(elementId);
-            OutputWriter.WriteActionResult(success, "Tapped", elementId, json,
+            Output.WriteActionResult(success, "Tapped", elementId, json,
                 success ? $"Tapped: {elementId}" : $"Failed to tap: {elementId}");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
     }
 
     private static async Task MauiFillAsync(string host, int port, bool json, string elementId, string text)
@@ -2374,11 +2399,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.FillAsync(elementId, text);
-            OutputWriter.WriteActionResult(success, "Filled", elementId, json,
+            Output.WriteActionResult(success, "Filled", elementId, json,
                 success ? $"Filled: {elementId}" : $"Failed to fill: {elementId}");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
     }
 
     private static async Task MauiClearAsync(string host, int port, bool json, string elementId)
@@ -2387,11 +2412,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.ClearAsync(elementId);
-            OutputWriter.WriteActionResult(success, "Cleared", elementId, json,
+            Output.WriteActionResult(success, "Cleared", elementId, json,
                 success ? $"Cleared: {elementId}" : $"Failed to clear: {elementId}");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json, suggestions: new[] { "Run 'MAUI tree' to refresh element IDs" }); _errorOccurred = true; }
     }
 
     private static async Task MauiScreenshotAsync(string host, int port, bool json, string? output, int? window, string? id, string? selector, bool overwrite = false, int? maxWidth = null, string? scale = null)
@@ -2401,7 +2426,7 @@ public class DevFlowCommands
             var filename = output ?? $"screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             if (!overwrite && File.Exists(filename))
             {
-                OutputWriter.WriteError($"File already exists: {Path.GetFullPath(filename)} (use --overwrite to replace)", json, "InvocationError");
+                Output.WriteError($"File already exists: {Path.GetFullPath(filename)} (use --overwrite to replace)", json, "InvocationError");
                 _errorOccurred = true;
                 return;
             }
@@ -2433,7 +2458,7 @@ public class DevFlowCommands
 
             if (data == null)
             {
-                OutputWriter.WriteError("Failed to capture screenshot", json);
+                Output.WriteError("Failed to capture screenshot", json);
                 _errorOccurred = true;
                 return;
             }
@@ -2448,7 +2473,13 @@ public class DevFlowCommands
             var fullPath = Path.GetFullPath(filename);
             if (json)
             {
-                OutputWriter.WriteResult(new { path = fullPath, size = data.Length, maxWidth = maxWidth, scale = scale ?? "auto" }, json);
+                Output.WriteResult(new JsonObject
+                {
+                    ["path"] = fullPath,
+                    ["size"] = data.Length,
+                    ["maxWidth"] = maxWidth,
+                    ["scale"] = scale ?? "auto"
+                }, json);
             }
             else
             {
@@ -2458,7 +2489,7 @@ public class DevFlowCommands
                 Console.WriteLine($"Screenshot saved: {fullPath} ({data.Length} bytes){target}{scaleInfo}");
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     /// <summary>
@@ -2475,18 +2506,10 @@ public class DevFlowCommands
             var tempFile = Path.Combine(Path.GetTempPath(), $"devflow-simctl-{Guid.NewGuid():N}.png");
             try
             {
-                var psi = new System.Diagnostics.ProcessStartInfo("xcrun",
-                    $"simctl io {udid} screenshot --type png \"{tempFile}\"")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false
-                };
-                using var proc = System.Diagnostics.Process.Start(psi)
-                    ?? throw new InvalidOperationException("Failed to start xcrun");
-                await proc.WaitForExitAsync();
+                var result = await ProcessRunner.RunAsync("xcrun",
+                    new[] { "simctl", "io", udid, "screenshot", "--type", "png", tempFile });
 
-                if (proc.ExitCode == 0 && File.Exists(tempFile))
+                if (result.ExitCode == 0 && File.Exists(tempFile))
                 {
                     var bytes = await File.ReadAllBytesAsync(tempFile);
                     if (bytes.Length > 0)
@@ -2613,14 +2636,18 @@ public class DevFlowCommands
             var value = await client.GetPropertyAsync(elementId, propertyName);
             if (json)
             {
-                OutputWriter.WriteResult(new { property = propertyName, value }, json);
+                Output.WriteResult(new JsonObject
+                {
+                    ["property"] = propertyName,
+                    ["value"] = value
+                }, json);
             }
             else
             {
                 Console.WriteLine(value != null ? $"{propertyName}: {value}" : $"Property '{propertyName}' not found");
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiSetPropertyAsync(string host, int port, bool json, string elementId, string propertyName, string value)
@@ -2631,16 +2658,16 @@ public class DevFlowCommands
             var success = await client.SetPropertyAsync(elementId, propertyName, value);
             if (success)
             {
-                OutputWriter.WriteActionResult(true, "SetProperty", elementId, json,
+                Output.WriteActionResult(true, "SetProperty", elementId, json,
                     $"Set {propertyName} = {value}");
             }
             else
             {
-                OutputWriter.WriteError($"Failed to set {propertyName}", json);
+                Output.WriteError($"Failed to set {propertyName}", json);
                 _errorOccurred = true;
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiElementAsync(string host, int port, bool json, string elementId)
@@ -2651,14 +2678,14 @@ public class DevFlowCommands
             var el = await client.GetElementAsync(elementId);
             if (el == null)
             {
-                OutputWriter.WriteError($"Element '{elementId}' not found", json,
+                Output.WriteError($"Element '{elementId}' not found", json,
                     suggestions: new[] { "Run 'MAUI tree' to refresh element IDs", "Element IDs are ephemeral — re-query after navigation" });
                 _errorOccurred = true;
                 return;
             }
-            OutputWriter.WriteResult(el, json);
+            Output.WriteResult(el, json);
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiNavigateAsync(string host, int port, bool json, string route)
@@ -2667,11 +2694,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.NavigateAsync(route);
-            OutputWriter.WriteActionResult(success, "Navigated", route, json,
+            Output.WriteActionResult(success, "Navigated", route, json,
                 success ? $"Navigated to: {route}" : $"Failed to navigate to: {route}");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiScrollAsync(string host, int port, bool json, string? elementId, double dx, double dy, bool animated, int? window, int? itemIndex = null, int? groupIndex = null, string? scrollToPosition = null)
@@ -2682,7 +2709,7 @@ public class DevFlowCommands
             var success = await client.ScrollAsync(elementId, dx, dy, animated, window, itemIndex, groupIndex, scrollToPosition);
             if (json)
             {
-                OutputWriter.WriteActionResult(success, "Scrolled", elementId, json);
+                Output.WriteActionResult(success, "Scrolled", elementId, json);
             }
             else
             {
@@ -2695,7 +2722,7 @@ public class DevFlowCommands
             }
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiFocusAsync(string host, int port, bool json, string elementId)
@@ -2704,11 +2731,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.FocusAsync(elementId);
-            OutputWriter.WriteActionResult(success, "Focused", elementId, json,
+            Output.WriteActionResult(success, "Focused", elementId, json,
                 success ? $"Focused: {elementId}" : $"Failed to focus: {elementId}");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiResizeAsync(string host, int port, bool json, int width, int height, int? window)
@@ -2718,12 +2745,12 @@ public class DevFlowCommands
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var success = await client.ResizeAsync(width, height, window);
             if (json)
-                OutputWriter.WriteActionResult(success, "Resized", $"{width}x{height}", json);
+                Output.WriteActionResult(success, "Resized", $"{width}x{height}", json);
             else
                 Console.WriteLine(success ? $"Resized to: {width}x{height}" : $"Failed to resize");
             if (!success) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiLogsAsync(string host, int port, bool json, int limit, int skip, string? source)
@@ -2751,7 +2778,7 @@ public class DevFlowCommands
                 PrintLogEntry(entry);
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiLogsFollowAsync(string host, int port, string? source, bool json, int replay)
@@ -2999,7 +3026,7 @@ public class DevFlowCommands
             if (json)
             {
                 foreach (var r in requests)
-                    Console.WriteLine(JsonSerializer.Serialize(r, new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull }));
+                    Console.WriteLine(CliJson.SerializeUntyped(r, indented: false));
             }
             else
             {
@@ -3031,14 +3058,14 @@ public class DevFlowCommands
 
             if (req == null)
             {
-                OutputWriter.WriteError($"Network request '{id}' not found.", json);
+                Output.WriteError($"Network request '{id}' not found.", json);
                 _errorOccurred = true;
                 return;
             }
 
             if (json)
             {
-                OutputWriter.WriteResult(req, json);
+                Output.WriteResult(req, json);
                 return;
             }
 
@@ -3076,7 +3103,7 @@ public class DevFlowCommands
                 PrintBody(req.ResponseBody, req.ResponseBodyEncoding);
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task MauiNetworkClearAsync(string host, int port, bool json)
@@ -3085,11 +3112,11 @@ public class DevFlowCommands
         {
             using var client = new Microsoft.Maui.DevFlow.Driver.AgentClient(host, port);
             var result = await client.ClearNetworkRequestsAsync();
-            OutputWriter.WriteActionResult(result, "NetworkCleared", null, json,
+            Output.WriteActionResult(result, "NetworkCleared", null, json,
                 result ? "Network request buffer cleared." : "Failed to clear.");
             if (!result) _errorOccurred = true;
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     // ── Network display helpers ──
@@ -3155,8 +3182,7 @@ public class DevFlowCommands
             // Try to pretty-print JSON
             try
             {
-                using var doc = JsonDocument.Parse(body);
-                Console.WriteLine(JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine(CliJson.PrettyPrint(body));
             }
             catch
             {
@@ -3242,12 +3268,16 @@ public class DevFlowCommands
         if (fieldSet == null)
             return elements;
 
-        return elements.Select(el => ProjectElement(el, fieldSet)).ToList();
+        var projected = new JsonArray();
+        foreach (var element in elements)
+            projected.Add((JsonNode)ProjectElement(element, fieldSet));
+
+        return projected;
     }
 
-    private static Dictionary<string, object?> ProjectElement(Microsoft.Maui.DevFlow.Driver.ElementInfo el, HashSet<string> fields)
+    private static JsonObject ProjectElement(Microsoft.Maui.DevFlow.Driver.ElementInfo el, HashSet<string> fields)
     {
-        var dict = new Dictionary<string, object?>();
+        var dict = new JsonObject();
         if (fields.Contains("id")) dict["id"] = el.Id;
         if (fields.Contains("parentId")) dict["parentId"] = el.ParentId;
         if (fields.Contains("type")) dict["type"] = el.Type;
@@ -3259,12 +3289,37 @@ public class DevFlowCommands
         if (fields.Contains("isFocused")) dict["isFocused"] = el.IsFocused;
         if (fields.Contains("opacity")) dict["opacity"] = el.Opacity;
         if (fields.Contains("bounds") && el.Bounds != null)
-            dict["bounds"] = new { el.Bounds.X, el.Bounds.Y, el.Bounds.Width, el.Bounds.Height };
-        if (fields.Contains("gestures") && el.Gestures != null) dict["gestures"] = el.Gestures;
+        {
+            dict["bounds"] = new JsonObject
+            {
+                ["x"] = el.Bounds.X,
+                ["y"] = el.Bounds.Y,
+                ["width"] = el.Bounds.Width,
+                ["height"] = el.Bounds.Height
+            };
+        }
+        if (fields.Contains("gestures") && el.Gestures != null)
+        {
+            var gestures = new JsonArray();
+            foreach (var gesture in el.Gestures)
+                gestures.Add((JsonNode?)JsonValue.Create(gesture));
+            dict["gestures"] = gestures;
+        }
         if (fields.Contains("nativeType")) dict["nativeType"] = el.NativeType;
-        if (fields.Contains("nativeProperties") && el.NativeProperties != null) dict["nativeProperties"] = el.NativeProperties;
+        if (fields.Contains("nativeProperties") && el.NativeProperties != null)
+        {
+            var nativeProperties = new JsonObject();
+            foreach (var (key, value) in el.NativeProperties)
+                nativeProperties[key] = value;
+            dict["nativeProperties"] = nativeProperties;
+        }
         if (fields.Contains("children") && el.Children != null && el.Children.Count > 0)
-            dict["children"] = el.Children.Select(c => ProjectElement(c, fields)).ToList();
+        {
+            var children = new JsonArray();
+            foreach (var child in el.Children)
+                children.Add((JsonNode)ProjectElement(child, fields));
+            dict["children"] = children;
+        }
         return dict;
     }
 
@@ -3275,16 +3330,20 @@ public class DevFlowCommands
         if (!string.IsNullOrEmpty(udid)) return udid;
 
         // Auto-detect booted simulator
-        var psi = new System.Diagnostics.ProcessStartInfo("xcrun", "simctl list devices booted -j")
-        {
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        };
-        using var proc = System.Diagnostics.Process.Start(psi)!;
-        var output = await proc.StandardOutput.ReadToEndAsync();
-        await proc.WaitForExitAsync();
+        var result = await ProcessRunner.RunAsync("xcrun", new[] { "simctl", "list", "devices", "booted", "-j" });
 
-        using var doc = JsonDocument.Parse(output);
+        if (!result.Success || result.ExitCode != 0)
+        {
+            var baseMessage = $"Failed to resolve simulator UDID. 'xcrun simctl list devices booted -j' exited with code {result.ExitCode}.";
+            var error = result.StandardError;
+            throw new InvalidOperationException(string.IsNullOrWhiteSpace(error) ? baseMessage : baseMessage + " Error: " + error.Trim());
+        }
+
+        var simOutput = result.StandardOutput;
+        if (string.IsNullOrWhiteSpace(simOutput))
+            throw new InvalidOperationException("Failed to resolve simulator UDID: no output received from 'xcrun simctl list devices booted -j'.");
+
+        using var doc = JsonDocument.Parse(simOutput);
         if (doc.RootElement.TryGetProperty("devices", out var devices))
         {
             foreach (var runtime in devices.EnumerateObject())
@@ -3337,16 +3396,15 @@ public class DevFlowCommands
         {
             try
             {
-                var psi = new System.Diagnostics.ProcessStartInfo("xcrun", "simctl list devices booted -j")
-                {
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false
-                };
-                using var proc = System.Diagnostics.Process.Start(psi)!;
-                var output = await proc.StandardOutput.ReadToEndAsync();
-                await proc.WaitForExitAsync();
+                var simResult = await ProcessRunner.RunAsync("xcrun", new[] { "simctl", "list", "devices", "booted", "-j" });
 
-                using var doc = JsonDocument.Parse(output);
+                if (!simResult.Success || simResult.ExitCode != 0)
+                    throw new InvalidOperationException($"xcrun simctl failed with exit code {simResult.ExitCode}: {simResult.StandardError}");
+
+                if (string.IsNullOrWhiteSpace(simResult.StandardOutput))
+                    throw new InvalidOperationException("xcrun simctl returned no output.");
+
+                using var doc = JsonDocument.Parse(simResult.StandardOutput);
                 if (doc.RootElement.TryGetProperty("devices", out var devices))
                 {
                     foreach (var runtime in devices.EnumerateObject())
@@ -3379,16 +3437,8 @@ public class DevFlowCommands
             if (status?.AppName != null)
             {
                 // Find process by app name
-                var psi = new System.Diagnostics.ProcessStartInfo("pgrep", $"-f {status.AppName}")
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false
-                };
-                using var proc = System.Diagnostics.Process.Start(psi)!;
-                var output = await proc.StandardOutput.ReadToEndAsync();
-                await proc.WaitForExitAsync();
-                var lines = output.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var pgrepResult = await ProcessRunner.RunAsync("pgrep", new[] { "-f", status.AppName });
+                var lines = pgrepResult.StandardOutput.Trim().Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 if (lines.Length > 0 && int.TryParse(lines[0].Trim(), out var resolved))
                     return resolved;
             }
@@ -3460,18 +3510,37 @@ public class DevFlowCommands
 
             if (alert is null)
             {
-                OutputWriter.WriteResult(new { detected = false }, json, _ => Console.WriteLine("No alert detected"));
+                Output.WriteResult(new JsonObject
+                {
+                    ["detected"] = false
+                }, json, _ => Console.WriteLine("No alert detected"));
                 return;
             }
 
-            OutputWriter.WriteResult(new { detected = true, title = alert.Title, buttons = alert.Buttons.Select(b => new { label = b.Label, centerX = b.CenterX, centerY = b.CenterY }) }, json, _ =>
+            var buttons = new JsonArray();
+            foreach (var button in alert.Buttons)
+            {
+                buttons.Add((JsonNode)new JsonObject
+                {
+                    ["label"] = button.Label,
+                    ["centerX"] = button.CenterX,
+                    ["centerY"] = button.CenterY
+                });
+            }
+
+            Output.WriteResult(new JsonObject
+            {
+                ["detected"] = true,
+                ["title"] = alert.Title,
+                ["buttons"] = buttons
+            }, json, _ =>
             {
                 Console.WriteLine($"Alert: {alert.Title ?? "(no title)"}");
                 foreach (var btn in alert.Buttons)
                     Console.WriteLine($"  Button: \"{btn.Label}\"");
             });
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task AlertDismissAsync(string? udid, int? pid, string host, int port, string? buttonLabel, bool json)
@@ -3506,11 +3575,18 @@ public class DevFlowCommands
             }
 
             if (alert is null)
-                OutputWriter.WriteResult(new { dismissed = false }, json, _ => Console.WriteLine("No alert to dismiss"));
+                Output.WriteResult(new JsonObject
+                {
+                    ["dismissed"] = false
+                }, json, _ => Console.WriteLine("No alert to dismiss"));
             else
-                OutputWriter.WriteResult(new { dismissed = true, title = alert.Title }, json, _ => Console.WriteLine($"Dismissed: {alert.Title ?? "(alert)"}"));
+                Output.WriteResult(new JsonObject
+                {
+                    ["dismissed"] = true,
+                    ["title"] = alert.Title
+                }, json, _ => Console.WriteLine($"Dismissed: {alert.Title ?? "(alert)"}"));
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     private static async Task AlertTreeAsync(string? udid, int? pid, string host, int port, bool json)
@@ -3549,12 +3625,14 @@ public class DevFlowCommands
                 // Try to parse as JSON and output directly; if not valid JSON, wrap as string
                 try
                 {
-                    using var doc = JsonDocument.Parse(treeResult);
-                    Console.WriteLine(JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true }));
+                    Console.WriteLine(CliJson.PrettyPrint(treeResult));
                 }
                 catch (JsonException)
                 {
-                    OutputWriter.WriteResult(new { tree = treeResult }, json);
+                    Output.WriteResult(new JsonObject
+                    {
+                        ["tree"] = treeResult
+                    }, json);
                 }
             }
             else
@@ -3562,37 +3640,31 @@ public class DevFlowCommands
                 Console.WriteLine(treeResult);
             }
         }
-        catch (Exception ex) { OutputWriter.WriteError(ex.Message, json); _errorOccurred = true; }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
-    private static async Task PermissionAsync(string action, string? udid, string? bundleId, string service)
+    private static async Task PermissionAsync(string action, string? udid, string? bundleId, string service, bool json)
     {
         try
         {
             var resolved = await ResolveUdidAsync(udid);
             // Run xcrun simctl privacy directly (driver methods require BundleId which may not be set)
-            var args = string.IsNullOrEmpty(bundleId)
-                ? $"simctl privacy {resolved} {action} {service}"
-                : $"simctl privacy {resolved} {action} {service} {bundleId}";
+            var privacyArgs = string.IsNullOrEmpty(bundleId)
+                ? new[] { "simctl", "privacy", resolved, action, service }
+                : new[] { "simctl", "privacy", resolved, action, service, bundleId };
 
-            var psi = new System.Diagnostics.ProcessStartInfo("xcrun", args)
-            {
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false
-            };
-            using var proc = System.Diagnostics.Process.Start(psi)!;
-            await proc.WaitForExitAsync();
+            var privacyResult = await ProcessRunner.RunAsync("xcrun", privacyArgs);
 
-            if (proc.ExitCode != 0)
+            if (!privacyResult.Success)
             {
-                var stderr = await proc.StandardError.ReadToEndAsync();
-                WriteError($"simctl privacy failed: {stderr.Trim()}");
+                Output.WriteError($"simctl privacy failed: {privacyResult.StandardError.Trim()}", json);
+                _errorOccurred = true;
                 return;
             }
-            Console.WriteLine($"Permission {action}: {service}" + (bundleId != null ? $" for {bundleId}" : ""));
+            var message = $"Permission {action}: {service}" + (bundleId != null ? $" for {bundleId}" : "");
+            Output.WriteActionResult(true, $"permission-{action}", service, json, message);
         }
-        catch (Exception ex) { WriteError(ex.Message); }
+        catch (Exception ex) { Output.WriteError(ex.Message, json); _errorOccurred = true; }
     }
 
     /// <summary>
@@ -3676,13 +3748,22 @@ public class DevFlowCommands
                 var response = await http.GetStringAsync($"http://localhost:{Broker.BrokerServer.DefaultPort}/api/health");
                 var doc = JsonDocument.Parse(response);
                 var agents = doc.RootElement.GetProperty("agents").GetInt32();
-                OutputWriter.WriteResult(new { running = true, port = Broker.BrokerServer.DefaultPort, agents, stateFile = false }, json,
+                Output.WriteResult(new JsonObject
+                {
+                    ["running"] = true,
+                    ["port"] = Broker.BrokerServer.DefaultPort,
+                    ["agents"] = agents,
+                    ["stateFile"] = false
+                }, json,
                     _ => Console.WriteLine($"Broker: running on port {Broker.BrokerServer.DefaultPort} ({agents} agent(s) connected) [no state file]"));
                 return;
             }
             catch { }
 
-            OutputWriter.WriteResult(new { running = false }, json,
+            Output.WriteResult(new JsonObject
+            {
+                ["running"] = false
+            }, json,
                 _ => Console.WriteLine("Broker: not running"));
             return;
         }
@@ -3693,12 +3774,22 @@ public class DevFlowCommands
             var response = await http.GetStringAsync($"http://localhost:{port}/api/health");
             var doc = JsonDocument.Parse(response);
             var agents = doc.RootElement.GetProperty("agents").GetInt32();
-            OutputWriter.WriteResult(new { running = true, port, agents }, json,
+            Output.WriteResult(new JsonObject
+            {
+                ["running"] = true,
+                ["port"] = port,
+                ["agents"] = agents
+            }, json,
                 _ => Console.WriteLine($"Broker: running on port {port} ({agents} agent(s) connected)"));
         }
         catch
         {
-            OutputWriter.WriteResult(new { running = false, port, stale = true }, json,
+            Output.WriteResult(new JsonObject
+            {
+                ["running"] = false,
+                ["port"] = port,
+                ["stale"] = true
+            }, json,
                 _ => Console.WriteLine($"Broker: not responding on port {port} (stale state file?)"));
         }
     }
@@ -3724,7 +3815,11 @@ public class DevFlowCommands
         var port = await Broker.BrokerClient.EnsureBrokerRunningAsync();
         if (port == null)
         {
-            OutputWriter.WriteError("Broker unavailable", json);
+            Output.WriteError("Broker unavailable", json);
+            if (json)
+            {
+                Output.WriteResult(new JsonArray(), json);
+            }
             _errorOccurred = true;
             return;
         }
@@ -3737,8 +3832,12 @@ public class DevFlowCommands
             
             if (json)
             {
-                var result = new { agents = Array.Empty<object>(), projects };
-                OutputWriter.WriteResult(result, json);
+                Output.WriteResult(new JsonArray(), json);
+                // Log project scan info to stderr so it doesn't pollute JSON output
+                if (projects.Length > 0)
+                {
+                    Console.Error.WriteLine($"DevFlow-enabled projects found: {string.Join(", ", projects)}");
+                }
             }
             else
             {
@@ -3765,7 +3864,7 @@ public class DevFlowCommands
 
         if (json)
         {
-            OutputWriter.WriteResult(agents, json);
+            Output.WriteResult(agents, json);
         }
         else
         {
@@ -3811,7 +3910,7 @@ public class DevFlowCommands
         
         if (json)
         {
-            OutputWriter.WriteResult(diagnostics, json);
+            Output.WriteResult(diagnostics, json);
             return;
         }
         
@@ -3916,7 +4015,7 @@ public class DevFlowCommands
 
         if (json)
         {
-            Console.WriteLine(JsonSerializer.Serialize(matched));
+            Console.WriteLine(CliJson.SerializeUntyped(matched, indented: false));
         }
         else
         {
@@ -3969,7 +4068,12 @@ public class DevFlowCommands
                     }
                     else
                     {
-                        var errJson = JsonSerializer.Serialize(new { command = rawCmd, exit_code = 1, output = $"Error: {errMsg}" });
+                        var errJson = CliJson.SerializeUntyped(new JsonObject
+                        {
+                            ["command"] = rawCmd,
+                            ["exit_code"] = 1,
+                            ["output"] = $"Error: {errMsg}"
+                        }, indented: false);
                         originalOut.WriteLine(errJson);
                         originalOut.Flush();
                     }
@@ -4015,7 +4119,12 @@ public class DevFlowCommands
                 }
                 else
                 {
-                    var jsonResponse = JsonSerializer.Serialize(new { command = rawCmd, exit_code = exitCode, output = combinedOutput });
+                    var jsonResponse = CliJson.SerializeUntyped(new JsonObject
+                    {
+                        ["command"] = rawCmd,
+                        ["exit_code"] = exitCode,
+                        ["output"] = combinedOutput
+                    }, indented: false);
                     originalOut.WriteLine(jsonResponse);
                     originalOut.Flush();
                 }
