@@ -24,10 +24,13 @@ behaviour without runtime reflection.
 
 ## Run
 
+All four `AIAttributes.Sample.*` apps share one `UserSecretsId`
+(`ai-attributes-secrets`), so you configure the endpoint once:
+
 ```bash
-export AI_API_KEY="<your-key>"
-export AI_ENDPOINT="https://<resource>.openai.azure.com"
-export AI_DEPLOYMENT="<deployment-name>"
+dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
+dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<your-key>"
+dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deployment-name>"
 
 dotnet run --project samples/AIAttributes.Sample.DIParameters
 ```

@@ -19,12 +19,15 @@ panel showing what the AI actually did.
 
 ## Run
 
+All four `AIAttributes.Sample.*` apps share one `UserSecretsId`
+(`ai-attributes-secrets`), so you configure the endpoint once:
+
 ```bash
-cd samples/AIAttributes.Sample.Garden
-dotnet user-secrets set "AI:ApiKey" "<your-key>"
-dotnet user-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
-dotnet user-secrets set "AI:DeploymentName" "<deployment-name>"
-dotnet build -f net10.0-maccatalyst
+dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
+dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<your-key>"
+dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deployment-name>"
+
+dotnet build samples/AIAttributes.Sample.Garden -f net10.0-maccatalyst
 ```
 
 Then run the resulting bundle, or `dotnet run -f net10.0-maccatalyst`.

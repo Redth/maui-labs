@@ -1,8 +1,8 @@
 using System.ClientModel;
-using System.ComponentModel;
 using AIAttributes.Sample.DIParameters;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.AI.Attributes;
 
@@ -12,22 +12,28 @@ using Microsoft.Maui.AI.Attributes;
 //   • inferred DI for interface/abstract parameters
 //   • [FromKeyedServices] for keyed services
 //   • [FromArguments] to force a DI-able type into the tool schema
-//   • CancellationToken + IServiceProvider as direct parameters
+//   • CancellationToken as a direct parameter
 //
-// See the single tool in TranslatorService below.
+// See TranslatorService.Translate for the single tool.
 
-var apiKey = Environment.GetEnvironmentVariable("AI_API_KEY");
-var endpoint = Environment.GetEnvironmentVariable("AI_ENDPOINT");
-var deployment = Environment.GetEnvironmentVariable("AI_DEPLOYMENT");
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .Build();
+
+var apiKey = configuration["AI:ApiKey"];
+var endpoint = configuration["AI:Endpoint"];
+var deployment = configuration["AI:DeploymentName"];
 
 if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(deployment))
 {
     Console.Error.WriteLine("""
-        AI_API_KEY, AI_ENDPOINT and AI_DEPLOYMENT environment variables must be set.
+        AI:Endpoint, AI:ApiKey and AI:DeploymentName must be set. Configure user-secrets:
 
-          export AI_API_KEY="<your key>"
-          export AI_ENDPOINT="<https://your-resource.openai.azure.com>"
-          export AI_DEPLOYMENT="<your deployment name>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "<endpoint>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<key>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deployment>"
+
+        (shared across all 4 AI.Attributes samples)
         """);
     return 1;
 }
@@ -87,52 +93,4 @@ while (true)
     history.AddMessages(response);
     Console.WriteLine(response.Text);
     Console.WriteLine();
-}
-
-namespace AIAttributes.Sample.DIParameters
-{
-    public interface ITranslator { string Translate(string text); }
-
-    public sealed class PigLatinTranslator : ITranslator
-    {
-        public string Translate(string text) =>
-            string.Join(' ', text.Split(' ').Select(w =>
-                w.Length > 1 ? w[1..] + w[0] + "ay" : w));
-    }
-
-    public interface IModelProvider { string Name { get; } }
-
-    public sealed class PremiumModelProvider : IModelProvider { public string Name => "premium-v2"; }
-    public sealed class FreeModelProvider : IModelProvider { public string Name => "free-v1"; }
-
-    /// <summary>Options passed in by the AI model as part of the tool call schema.</summary>
-    public sealed record TranslationOptions(bool Verbose = false);
-
-    public class TranslatorService
-    {
-        [Description("Translates a phrase using the configured translator.")]
-        [ExportAIFunction("translate")]
-        public string Translate(
-            [Description("The text to translate")] string text,
-            // Inferred DI: interface parameter pulled from the IServiceProvider
-            // at invocation time. Not part of the tool schema.
-            ITranslator translator,
-            // Explicit keyed DI: resolved via [FromKeyedServices].
-            [FromKeyedServices("premium")] IModelProvider model,
-            // [FromArguments] forces a DI-resolvable type to be treated as a
-            // model argument instead — the AI fills it in per call.
-            [FromArguments] TranslationOptions options,
-            // Direct CancellationToken support — never appears in the schema.
-            CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-            var translated = translator.Translate(text);
-            return options.Verbose
-                ? $"[model: {model.Name}] {text} => {translated}"
-                : translated;
-        }
-    }
-
-    [AIToolSource(typeof(TranslatorService))]
-    public partial class TranslatorTools : AIToolContext { }
 }

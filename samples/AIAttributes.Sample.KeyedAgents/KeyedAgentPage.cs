@@ -33,33 +33,4 @@ public abstract class KeyedAgentPage : ContentPage
         Title = title;
         Content = _panel;
     }
-
-    protected override void OnDisappearing()
-    {
-        base.OnDisappearing();
-    }
-}
-
-public sealed class BrowsePage : KeyedAgentPage
-{
-    public BrowsePage(IServiceProvider services)
-        : base(services,
-               toolKey: "browse",
-               title: "Browse Catalog",
-               subtitle: "Read-only agent — searches the plant catalog",
-               systemPrompt: "You are a gardening reference assistant. You can search a catalog of plants " +
-                             "but cannot modify anyone's garden. Use the catalog tools to answer questions.")
-    { }
-}
-
-public sealed class ManagePage : KeyedAgentPage
-{
-    public ManagePage(IServiceProvider services)
-        : base(services,
-               toolKey: "manage",
-               title: "Manage Garden",
-               subtitle: "Mutation agent — adds, moves, removes plants",
-               systemPrompt: "You are a garden management assistant. You can add plants, water them, " +
-                             "move them, and remove them. Do not make up plant data; only use the tools.")
-    { }
 }

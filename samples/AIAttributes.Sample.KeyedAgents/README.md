@@ -27,10 +27,13 @@ the pattern for role-based or persona-based agents.
 
 ## Run
 
+All four `AIAttributes.Sample.*` apps share one `UserSecretsId`
+(`ai-attributes-secrets`), so you configure the endpoint once:
+
 ```bash
-cd samples/AIAttributes.Sample.KeyedAgents
-dotnet user-secrets set "AI:ApiKey" "<your-key>"
-dotnet user-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
-dotnet user-secrets set "AI:DeploymentName" "<deployment-name>"
-dotnet build -f net10.0-maccatalyst
+dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
+dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<your-key>"
+dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deployment-name>"
+
+dotnet build samples/AIAttributes.Sample.KeyedAgents -f net10.0-maccatalyst
 ```

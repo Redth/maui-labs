@@ -85,12 +85,11 @@ public static class MauiProgram
         {
             throw new InvalidOperationException(
                 """
-                AI services are not configured. Set up user secrets:
+                AI services are not configured. Set up user secrets (shared across all AIAttributes samples):
 
-                  cd samples/AIAttributes.Sample.Garden
-                  dotnet user-secrets set "AI:ApiKey" "<your-key>"
-                  dotnet user-secrets set "AI:Endpoint" "<your-endpoint>"
-                  dotnet user-secrets set "AI:DeploymentName" "<your-deployment>"
+                  dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "<your-endpoint>"
+                  dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<your-key>"
+                  dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<your-deployment>"
                 """);
         }
 

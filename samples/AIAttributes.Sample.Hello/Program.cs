@@ -1,8 +1,8 @@
 using System.ClientModel;
 using System.ComponentModel;
-using AIAttributes.Sample.Hello;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.AI.Attributes;
 
@@ -10,18 +10,24 @@ using Microsoft.Maui.AI.Attributes;
 // one service, two [ExportAIFunction] methods, AddAITools<T>(), and a
 // console chat loop powered by FunctionInvokingChatClient.
 
-var apiKey = Environment.GetEnvironmentVariable("AI_API_KEY");
-var endpoint = Environment.GetEnvironmentVariable("AI_ENDPOINT");
-var deployment = Environment.GetEnvironmentVariable("AI_DEPLOYMENT");
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets<Program>()
+    .Build();
+
+var apiKey = configuration["AI:ApiKey"];
+var endpoint = configuration["AI:Endpoint"];
+var deployment = configuration["AI:DeploymentName"];
 
 if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(deployment))
 {
     Console.Error.WriteLine("""
-        AI_API_KEY, AI_ENDPOINT and AI_DEPLOYMENT environment variables must be set.
+        AI:Endpoint, AI:ApiKey and AI:DeploymentName must be set. Configure user-secrets:
 
-          export AI_API_KEY="<your key>"
-          export AI_ENDPOINT="<https://your-resource.openai.azure.com>"
-          export AI_DEPLOYMENT="<your deployment name>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:Endpoint" "<endpoint>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:ApiKey" "<key>"
+          dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deployment>"
+
+        (shared across all 4 AI.Attributes samples)
         """);
     return 1;
 }
@@ -76,41 +82,39 @@ while (true)
     Console.WriteLine();
 }
 
-namespace AIAttributes.Sample.Hello
-{
-    /// <summary>
-    /// Stateless service with two exported AI tools. The source generator
-    /// emits one <see cref="AIFunction"/> wrapper per method.
-    /// </summary>
-    public class WeatherService
-    {
-        [Description("Gets the current temperature in a city.")]
-        [ExportAIFunction("get_temperature")]
-        public string GetTemperature(
-            [Description("The city name")] string city,
-            [Description("Unit: 'celsius' or 'fahrenheit'. Defaults to celsius.")] string unit = "celsius")
-        {
-            var temp = city.GetHashCode() % 30;
-            return unit.Equals("fahrenheit", StringComparison.OrdinalIgnoreCase)
-                ? $"{temp * 9 / 5 + 32}°F in {city}"
-                : $"{temp}°C in {city}";
-        }
+/// <summary>
+/// Source-generated tool context. The generator fills this partial class
+/// with <c>GetTools</c> and <c>RegisterTools</c> overrides that wire each
+/// <c>[ExportAIFunction]</c> method on <see cref="WeatherService"/> into
+/// an <see cref="AITool"/>.
+/// </summary>
+[AIToolSource(typeof(WeatherService))]
+public partial class WeatherTools : AIToolContext { }
 
-        [Description("Gets a short forecast for the next few days in a city.")]
-        [ExportAIFunction("get_forecast")]
-        public string GetForecast(
-            [Description("The city name")] string city,
-            [Description("Number of days (1-7). Defaults to 3.")] int days = 3)
-        {
-            return $"{days}-day forecast for {city}: mostly pleasant.";
-        }
+/// <summary>
+/// Stateless service with two exported AI tools. The source generator
+/// emits one <see cref="AIFunction"/> wrapper per method.
+/// </summary>
+public class WeatherService
+{
+    [Description("Gets the current temperature in a city.")]
+    [ExportAIFunction("get_temperature")]
+    public string GetTemperature(
+        [Description("The city name")] string city,
+        [Description("Unit: 'celsius' or 'fahrenheit'. Defaults to celsius.")] string unit = "celsius")
+    {
+        var temp = city.GetHashCode() % 30;
+        return unit.Equals("fahrenheit", StringComparison.OrdinalIgnoreCase)
+            ? $"{temp * 9 / 5 + 32}°F in {city}"
+            : $"{temp}°C in {city}";
     }
 
-    /// <summary>
-    /// The source-generated tool context. The generator fills this partial
-    /// class with <c>GetTools</c> and <c>RegisterTools</c> overrides that
-    /// wire each <c>[ExportAIFunction]</c> method into <see cref="AITool"/>.
-    /// </summary>
-    [AIToolSource(typeof(WeatherService))]
-    public partial class WeatherTools : AIToolContext { }
+    [Description("Gets a short forecast for the next few days in a city.")]
+    [ExportAIFunction("get_forecast")]
+    public string GetForecast(
+        [Description("The city name")] string city,
+        [Description("Number of days (1-7). Defaults to 3.")] int days = 3)
+    {
+        return $"{days}-day forecast for {city}: mostly pleasant.";
+    }
 }
