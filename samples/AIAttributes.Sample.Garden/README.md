@@ -36,3 +36,16 @@ Then run the resulting bundle, or `dotnet run -f net10.0-maccatalyst`.
 
 You want to understand how scope boundaries, lifetime, and the approval flow
 behave together inside a real UI.
+
+## Inspecting the generated source
+
+This csproj sets `EmitCompilerGeneratedFiles=true` so you can see exactly
+what `Microsoft.Maui.AI.Attributes.Generators` emits for each tool context.
+It is **not required for the sample to  delete the property if yourun** 
+don't care about generator output.
+
+After a build, look under:
+
+```
+artifacts/obj/<ProjectName>/<Config>/<TargetFramework>/generated/Microsoft.Maui.AI.Attributes.Generators/Microsoft.Maui.AI.Attributes.Generators.AIToolContextGenerator/*.g.cs
+```
