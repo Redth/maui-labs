@@ -1,4 +1,5 @@
-using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -6,98 +7,130 @@ namespace Microsoft.Maui.AI.Attributes;
 
 /// <summary>
 /// Base class for source-generated AI tool contexts. Subclasses decorated with
-/// <see cref="AIToolSourceAttribute"/> have their tool registration methods
-/// implemented by the source generator at compile time.
+/// <see cref="AIToolSourceAttribute"/> have their tool registration methods implemented by the
+/// source generator at compile time.
 /// </summary>
 /// <remarks>
 /// This follows the same pattern as <c>System.Text.Json.Serialization.JsonSerializerContext</c>:
 /// declare a partial class, decorate it with attributes, and the source generator fills in the
-///  no runtime reflection needed for discovery.implementation 
+/// implementation &#8212; no runtime reflection for discovery.
 /// </remarks>
 public abstract class AIToolContext
 {
     /// <summary>
-    /// Returns the AI tools defined by this context, bound to the given service provider
-    /// for resolving service instances per invocation.
+    /// Returns the AI tools defined by this context. Each tool resolves its backing service
+    /// from <see cref="AIFunctionArguments.Services"/> at invocation time, falling back to
+    /// <paramref name="serviceProvider"/> if the caller did not supply a provider.
     /// </summary>
     /// <param name="serviceProvider">
-    /// The root service provider used to resolve service dependencies for each tool invocation.
+    /// The fallback service provider. Used only when the invoker does not set
+    /// <see cref="AIFunctionArguments.Services"/>. Typically the root DI container.
     /// </param>
-    /// <returns>The list of AI tools produced by this context.</returns>
     public abstract IReadOnlyList<AITool> GetTools(IServiceProvider serviceProvider);
 
     /// <summary>
-    /// Registers all tools from this context as individual <see cref="AITool"/> singleton
-    /// services in the given service collection.
+    /// Registers all tools from this context as singleton <see cref="AITool"/> services.
     /// </summary>
-    /// <param name="services">The service collection to register tools in.</param>
     public abstract void RegisterTools(IServiceCollection services);
 
     /// <summary>
-    /// Registers all tools from this context as individual keyed <see cref="AITool"/> singleton
-    /// services in the given service collection.
+    /// Registers all tools from this context as keyed singleton <see cref="AITool"/> services.
     /// </summary>
-    /// <param name="services">The service collection to register tools in.</param>
-    /// <param name="key">The service key for keyed DI registration.</param>
     public abstract void RegisterTools(IServiceCollection services, string key);
 
     /// <summary>
-    /// Creates an AI tool that resolves its service instance from DI on each invocation.
-    /// Called by generated  not intended for direct use.code 
+    /// Helpers used by generated code. These are not intended for direct use by applications.
     /// </summary>
-    protected static AITool CreateDITool(
-        IServiceProvider rootServiceProvider,
-        Type serviceType,
-        string methodName,
-        string toolName,
-        string? description,
-        bool approvalRequired)
+    protected static class Helpers
     {
-        var method = serviceType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException(
-                $"Method '{methodName}' not found on type {serviceType.FullName}.");
+        /// <summary>
+        /// Returns the service provider to use for a single invocation. Prefers the caller-
+        /// supplied <see cref="AIFunctionArguments.Services"/> and falls back to the provider
+        /// captured at tool-registration time. Throws if neither is available.
+        /// </summary>
+        public static IServiceProvider RequireServices(AIFunctionArguments args, IServiceProvider? fallback)
+        {
+            var provider = args.Services ?? fallback;
+            if (provider is null)
+            {
+                throw new InvalidOperationException(
+                    "No IServiceProvider is available. Either set AIFunctionArguments.Services before invoking the tool, " +
+                    "or construct this tool via AddAITools<T>()/GetTools(serviceProvider) so a fallback provider is captured.");
+            }
+            return provider;
+        }
 
-        AIFunction function = new DependencyInjectionAIFunction(
-            method,
-            serviceType,
-            rootServiceProvider,
-            toolName,
-            description);
+        /// <summary>
+        /// Reads a required argument from <see cref="AIFunctionArguments"/>, converting it to
+        /// <typeparamref name="T"/> via a direct cast, JSON element conversion, or JSON round-trip.
+        /// </summary>
+        public static T GetRequiredArg<T>(AIFunctionArguments args, string name, JsonSerializerOptions? options = null)
+        {
+            if (!args.TryGetValue(name, out var value))
+            {
+                throw new ArgumentException($"Missing required argument '{name}'.", nameof(args));
+            }
+            return ConvertArg<T>(value, name, options);
+        }
 
-        return approvalRequired
-            ? new ApprovalRequiredAIFunction(function)
-            : function;
-    }
+        /// <summary>
+        /// Reads an optional argument. If the value is missing or <see langword="null"/>, returns
+        /// <paramref name="defaultValue"/>.
+        /// </summary>
+        public static T? GetOptionalArg<T>(AIFunctionArguments args, string name, T? defaultValue, JsonSerializerOptions? options = null)
+        {
+            if (!args.TryGetValue(name, out var value) || value is null)
+            {
+                return defaultValue;
+            }
+            return ConvertArg<T>(value, name, options);
+        }
 
-    /// <summary>
-    /// Registers a single AI tool as a singleton service using a factory
-    /// that creates a DI-resolving tool. Called by generated code.
-    /// </summary>
-    protected static void RegisterDITool(
-        IServiceCollection services,
-        Type serviceType,
-        string methodName,
-        string toolName,
-        string? description,
-        bool approvalRequired)
-    {
-        services.AddSingleton<AITool>(sp =>
-            CreateDITool(sp, serviceType, methodName, toolName, description, approvalRequired));
-    }
+        private static T ConvertArg<T>(object? value, string name, JsonSerializerOptions? options)
+        {
+            if (value is null)
+            {
+                if (default(T) is null)
+                {
+                    return default!;
+                }
+                throw new ArgumentException($"Argument '{name}' is null but target type '{typeof(T)}' is non-nullable.", nameof(name));
+            }
 
-    /// <summary>
-    /// Registers a single AI tool as a keyed singleton service. Called by generated code.
-    /// </summary>
-    protected static void RegisterKeyedDITool(
-        IServiceCollection services,
-        string key,
-        Type serviceType,
-        string methodName,
-        string toolName,
-        string? description,
-        bool approvalRequired)
-    {
-        services.AddKeyedSingleton<AITool>(key, (sp, _) =>
-            CreateDITool(sp, serviceType, methodName, toolName, description, approvalRequired));
+            if (value is T typed)
+            {
+                return typed;
+            }
+
+            var opts = options ?? AIJsonUtilities.DefaultOptions;
+
+            if (value is JsonElement je)
+            {
+                return je.Deserialize<T>(opts)!;
+            }
+
+            if (value is JsonNode jn)
+            {
+                return jn.Deserialize<T>(opts)!;
+            }
+
+            // If the LLM supplied a raw JSON string for a non-string target, try to parse it.
+            if (value is string s && typeof(T) != typeof(string))
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<T>(s, opts)!;
+                }
+                catch
+                {
+                    // Fall through to round-trip.
+                }
+            }
+
+            // Fallback: JSON round-trip. This matches ReflectionAIFunction's behavior for
+            // general object-to-T coercion.
+            var json = JsonSerializer.Serialize(value, value.GetType(), opts);
+            return JsonSerializer.Deserialize<T>(json, opts)!;
+        }
     }
 }

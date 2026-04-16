@@ -11,13 +11,37 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.Maui.AI.Attributes.Generators;
 
+/// <summary>
+/// Incremental source generator that emits a fully-typed <c>AIFunction</c> subclass per
+/// <c>[ExportAIFunction]</c> method on each type referenced by an
+/// <c>[AIToolSource(typeof(...))]</c> attribute on an <c>AIToolContext</c> partial class.
+/// </summary>
+/// <remarks>
+/// The emitted class:
+/// <list type="bullet">
+/// <item>Overrides <c>Name</c>, <c>Description</c>, <c>JsonSchema</c>, <c>ReturnJsonSchema</c>.</item>
+/// <item>Resolves its backing service from <c>AIFunctionArguments.Services</c> (falling back to a
+/// captured provider) per invocation — no <c>AIFunctionFactory.Create</c>, no
+/// <c>MethodInfo.Invoke</c>.</item>
+/// <item>Binds each parameter at compile time:
+/// <c>CancellationToken</c>/<c>IServiceProvider</c>/<c>AIFunctionArguments</c> get special cases;
+/// <c>[FromServices]</c>/<c>[FromKeyedServices]</c>/interface-or-abstract parameters resolve from
+/// DI; everything else binds from the argument dictionary.</item>
+/// </list>
+/// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class AIToolContextGenerator : IIncrementalGenerator
 {
     private const string AIToolContextFullName = "Microsoft.Maui.AI.Attributes.AIToolContext";
     private const string AIToolSourceAttributeFullName = "Microsoft.Maui.AI.Attributes.AIToolSourceAttribute";
     private const string ExportAIFunctionAttributeFullName = "Microsoft.Maui.AI.Attributes.ExportAIFunctionAttribute";
+    private const string FromArgumentsAttributeFullName = "Microsoft.Maui.AI.Attributes.FromArgumentsAttribute";
     private const string DescriptionAttributeFullName = "System.ComponentModel.DescriptionAttribute";
+    private const string FromServicesAttributeFullName = "Microsoft.Extensions.DependencyInjection.FromServicesAttribute";
+    private const string FromKeyedServicesAttributeFullName = "Microsoft.Extensions.DependencyInjection.FromKeyedServicesAttribute";
+    private const string CancellationTokenFullName = "System.Threading.CancellationToken";
+    private const string IServiceProviderFullName = "System.IServiceProvider";
+    private const string AIFunctionArgumentsFullName = "Microsoft.Extensions.AI.AIFunctionArguments";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -30,7 +54,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             .Where(static m => m is not null)
             .Select(static (m, _) => m!);
 
-        // Group by context class (multiple [AIToolSource] attributes produce multiple entries)
+        // Merge duplicate context entries (multiple [AIToolSource] attributes → multiple invocations).
         var grouped = contextDeclarations
             .Collect()
             .SelectMany(static (items, _) =>
@@ -45,15 +69,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                     }
                     else
                     {
-                        var merged = new ContextModel(
-                            existing.Namespace,
-                            existing.ClassName,
-                            existing.FullyQualifiedName,
-                            existing.Accessibility,
-                            existing.SourceTypes.AddRange(
-                                item.SourceTypes.Where(s =>
-                                    !existing.SourceTypes.Any(e =>
-                                        e.FullyQualifiedName == s.FullyQualifiedName))));
+                        var merged = existing.WithAdditionalSourceTypes(item.SourceTypes);
                         dict[key] = merged;
                     }
                 }
@@ -64,6 +80,11 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         {
             var source = GenerateContextSource(model);
             spc.AddSource($"{model.ClassName}.g.cs", SourceText.From(source, Encoding.UTF8));
+
+            foreach (var diag in model.Diagnostics)
+            {
+                spc.ReportDiagnostic(diag.ToDiagnostic());
+            }
         });
     }
 
@@ -78,6 +99,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             return null;
 
         var sourceTypes = new List<SourceTypeModel>();
+        var diagnostics = new List<DiagnosticInfo>();
 
         foreach (var attr in contextSymbol.GetAttributes())
         {
@@ -92,16 +114,22 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             if (attr.ConstructorArguments[0].Value is not INamedTypeSymbol sourceTypeSymbol)
                 continue;
 
-            var methods = GetExportedMethods(sourceTypeSymbol, ct);
-            if (methods.Count > 0)
+            var methods = GetExportedMethods(sourceTypeSymbol, diagnostics, ct);
+            if (methods.Count == 0)
             {
-                sourceTypes.Add(new SourceTypeModel(
-                    sourceTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    methods.ToImmutableArray()));
+                diagnostics.Add(DiagnosticInfo.NoExportableMethods(
+                    sourceTypeSymbol.ToDisplayString(),
+                    attr.ApplicationSyntaxReference?.GetSyntax(ct).GetLocation()));
+                continue;
             }
+
+            sourceTypes.Add(new SourceTypeModel(
+                sourceTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                SanitizeIdentifier(sourceTypeSymbol.Name),
+                methods.ToImmutableArray()));
         }
 
-        if (sourceTypes.Count == 0)
+        if (sourceTypes.Count == 0 && diagnostics.Count == 0)
             return null;
 
         var accessibility = contextSymbol.DeclaredAccessibility switch
@@ -116,16 +144,21 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         };
 
         return new ContextModel(
-            contextSymbol.ContainingNamespace?.ToDisplayString() ?? string.Empty,
+            contextSymbol.ContainingNamespace?.IsGlobalNamespace == true ? "" : contextSymbol.ContainingNamespace!.ToDisplayString(),
             contextSymbol.Name,
             contextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             accessibility,
-            sourceTypes.ToImmutableArray());
+            sourceTypes.ToImmutableArray(),
+            diagnostics.ToImmutableArray());
     }
 
-    private static List<MethodModel> GetExportedMethods(INamedTypeSymbol typeSymbol, CancellationToken ct)
+    private static List<MethodModel> GetExportedMethods(
+        INamedTypeSymbol typeSymbol,
+        List<DiagnosticInfo> diagnostics,
+        CancellationToken ct)
     {
         var methods = new List<MethodModel>();
+        var nameCollisions = new Dictionary<string, int>();
 
         foreach (var member in typeSymbol.GetMembers())
         {
@@ -133,82 +166,289 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
 
             if (member is not IMethodSymbol method)
                 continue;
-
             if (method.MethodKind != MethodKind.Ordinary)
                 continue;
-
             if (method.IsStatic)
                 continue;
+            if (method.DeclaredAccessibility != Accessibility.Public && method.DeclaredAccessibility != Accessibility.Internal)
+                continue;
 
-            ExportAIFunctionData? exportData = null;
+            var exportAttr = method.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+            if (exportAttr is null)
+                continue;
 
-            foreach (var attr in method.GetAttributes())
+            var location = method.Locations.FirstOrDefault();
+
+            if (method.IsGenericMethod)
             {
-                if (attr.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName)
+                diagnostics.Add(DiagnosticInfo.UnsupportedSignature(
+                    method.ToDisplayString(),
+                    "Generic methods are not supported.",
+                    location));
+                continue;
+            }
+
+            bool hasRefOrOut = false;
+            foreach (var p in method.Parameters)
+            {
+                if (p.RefKind is RefKind.Ref or RefKind.Out or RefKind.In or RefKind.RefReadOnlyParameter)
                 {
-                    var name = (string?)null;
-                    var description = (string?)null;
-                    var approvalRequired = false;
-
-                    if (attr.ConstructorArguments.Length >= 1 &&
-                        attr.ConstructorArguments[0].Value is string ctorName)
-                    {
-                        name = ctorName;
-                    }
-
-                    foreach (var namedArg in attr.NamedArguments)
-                    {
-                        switch (namedArg.Key)
-                        {
-                            case "Name":
-                                name = namedArg.Value.Value as string;
-                                break;
-                            case "Description":
-                                description = namedArg.Value.Value as string;
-                                break;
-                            case "ApprovalRequired":
-                                approvalRequired = namedArg.Value.Value is true;
-                                break;
-                        }
-                    }
-
-                    exportData = new ExportAIFunctionData(
-                        name ?? method.Name,
-                        description,
-                        approvalRequired);
+                    hasRefOrOut = true;
                     break;
                 }
             }
-
-            if (exportData is null)
-                continue;
-
-            // Check for [Description] on the method as fallback
-            if (exportData.Description is null)
+            if (hasRefOrOut)
             {
-                foreach (var attr in method.GetAttributes())
+                diagnostics.Add(DiagnosticInfo.UnsupportedSignature(
+                    method.ToDisplayString(),
+                    "Parameters with ref, out, or in modifiers are not supported.",
+                    location));
+                continue;
+            }
+
+            string? name = null;
+            string? description = null;
+            bool approvalRequired = false;
+
+            if (exportAttr.ConstructorArguments.Length >= 1 &&
+                exportAttr.ConstructorArguments[0].Value is string ctorName)
+            {
+                name = ctorName;
+            }
+            foreach (var na in exportAttr.NamedArguments)
+            {
+                switch (na.Key)
                 {
-                    if (attr.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName &&
-                        attr.ConstructorArguments.Length >= 1 &&
-                        attr.ConstructorArguments[0].Value is string desc)
-                    {
-                        exportData = new ExportAIFunctionData(
-                            exportData.Name,
-                            desc,
-                            exportData.ApprovalRequired);
-                        break;
-                    }
+                    case "Name": name = na.Value.Value as string; break;
+                    case "Description": description = na.Value.Value as string; break;
+                    case "ApprovalRequired": approvalRequired = na.Value.Value is true; break;
                 }
+            }
+
+            if (description is null)
+            {
+                var descAttr = method.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
+                if (descAttr is not null &&
+                    descAttr.ConstructorArguments.Length >= 1 &&
+                    descAttr.ConstructorArguments[0].Value is string d)
+                {
+                    description = d;
+                }
+            }
+
+            var toolName = name ?? method.Name;
+            var parameters = AnalyzeParameters(method, diagnostics);
+            var returnInfo = AnalyzeReturnType(method.ReturnType);
+
+            // Disambiguate same-method-name overloads in the generated class name.
+            var baseClassName = $"{SanitizeIdentifier(typeSymbol.Name)}_{SanitizeIdentifier(method.Name)}_Tool";
+            if (nameCollisions.TryGetValue(baseClassName, out var count))
+            {
+                nameCollisions[baseClassName] = count + 1;
+                baseClassName = $"{baseClassName}_{count + 1}";
+            }
+            else
+            {
+                nameCollisions[baseClassName] = 0;
             }
 
             methods.Add(new MethodModel(
                 method.Name,
-                exportData.Name,
-                exportData.Description,
-                exportData.ApprovalRequired));
+                toolName,
+                description,
+                approvalRequired,
+                parameters,
+                returnInfo,
+                baseClassName));
         }
 
         return methods;
+    }
+
+    private static ImmutableArray<ParameterModel> AnalyzeParameters(
+        IMethodSymbol method,
+        List<DiagnosticInfo> diagnostics)
+    {
+        var list = new List<ParameterModel>(method.Parameters.Length);
+        foreach (var p in method.Parameters)
+        {
+            var typeName = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var unannotatedTypeName = p.Type.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+                .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+            var kind = ClassifyParameter(p, out string? keyedServiceKey);
+
+            // hasDefault/defaultValueLiteral
+            string? defaultLiteral = null;
+            bool hasDefault = p.HasExplicitDefaultValue;
+            if (hasDefault)
+            {
+                defaultLiteral = FormatDefaultLiteral(p.ExplicitDefaultValue, p.Type);
+            }
+
+            if (kind == ParameterKind.Unknown)
+            {
+                diagnostics.Add(DiagnosticInfo.UnserializableParameter(
+                    method.ToDisplayString(),
+                    p.Name,
+                    typeName,
+                    p.Locations.FirstOrDefault()));
+                // Fall back to JSON binding so compilation succeeds; it will fail at runtime if invoked.
+                kind = ParameterKind.JsonArgument;
+            }
+            else if (kind == ParameterKind.InferredDI)
+            {
+                diagnostics.Add(DiagnosticInfo.InferredDI(
+                    method.ToDisplayString(),
+                    p.Name,
+                    typeName,
+                    p.Locations.FirstOrDefault()));
+            }
+
+            list.Add(new ParameterModel(
+                p.Name,
+                typeName,
+                unannotatedTypeName,
+                kind,
+                keyedServiceKey,
+                p.Type.NullableAnnotation == NullableAnnotation.Annotated || p.Type.IsReferenceType,
+                hasDefault,
+                defaultLiteral,
+                GetParameterDescription(p)));
+        }
+        return list.ToImmutableArray();
+    }
+
+    private static string? GetParameterDescription(IParameterSymbol p)
+    {
+        var attr = p.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
+        if (attr is not null &&
+            attr.ConstructorArguments.Length >= 1 &&
+            attr.ConstructorArguments[0].Value is string d)
+        {
+            return d;
+        }
+        return null;
+    }
+
+    private static ParameterKind ClassifyParameter(IParameterSymbol p, out string? keyedServiceKey)
+    {
+        keyedServiceKey = null;
+        var fullName = p.Type.ToDisplayString();
+
+        // Explicit attributes take precedence.
+        var keyedAttr = p.GetAttributes()
+            .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == FromKeyedServicesAttributeFullName);
+        if (keyedAttr is not null)
+        {
+            if (keyedAttr.ConstructorArguments.Length >= 1)
+            {
+                keyedServiceKey = FormatConstantKey(keyedAttr.ConstructorArguments[0]);
+            }
+            return ParameterKind.FromKeyedServices;
+        }
+
+        if (p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == FromServicesAttributeFullName))
+        {
+            return ParameterKind.FromServices;
+        }
+
+        if (p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == FromArgumentsAttributeFullName))
+        {
+            return IsJsonBindable(p.Type) ? ParameterKind.JsonArgument : ParameterKind.Unknown;
+        }
+
+        // Framework-provided types.
+        if (fullName is CancellationTokenFullName or "global::" + CancellationTokenFullName)
+            return ParameterKind.CancellationToken;
+        if (p.Type is INamedTypeSymbol nts && nts.ToDisplayString() == CancellationTokenFullName)
+            return ParameterKind.CancellationToken;
+        if (p.Type.ToDisplayString() == IServiceProviderFullName)
+            return ParameterKind.ServiceProvider;
+        if (p.Type.ToDisplayString() == AIFunctionArgumentsFullName)
+            return ParameterKind.AIFunctionArguments;
+
+        // Infer DI for interface or abstract class parameters without explicit attribute.
+        if (p.Type.TypeKind == TypeKind.Interface)
+            return ParameterKind.InferredDI;
+        if (p.Type is INamedTypeSymbol { IsAbstract: true, TypeKind: TypeKind.Class })
+            return ParameterKind.InferredDI;
+
+        // Otherwise, bind from the argument dictionary (JSON).
+        return IsJsonBindable(p.Type) ? ParameterKind.JsonArgument : ParameterKind.Unknown;
+    }
+
+    private static bool IsJsonBindable(ITypeSymbol type)
+    {
+        // Conservative allowlist for the warning diagnostic only. The runtime ultimately decides
+        // via JsonSerializer. We flag "clearly non-bindable" things like delegates and pointer types.
+        if (type.TypeKind is TypeKind.Delegate or TypeKind.Pointer or TypeKind.FunctionPointer)
+            return false;
+        return true;
+    }
+
+    private static string FormatConstantKey(TypedConstant c)
+    {
+        if (c.Value is null) return "null";
+        if (c.Value is string s) return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        return c.ToCSharpString();
+    }
+
+    private static string FormatDefaultLiteral(object? value, ITypeSymbol type)
+    {
+        if (value is null)
+        {
+            return type.IsReferenceType || type.NullableAnnotation == NullableAnnotation.Annotated
+                ? "null"
+                : $"default({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})";
+        }
+        return value switch
+        {
+            string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+            bool b => b ? "true" : "false",
+            char c => "'" + c + "'",
+            _ => value.ToString()!,
+        };
+    }
+
+    private static ReturnInfo AnalyzeReturnType(ITypeSymbol returnType)
+    {
+        var displayName = returnType.ToDisplayString();
+        if (displayName == "void")
+            return new ReturnInfo(ReturnShape.Void, null, null);
+
+        if (returnType is INamedTypeSymbol named)
+        {
+            var defn = named.ConstructedFrom.ToDisplayString();
+            if (defn == "System.Threading.Tasks.Task")
+                return new ReturnInfo(ReturnShape.Task, null, null);
+            if (defn == "System.Threading.Tasks.ValueTask")
+                return new ReturnInfo(ReturnShape.ValueTask, null, null);
+            if (defn == "System.Threading.Tasks.Task<TResult>")
+            {
+                var t = named.TypeArguments[0];
+                return new ReturnInfo(
+                    ReturnShape.TaskOfT,
+                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    t);
+            }
+            if (defn == "System.Threading.Tasks.ValueTask<TResult>")
+            {
+                var t = named.TypeArguments[0];
+                return new ReturnInfo(
+                    ReturnShape.ValueTaskOfT,
+                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                    t);
+            }
+        }
+
+        return new ReturnInfo(
+            ReturnShape.Sync,
+            returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+            returnType);
     }
 
     private static bool InheritsFrom(INamedTypeSymbol symbol, string baseTypeFullName)
@@ -228,6 +468,17 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         var sb = new StringBuilder();
         sb.AppendLine("// <auto-generated />");
         sb.AppendLine("#nullable enable");
+        sb.AppendLine("#pragma warning disable CS8019 // Unnecessary using directive");
+        sb.AppendLine("#pragma warning disable CS8604 // Possible null reference argument (JSON-deserialized values passed to non-nullable parameters)");
+        sb.AppendLine();
+        sb.AppendLine("using global::System;");
+        sb.AppendLine("using global::System.Collections.Generic;");
+        sb.AppendLine("using global::System.Reflection;");
+        sb.AppendLine("using global::System.Text.Json;");
+        sb.AppendLine("using global::System.Threading;");
+        sb.AppendLine("using global::System.Threading.Tasks;");
+        sb.AppendLine("using global::Microsoft.Extensions.AI;");
+        sb.AppendLine("using global::Microsoft.Extensions.DependencyInjection;");
         sb.AppendLine();
 
         var indent = "";
@@ -238,63 +489,69 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             indent = "    ";
         }
 
+        // Emit the partial class body: Default + GetTools + RegisterTools.
         sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}");
         sb.AppendLine($"{indent}{{");
-
-        // Static Default property
         sb.AppendLine($"{indent}    /// <summary>Gets the default singleton instance of this tool context.</summary>");
         sb.AppendLine($"{indent}    public static {model.ClassName} Default {{ get; }} = new {model.ClassName}();");
         sb.AppendLine();
 
-        // GetTools override — uses base class CreateDITool helper
+        // GetTools(IServiceProvider)
         sb.AppendLine($"{indent}    /// <inheritdoc />");
         sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools(global::System.IServiceProvider serviceProvider)");
         sb.AppendLine($"{indent}    {{");
         sb.AppendLine($"{indent}        return new global::Microsoft.Extensions.AI.AITool[]");
         sb.AppendLine($"{indent}        {{");
-
-        foreach (var sourceType in model.SourceTypes)
+        foreach (var st in model.SourceTypes)
         {
-            foreach (var method in sourceType.Methods)
+            foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}            CreateDITool(serviceProvider, typeof({sourceType.FullyQualifiedName}), {Escape(method.MethodName)}, {Escape(method.ToolName)}, {EscapeOrNull(method.Description)}, {BoolLiteral(method.ApprovalRequired)}),");
+                sb.AppendLine($"{indent}            {WrapApproval($"new {m.GeneratedClassName}(serviceProvider)", m.ApprovalRequired)},");
             }
         }
-
         sb.AppendLine($"{indent}        }};");
         sb.AppendLine($"{indent}    }}");
         sb.AppendLine();
 
-        // RegisterTools (non-keyed) — uses base class RegisterDITool helper
+        // RegisterTools(IServiceCollection)
         sb.AppendLine($"{indent}    /// <inheritdoc />");
         sb.AppendLine($"{indent}    public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
         sb.AppendLine($"{indent}    {{");
-
-        foreach (var sourceType in model.SourceTypes)
+        foreach (var st in model.SourceTypes)
         {
-            foreach (var method in sourceType.Methods)
+            foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}        RegisterDITool(services, typeof({sourceType.FullyQualifiedName}), {Escape(method.MethodName)}, {Escape(method.ToolName)}, {EscapeOrNull(method.Description)}, {BoolLiteral(method.ApprovalRequired)});");
+                sb.AppendLine($"{indent}        services.AddSingleton<global::Microsoft.Extensions.AI.AITool>(static sp => {WrapApproval($"new {m.GeneratedClassName}(sp)", m.ApprovalRequired)});");
             }
         }
-
         sb.AppendLine($"{indent}    }}");
         sb.AppendLine();
 
-        // RegisterTools (keyed) — uses base class RegisterKeyedDITool helper
+        // RegisterTools(IServiceCollection, string key)
         sb.AppendLine($"{indent}    /// <inheritdoc />");
         sb.AppendLine($"{indent}    public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, string key)");
         sb.AppendLine($"{indent}    {{");
-
-        foreach (var sourceType in model.SourceTypes)
+        foreach (var st in model.SourceTypes)
         {
-            foreach (var method in sourceType.Methods)
+            foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}        RegisterKeyedDITool(services, key, typeof({sourceType.FullyQualifiedName}), {Escape(method.MethodName)}, {Escape(method.ToolName)}, {EscapeOrNull(method.Description)}, {BoolLiteral(method.ApprovalRequired)});");
+                sb.AppendLine($"{indent}        services.AddKeyedSingleton<global::Microsoft.Extensions.AI.AITool>(key, static (sp, _) => {WrapApproval($"new {m.GeneratedClassName}(sp)", m.ApprovalRequired)});");
             }
         }
-
         sb.AppendLine($"{indent}    }}");
+
+        // Emit tool classes as nested private classes inside the context class — avoids
+        // cross-context name collisions when the same service method is referenced from
+        // multiple [AIToolSource]-decorated contexts.
+        sb.AppendLine();
+        foreach (var st in model.SourceTypes)
+        {
+            foreach (var m in st.Methods)
+            {
+                EmitToolClass(sb, indent + "    ", st, m);
+                sb.AppendLine();
+            }
+        }
 
         sb.AppendLine($"{indent}}}");
 
@@ -306,36 +563,238 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string Escape(string value)
+    private static string WrapApproval(string inner, bool approvalRequired) =>
+        approvalRequired
+            ? $"new global::Microsoft.Extensions.AI.ApprovalRequiredAIFunction({inner})"
+            : inner;
+
+    private static void EmitToolClass(StringBuilder sb, string indent, SourceTypeModel st, MethodModel m)
     {
-        return "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        var cls = m.GeneratedClassName;
+        sb.AppendLine($"{indent}private sealed class {cls} : global::Microsoft.Extensions.AI.AIFunction");
+        sb.AppendLine($"{indent}{{");
+        sb.AppendLine($"{indent}    private readonly global::System.IServiceProvider? _fallback;");
+        sb.AppendLine($"{indent}    private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);");
+        sb.AppendLine($"{indent}    private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);");
+        sb.AppendLine();
+
+        sb.AppendLine($"{indent}    public {cls}(global::System.IServiceProvider? fallback = null)");
+        sb.AppendLine($"{indent}    {{");
+        sb.AppendLine($"{indent}        _fallback = fallback;");
+        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine();
+
+        sb.AppendLine($"{indent}    public override string Name => {Escape(m.ToolName)};");
+        sb.AppendLine($"{indent}    public override string Description => {EscapeOrEmpty(m.Description)};");
+        sb.AppendLine($"{indent}    public override global::System.Text.Json.JsonElement JsonSchema => s_schema.Value;");
+        sb.AppendLine($"{indent}    public override global::System.Text.Json.JsonElement? ReturnJsonSchema => s_returnSchema.Value;");
+        sb.AppendLine();
+
+        // MethodInfo lookup (used for schema generation only, one-shot at warmup).
+        sb.AppendLine($"{indent}    private static global::System.Reflection.MethodInfo GetTargetMethod()");
+        sb.AppendLine($"{indent}    {{");
+        sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
+        sb.Append($"{indent}        var paramTypes = new global::System.Type[] {{ ");
+        foreach (var p in m.Parameters)
+        {
+            sb.Append($"typeof({p.UnannotatedTypeName}), ");
+        }
+        sb.AppendLine("};");
+        sb.AppendLine($"{indent}        return serviceType.GetMethod({Escape(m.MethodName)}, global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance, null, paramTypes, null)");
+        sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target method {st.FullyQualifiedName}.{m.MethodName}.")});");
+        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine();
+
+        // Schema builder (uses IncludeParameter to exclude DI-bound parameters).
+        sb.AppendLine($"{indent}    private static readonly global::System.Collections.Generic.HashSet<string> s_schemaExcludedParameters = new()");
+        sb.AppendLine($"{indent}    {{");
+        foreach (var p in m.Parameters)
+        {
+            if (!IncludeInSchema(p.Kind))
+                sb.AppendLine($"{indent}        {Escape(p.Name)},");
+        }
+        sb.AppendLine($"{indent}    }};");
+        sb.AppendLine();
+
+        sb.AppendLine($"{indent}    private static global::System.Text.Json.JsonElement BuildSchema()");
+        sb.AppendLine($"{indent}    {{");
+        sb.AppendLine($"{indent}        var inferenceOptions = new global::Microsoft.Extensions.AI.AIJsonSchemaCreateOptions");
+        sb.AppendLine($"{indent}        {{");
+        sb.AppendLine($"{indent}            IncludeParameter = static p => !s_schemaExcludedParameters.Contains(p.Name!),");
+        sb.AppendLine($"{indent}        }};");
+        sb.AppendLine($"{indent}        return global::Microsoft.Extensions.AI.AIJsonUtilities.CreateFunctionJsonSchema(");
+        sb.AppendLine($"{indent}            GetTargetMethod(), title: string.Empty, description: string.Empty, inferenceOptions: inferenceOptions);");
+        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine();
+
+        sb.AppendLine($"{indent}    private static global::System.Text.Json.JsonElement? BuildReturnSchema()");
+        sb.AppendLine($"{indent}    {{");
+        if (m.ReturnInfo.Shape == ReturnShape.Void || m.ReturnInfo.Shape == ReturnShape.Task || m.ReturnInfo.Shape == ReturnShape.ValueTask)
+        {
+            sb.AppendLine($"{indent}        return null;");
+        }
+        else
+        {
+            sb.AppendLine($"{indent}        return global::Microsoft.Extensions.AI.AIJsonUtilities.CreateJsonSchema(typeof({m.ReturnInfo.TypeName!}));");
+        }
+        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine();
+
+        // InvokeCoreAsync
+        sb.AppendLine($"{indent}    protected override async global::System.Threading.Tasks.ValueTask<object?> InvokeCoreAsync(");
+        sb.AppendLine($"{indent}        global::Microsoft.Extensions.AI.AIFunctionArguments arguments,");
+        sb.AppendLine($"{indent}        global::System.Threading.CancellationToken cancellationToken)");
+        sb.AppendLine($"{indent}    {{");
+        sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments, _fallback);");
+        sb.AppendLine($"{indent}        var __service = __provider.GetRequiredService<{st.FullyQualifiedName}>();");
+
+        var argNames = new List<string>();
+        foreach (var p in m.Parameters)
+        {
+            var local = $"__arg_{p.Name}";
+            argNames.Add(local);
+            EmitParameterBinding(sb, indent + "        ", local, p);
+        }
+
+        // Call & await
+        var callExpr = $"__service.{m.MethodName}({string.Join(", ", argNames)})";
+        switch (m.ReturnInfo.Shape)
+        {
+            case ReturnShape.Void:
+                sb.AppendLine($"{indent}        {callExpr};");
+                sb.AppendLine($"{indent}        return null;");
+                break;
+            case ReturnShape.Sync:
+                sb.AppendLine($"{indent}        var __result = {callExpr};");
+                sb.AppendLine($"{indent}        return __result;");
+                break;
+            case ReturnShape.Task:
+                sb.AppendLine($"{indent}        await {callExpr}.ConfigureAwait(false);");
+                sb.AppendLine($"{indent}        return null;");
+                break;
+            case ReturnShape.ValueTask:
+                sb.AppendLine($"{indent}        await {callExpr}.ConfigureAwait(false);");
+                sb.AppendLine($"{indent}        return null;");
+                break;
+            case ReturnShape.TaskOfT:
+            case ReturnShape.ValueTaskOfT:
+                sb.AppendLine($"{indent}        var __result = await {callExpr}.ConfigureAwait(false);");
+                sb.AppendLine($"{indent}        return __result;");
+                break;
+        }
+
+        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine($"{indent}}}");
     }
+
+    private static void EmitParameterBinding(StringBuilder sb, string indent, string local, ParameterModel p)
+    {
+        switch (p.Kind)
+        {
+            case ParameterKind.CancellationToken:
+                sb.AppendLine($"{indent}var {local} = cancellationToken;");
+                break;
+            case ParameterKind.ServiceProvider:
+                sb.AppendLine($"{indent}var {local} = __provider;");
+                break;
+            case ParameterKind.AIFunctionArguments:
+                sb.AppendLine($"{indent}var {local} = arguments;");
+                break;
+            case ParameterKind.FromServices:
+            case ParameterKind.InferredDI:
+                sb.AppendLine($"{indent}var {local} = __provider.GetRequiredService<{p.TypeName}>();");
+                break;
+            case ParameterKind.FromKeyedServices:
+                sb.AppendLine($"{indent}var {local} = __provider.GetRequiredKeyedService<{p.TypeName}>({p.KeyedServiceKey ?? "null"});");
+                break;
+            case ParameterKind.JsonArgument:
+                if (p.HasDefault)
+                {
+                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetOptionalArg<{p.TypeName}>(arguments, {Escape(p.Name)}, {p.DefaultLiteral});");
+                }
+                else
+                {
+                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
+                }
+                break;
+            default:
+                sb.AppendLine($"{indent}// Unclassified parameter {p.Name}: falling back to JSON binding.");
+                sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
+                break;
+        }
+    }
+
+    private static bool IncludeInSchema(ParameterKind kind) =>
+        kind is ParameterKind.JsonArgument;
+
+    private static string SanitizeIdentifier(string name)
+    {
+        var sb = new StringBuilder(name.Length);
+        foreach (var c in name)
+        {
+            sb.Append(char.IsLetterOrDigit(c) || c == '_' ? c : '_');
+        }
+        return sb.ToString();
+    }
+
+    private static string Escape(string value)
+        => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
     private static string EscapeOrNull(string? value)
+        => value is null ? "null" : Escape(value);
+
+    private static string EscapeOrEmpty(string? value)
+        => value is null ? "string.Empty" : Escape(value);
+
+    // Pipeline models
+
+    private enum ParameterKind
     {
-        return value is null ? "null" : Escape(value);
+        JsonArgument,
+        CancellationToken,
+        ServiceProvider,
+        AIFunctionArguments,
+        FromServices,
+        FromKeyedServices,
+        InferredDI,
+        Unknown,
     }
 
-    private static string BoolLiteral(bool value)
+    private enum ReturnShape
     {
-        return value ? "true" : "false";
+        Void,
+        Sync,
+        Task,
+        TaskOfT,
+        ValueTask,
+        ValueTaskOfT,
     }
 
-    // Pipeline data models
+    private sealed record ReturnInfo(ReturnShape Shape, string? TypeName, ITypeSymbol? TypeSymbol);
 
-    private sealed record ExportAIFunctionData(
+    private sealed record ParameterModel(
         string Name,
-        string? Description,
-        bool ApprovalRequired);
+        string TypeName,
+        string UnannotatedTypeName,
+        ParameterKind Kind,
+        string? KeyedServiceKey,
+        bool IsNullable,
+        bool HasDefault,
+        string? DefaultLiteral,
+        string? Description);
 
     private sealed record MethodModel(
         string MethodName,
         string ToolName,
         string? Description,
-        bool ApprovalRequired);
+        bool ApprovalRequired,
+        ImmutableArray<ParameterModel> Parameters,
+        ReturnInfo ReturnInfo,
+        string GeneratedClassName);
 
     private sealed record SourceTypeModel(
         string FullyQualifiedName,
+        string SimpleName,
         ImmutableArray<MethodModel> Methods);
 
     private sealed record ContextModel(
@@ -343,5 +802,65 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         string ClassName,
         string FullyQualifiedName,
         string Accessibility,
-        ImmutableArray<SourceTypeModel> SourceTypes);
+        ImmutableArray<SourceTypeModel> SourceTypes,
+        ImmutableArray<DiagnosticInfo> Diagnostics)
+    {
+        public ContextModel WithAdditionalSourceTypes(ImmutableArray<SourceTypeModel> newTypes)
+        {
+            var existing = SourceTypes.ToList();
+            foreach (var nt in newTypes)
+            {
+                if (!existing.Any(e => e.FullyQualifiedName == nt.FullyQualifiedName))
+                    existing.Add(nt);
+            }
+            return this with { SourceTypes = existing.ToImmutableArray() };
+        }
+    }
+
+    private sealed record DiagnosticInfo(
+        string Id,
+        DiagnosticSeverity Severity,
+        string Message,
+        Location? Location)
+    {
+        public Diagnostic ToDiagnostic()
+        {
+            var desc = new DiagnosticDescriptor(
+                Id,
+                Id,
+                Message,
+                "Microsoft.Maui.AI.Attributes",
+                Severity,
+                isEnabledByDefault: true);
+            return Diagnostic.Create(desc, Location ?? Microsoft.CodeAnalysis.Location.None);
+        }
+
+        public static DiagnosticInfo NoExportableMethods(string typeName, Location? location) =>
+            new(
+                "MAUIAI003",
+                DiagnosticSeverity.Warning,
+                $"[AIToolSource(typeof({typeName}))] references a type with no [ExportAIFunction] methods.",
+                location);
+
+        public static DiagnosticInfo InferredDI(string methodName, string paramName, string typeName, Location? location) =>
+            new(
+                "MAUIAI001",
+                DiagnosticSeverity.Info,
+                $"Parameter '{paramName}' ({typeName}) on '{methodName}' is an interface/abstract type and will be resolved from IServiceProvider. Apply [FromArguments] to include it in the tool schema instead.",
+                location);
+
+        public static DiagnosticInfo UnserializableParameter(string methodName, string paramName, string typeName, Location? location) =>
+            new(
+                "MAUIAI002",
+                DiagnosticSeverity.Warning,
+                $"Parameter '{paramName}' ({typeName}) on '{methodName}' is unlikely to be JSON-serializable. Consider annotating it with [FromServices]/[FromKeyedServices] or using a supported type.",
+                location);
+
+        public static DiagnosticInfo UnsupportedSignature(string methodName, string reason, Location? location) =>
+            new(
+                "MAUIAI004",
+                DiagnosticSeverity.Error,
+                $"[ExportAIFunction] method '{methodName}' has an unsupported signature: {reason}",
+                location);
+    }
 }
