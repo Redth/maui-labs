@@ -8,7 +8,10 @@
     <Project Path="playground/DevFlow.Console/DevFlow.Console.csproj" />
   </Folder>
   <Folder Name="/samples/">
-    <Project Path="samples/AIAttributesSample/AIAttributesSample.csproj" />
+    <Project Path="samples/AIAttributes.Sample.Garden/AIAttributes.Sample.Garden.csproj" />
+    <Project Path="samples/AIAttributes.Sample.Hello/AIAttributes.Sample.Hello.csproj" />
+    <Project Path="samples/AIAttributes.Sample.KeyedAgents/AIAttributes.Sample.KeyedAgents.csproj" />
+    <Project Path="samples/AIAttributes.Sample.DIParameters/AIAttributes.Sample.DIParameters.csproj" />
     <Project Path="samples/DevFlow.Sample.Linux/DevFlow.Sample.Linux.csproj" />
     <Project Path="samples/DevFlow.Sample.MacOS/DevFlow.Sample.MacOS.csproj" />
     <Project Path="samples/DevFlow.Sample/DevFlow.Sample.csproj" />

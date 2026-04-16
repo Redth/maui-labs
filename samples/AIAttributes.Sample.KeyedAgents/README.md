@@ -1,0 +1,36 @@
+# KeyedAgents — multiple tool sets in one app
+
+A two-tab MAUI app. The **Browse** tab is a read-only catalog agent. The
+**Manage** tab can mutate the user's garden. Each tab talks to a different
+`AITool` set resolved by DI key.
+
+## What this demonstrates
+
+- **Keyed tool registration.**
+  ```csharp
+  services.AddAITools<CatalogTools>("browse");
+  services.AddAITools<GardenManagementTools>("manage");
+  ```
+  Each context exports its own `[ExportAIFunction]` methods; they do not see
+  each other's tools.
+- **Per-tab DI scope.** Each page creates its own scope, so scoped services
+  like `GardenService` stay isolated between tabs.
+- **Per-tab tool resolution** via
+  `sp.GetKeyedServices<AITool>("browse" | "manage")` rather than a single
+  global tool list.
+
+## When to look at this sample
+
+You want an app where different UI surfaces have different capabilities —
+one read-only agent, one agent with write access, and so on. This is also
+the pattern for role-based or persona-based agents.
+
+## Run
+
+```bash
+cd samples/AIAttributes.Sample.KeyedAgents
+dotnet user-secrets set "AI:ApiKey" "<your-key>"
+dotnet user-secrets set "AI:Endpoint" "https://<resource>.openai.azure.com"
+dotnet user-secrets set "AI:DeploymentName" "<deployment-name>"
+dotnet build -f net10.0-maccatalyst
+```

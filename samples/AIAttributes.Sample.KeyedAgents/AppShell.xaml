@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:AIAttributes.Sample.KeyedAgents"
+       x:Class="AIAttributes.Sample.KeyedAgents.AppShell"
+       Title="Keyed Agents"
+       Shell.FlyoutBehavior="Disabled"
+       Shell.NavBarHasShadow="True"
+       Shell.BackgroundColor="#5B8C5A"
+       Shell.ForegroundColor="White"
+       Shell.TitleColor="White"
+       Shell.TabBarBackgroundColor="#5B8C5A"
+       Shell.TabBarForegroundColor="White"
+       Shell.TabBarTitleColor="White"
+       Shell.TabBarUnselectedColor="#B9D9B8">
+
+    <TabBar>
+        <ShellContent Title="Browse"
+                      ContentTemplate="{DataTemplate pages:BrowsePage}"
+                      Route="BrowsePage" />
+        <ShellContent Title="Manage"
+                      ContentTemplate="{DataTemplate pages:ManagePage}"
+                      Route="ManagePage" />
+    </TabBar>
+
+</Shell>

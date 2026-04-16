@@ -123,7 +123,7 @@ You control the scope purely by how you register `IChatClient`:
 | Build `IChatClient` per chat session with a session-specific `IServiceScope` | Scoped services live for the chat session. Reset the chat by disposing the scope and creating a new one. |
 | Register `IChatClient` as transient | New client per resolution — rarely useful. |
 
-Example (scope-per-session, matches `samples/AIAttributesSample`):
+Example (scope-per-session, matches `samples/AIAttributes.Sample.Garden`):
 
 ```csharp
 _sessionScope?.Dispose();
@@ -159,6 +159,46 @@ This library ships as two projects:
 | `AIToolContext` | Base class for source-generated tool contexts |
 | `FromArgumentsAttribute` | Forces an interface/abstract parameter to be bound from the argument dictionary (instead of the default DI inference) |
 | `AddAITools<T>()` | Extension method to register tools from a context |
+
+## Samples
+
+The repository ships four focused samples under `samples/`. Each one tells
+exactly one story, so pick whichever matches what you want to learn:
+
+| Sample | Type | Demonstrates |
+|---|---|---|
+| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest possible end-to-end: one service, one attribute, one REPL. |
+| [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
+| [`AIAttributes.Sample.KeyedAgents`](../../../samples/AIAttributes.Sample.KeyedAgents) | MAUI | Multiple keyed tool sets in a single app (e.g. read-only vs mutation agent). |
+| [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: inferred DI, `[FromKeyedServices]`, `[FromArguments]`, `CancellationToken`. |
+
+## Hand-crafted tools alongside generated ones
+
+Generated tools are plain `AITool` DI registrations, so they compose with
+anything. To mix hand-crafted `AIFunction`s into the same pipeline, register
+them alongside:
+
+```csharp
+services.AddAITools<MyTools>();
+services.AddSingleton<AITool>(AIFunctionFactory.Create(
+    ([Description("ISO-8601 timestamp")] string _ = "") => DateTime.UtcNow.ToString("o"),
+    name: "get_current_datetime"));
+```
+
+`sp.GetServices<AITool>()` returns both.
+
+## Resolving a specific context's tools
+
+`AddAITools<T>()` also registers the strongly-typed `T` itself. If you need
+only one context's tools (for example, for a panel that exposes different
+capabilities), resolve the context directly:
+
+```csharp
+var gardenTools = sp.GetRequiredService<GardenTools>().GetTools(sp);
+```
+
+Or use the keyed overload: `services.AddAITools<T>("key")` then
+`sp.GetKeyedServices<AITool>("key")`. See the KeyedAgents sample.
 
 ## AOT compatibility
 
