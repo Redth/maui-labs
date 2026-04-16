@@ -27,7 +27,17 @@
     <MicrosoftExtensionsHostingVersion>10.0.5</MicrosoftExtensionsHostingVersion>
     <MicrosoftExtensionsLoggingAbstractionsVersion>10.0.5</MicrosoftExtensionsLoggingAbstractionsVersion>
     <MicrosoftExtensionsLoggingDebugVersion>10.0.5</MicrosoftExtensionsLoggingDebugVersion>
+    <MicrosoftExtensionsConfigurationJsonVersion>10.0.5</MicrosoftExtensionsConfigurationJsonVersion>
     <SystemTextJsonVersion>10.0.5</SystemTextJsonVersion>
+  </PropertyGroup>
+  <PropertyGroup Label="AI">
+    <MicrosoftExtensionsAIVersion>10.4.1</MicrosoftExtensionsAIVersion>
+    <MicrosoftExtensionsAIOpenAIVersion>10.4.1</MicrosoftExtensionsAIOpenAIVersion>
+    <AzureAIOpenAIVersion>2.1.0</AzureAIOpenAIVersion>
+  </PropertyGroup>
+  <PropertyGroup Label="Roslyn">
+    <MicrosoftCodeAnalysisCSharpVersion>4.12.0</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.4</MicrosoftCodeAnalysisAnalyzersVersion>
   </PropertyGroup>
   <!-- Pinned dependencies (third party, not flowing via maestro) -->
   <PropertyGroup Label="Third Party">
