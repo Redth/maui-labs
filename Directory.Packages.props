@@ -71,6 +71,8 @@
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit" Version="$(XunitVersion)" />
     <PackageVersion Include="coverlet.collector" Version="$(CoverletCollectorVersion)" />
+    <PackageVersion Include="Verify.Xunit" Version="$(VerifyXunitVersion)" />
+    <PackageVersion Include="Verify.SourceGenerators" Version="$(VerifySourceGeneratorsVersion)" />
   </ItemGroup>
 
   <!-- Source Link -->

@@ -1,0 +1,24 @@
+{
+  Diagnostics: [
+    {
+      Location: /*
+    [ExportAIFunction]
+    public string Do(string name, IThing thing) => name + thing.Value;
+                                         ^^^^^
+}
+*/
+ : (9,41)-(9,46),
+      Message: Parameter 'thing' (global::Sample.IThing) on 'Sample.Svc.Do(string, Sample.IThing)' is an interface/abstract type and will be resolved from IServiceProvider. Apply [FromArguments] to include it in the tool schema instead.,
+      Severity: Info,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: MAUIAI001,
+        Title: MAUIAI001,
+        MessageFormat: Parameter 'thing' (global::Sample.IThing) on 'Sample.Svc.Do(string, Sample.IThing)' is an interface/abstract type and will be resolved from IServiceProvider. Apply [FromArguments] to include it in the tool schema instead.,
+        Category: Microsoft.Maui.AI.Attributes,
+        DefaultSeverity: Info,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  Diagnostics: [
+    {
+      Location: /*
+    [ExportAIFunction]
+    public T Do<T>(T value) => value;
+             ^^
+}
+*/
+ : (7,13)-(7,15),
+      Message: [ExportAIFunction] method 'Sample.Svc.Do<T>(T)' has an unsupported signature: Generic methods are not supported.,
+      Severity: Error,
+      Descriptor: {
+        Id: MAUIAI004,
+        Title: MAUIAI004,
+        MessageFormat: [ExportAIFunction] method 'Sample.Svc.Do<T>(T)' has an unsupported signature: Generic methods are not supported.,
+        Category: Microsoft.Maui.AI.Attributes,
+        DefaultSeverity: Error,
+        IsEnabledByDefault: true
+      }
+    },
+    {
+      Location: /*
+
+[AIToolSource(typeof(Svc))]
+ ^^^^^^^^^^^^^^^^^^^^^^^^^
+public partial class ToolsCtx : AIToolContext { }
+*/
+ : (10,1)-(10,26),
+      Message: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] methods.,
+      Severity: Warning,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: MAUIAI003,
+        Title: MAUIAI003,
+        MessageFormat: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] methods.,
+        Category: Microsoft.Maui.AI.Attributes,
+        DefaultSeverity: Warning,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}

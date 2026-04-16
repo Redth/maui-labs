@@ -71,6 +71,8 @@
     <XunitVersion>2.9.3</XunitVersion>
     <XunitRunnerVisualstudioVersion>3.1.5</XunitRunnerVisualstudioVersion>
     <CoverletCollectorVersion>8.0.0</CoverletCollectorVersion>
+    <VerifyXunitVersion>28.15.0</VerifyXunitVersion>
+    <VerifySourceGeneratorsVersion>2.5.0</VerifySourceGeneratorsVersion>
   </PropertyGroup>
   <PropertyGroup Label="SourceLink">
     <MicrosoftSourceLinkGitHubVersion>10.0.201</MicrosoftSourceLinkGitHubVersion>

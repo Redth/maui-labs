@@ -1,0 +1,24 @@
+{
+  Diagnostics: [
+    {
+      Location: /*
+
+[AIToolSource(typeof(Svc))]
+ ^^^^^^^^^^^^^^^^^^^^^^^^^
+public partial class ToolsCtx : AIToolContext { }
+*/
+ : (6,1)-(6,26),
+      Message: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] methods.,
+      Severity: Warning,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: MAUIAI003,
+        Title: MAUIAI003,
+        MessageFormat: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] methods.,
+        Category: Microsoft.Maui.AI.Attributes,
+        DefaultSeverity: Warning,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}
