@@ -10,7 +10,7 @@ This repository hosts experimental .NET MAUI packages. It is a **multi-product m
 
 | Product | Package / Tool | Description |
 |---------|---------------|-------------|
-| **DevFlow** | `Microsoft.Maui.DevFlow.*` (8 packages), `maui-devflow` CLI | Runtime MAUI automation toolkit. In-app agent with HTTP API, visual tree inspection, CDP bridge for Blazor WebViews, MCP server for AI agents, cross-platform driver library. |
+| **DevFlow** | `Microsoft.Maui.DevFlow.*` packages plus the unified `maui devflow` CLI surface | Runtime MAUI automation toolkit. In-app agent with HTTP API, visual tree inspection, CDP bridge for Blazor WebViews, MCP server for AI agents, cross-platform driver library. |
 
 ### Technology Stack
 
@@ -85,7 +85,7 @@ maui-labs/
 │       ├── Microsoft.Maui.DevFlow.Agent.Gtk/     # GTK/Linux agent
 │       ├── Microsoft.Maui.DevFlow.Blazor/        # Blazor WebView CDP bridge
 │       ├── Microsoft.Maui.DevFlow.Blazor.Gtk/    # WebKitGTK CDP bridge
-│       ├── Microsoft.Maui.DevFlow.CLI/           # CLI global tool (maui-devflow)
+│       ├── Microsoft.Maui.DevFlow.CLI/           # DevFlow command implementation behind `maui devflow`
 │       │   ├── Broker/                           # Connection management
 │       │   └── Mcp/Tools/                        # MCP tool implementations
 │       ├── Microsoft.Maui.DevFlow.Driver/        # Cross-platform driver (AgentClient)
@@ -123,7 +123,7 @@ maui-labs/
 ## Packaging and Signing
 
 - Packages are built by the Arcade SDK's `Pack` target
-- **PackAsTool**: Both CLIs (`maui-devflow`, `maui`) set `PackAsTool=true`
+- **PackAsTool**: The user-facing global tool is `maui`; DevFlow functionality is exposed via `maui devflow`
 - **IsShipping/IsPackable**: Default `false` in `Directory.Build.props`; shipped projects override to `true`
 - **Signing**: `eng/Signing.props` configures Microsoft .NET certificate for first-party DLLs, `3PartySHA2` for third-party dependencies, `NuGet` certificate for `.nupkg` files
 - **Version flow**: `eng/Versions.props` defines `VersionPrefix`/`VersionSuffix`, Arcade SDK applies them
@@ -221,3 +221,37 @@ DevFlow exposes 49 MCP tools for AI agent integration (in `src/DevFlow/Microsoft
 - **`AgentClient`** (in `Microsoft.Maui.DevFlow.Driver`) is the public API consumed by NuGet users. Method signature changes are **binary and source breaking** for consumers.
 - The repo is at version **0.1.0-preview** — breaking changes are acceptable but should be documented.
 - **Platform conditionals**: Use `#if IOS`, `#if ANDROID`, `#if MACCATALYST`, `#if MACOS`, `#if WINDOWS` for platform-specific code in multi-targeting projects.
+
+## Skills Marketplace
+
+This repository also distributes agent skills as a plugin under `plugins/dotnet-maui/`.
+
+### Plugin Structure
+
+```
+plugins/<plugin-name>/
+ plugin.json              # Plugin manifest (name, version, description, skills path)
+ skills/
+ <skill-name>/    
+ SKILL.md         # Skill definition (required)        
+ references/      # Supporting documentation (optional)        
+```
+
+### Skill Format
+
+Each `SKILL.md` must have YAML frontmatter:
+
+```yaml
+---
+name: skill-name
+description: >-
+  What this skill does. USE FOR: specific scenarios.
+  DO NOT USE FOR: non-applicable contexts.
+---
+```
+
+The `description` field is critical — agent runtimes read only the description to decide whether to activate the skill. Include explicit "USE FOR" and "DO NOT USE FOR" guidance.
+
+### Adding a New Skill
+
+See [plugins/CONTRIBUTING.md](plugins/CONTRIBUTING.md) for the full guide, including skill structure, SKILL.md format, evaluation tests, and the PR checklist.
