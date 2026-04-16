@@ -8,3 +8,13 @@ public interface IModelProvider
 {
     string Name { get; }
 }
+
+public sealed class FreeModelProvider : IModelProvider
+{
+    public string Name => "free-v1";
+}
+
+public sealed class PremiumModelProvider : IModelProvider
+{
+    public string Name => "premium-v2";
+}
