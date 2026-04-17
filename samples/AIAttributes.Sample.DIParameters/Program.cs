@@ -92,9 +92,7 @@ var history = new List<ChatMessage>
     new(ChatRole.System,
         """
         You are a translation assistant. You MUST call the translate tool for every
-        translation request, even trivial ones — never translate text yourself. When
-        the user mentions words like "verbose", set options.Verbose=true. After a
-        tool call, return the tool's result verbatim in your reply.
+        translation request, even trivial ones — never translate text yourself.
         """)
 };
 

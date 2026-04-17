@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.DIParameters;
@@ -13,6 +14,13 @@ public sealed record TranslationOptions(bool Verbose = false);
 
 public class TranslatorService
 {
+    private readonly ILogger<TranslatorService> _logger;
+
+    public TranslatorService(ILogger<TranslatorService> logger)
+    {
+        _logger = logger;
+    }
+
     [Description("Translates a phrase using the configured translator. Always return the tool result verbatim.")]
     [ExportAIFunction("translate")]
     public string Translate(
@@ -29,16 +37,15 @@ public class TranslatorService
     {
         ct.ThrowIfCancellationRequested();
 
-        // Print what DI resolved and what the model filled in, so the sample
+        // Log what DI resolved and what the model filled in, so the sample
         // demonstrates parameter binding even when the LLM paraphrases the
         // tool result.
-        Console.WriteLine();
-        Console.WriteLine($"  [translate tool called]");
-        Console.WriteLine($"    text        = {text.Replace("\"", "\\\"")}");
-        Console.WriteLine($"    translator  = {translator.GetType().Name}   (from [FromServices])");
-        Console.WriteLine($"    model       = {model.Name}   (from [FromKeyedServices(\"premium\")])");
-        Console.WriteLine($"    options     = {options}   (from the AI)");
-        Console.WriteLine();
+        _logger.LogInformation(
+            "translate tool called: text={Text}, translator={Translator} (from [FromServices]), model={Model} (from [FromKeyedServices(\"premium\")]), options={Options} (from the AI)",
+            text,
+            translator.GetType().Name,
+            model.Name,
+            options);
 
         var translated = translator.Translate(text);
         return options.Verbose
