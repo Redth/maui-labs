@@ -9,7 +9,7 @@ namespace AIAttributes.Sample.DIParameters;
 /// </summary>
 public interface ITranslator
 {
-    string Translate(string text);
+    string Translate(string text, bool verbose = false);
 }
 
 /// <summary>
@@ -19,19 +19,20 @@ public interface ITranslator
 /// is produced by the standard <c>AddLogging()</c> registration and appears
 /// in the console output, making the resolution chain visible.
 /// </summary>
-public sealed class PigLatinTranslator : ITranslator
+public sealed class PigLatinTranslator(ILogger<PigLatinTranslator> logger) : ITranslator
 {
-    private readonly ILogger<PigLatinTranslator> _logger;
-
-    public PigLatinTranslator(ILogger<PigLatinTranslator> logger)
+    public string Translate(string text, bool verbose = false)
     {
-        _logger = logger;
-    }
+        var words = text.Split(' ');
 
-    public string Translate(string text)
-    {
-        _logger.LogInformation("Translating {WordCount} word(s) to pig latin.", text.Split(' ').Length);
-        return string.Join(' ', text.Split(' ').Select(w =>
+        if (verbose)
+        {
+            logger.LogInformation(
+                "Translating {WordCount} word(s) to pig latin...",
+                words.Length);
+        }
+
+        return string.Join(' ', words.Select(w =>
             w.Length > 1 ? w[1..] + w[0] + "ay" : w));
     }
 }

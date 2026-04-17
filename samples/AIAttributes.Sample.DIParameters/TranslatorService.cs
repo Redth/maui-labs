@@ -10,18 +10,12 @@ namespace AIAttributes.Sample.DIParameters;
 /// (not an interface/abstract class) so the generator schemas it by default
 /// — no explicit attribute is needed to keep it in the tool schema.
 /// </summary>
-public sealed record TranslationOptions(bool Verbose = false);
+public sealed record TranslationOptions(
+    bool Verbose = false);
 
-public class TranslatorService
+public class TranslatorService(ILogger<TranslatorService> logger)
 {
-    private readonly ILogger<TranslatorService> _logger;
-
-    public TranslatorService(ILogger<TranslatorService> logger)
-    {
-        _logger = logger;
-    }
-
-    [Description("Translates a phrase using the configured translator. Always return the tool result verbatim.")]
+    [Description("Translates a phrase using the configured translator.")]
     [ExportAIFunction("translate")]
     public string Translate(
         [Description("The text to translate")] string text,
@@ -40,17 +34,16 @@ public class TranslatorService
         // Log what DI resolved and what the model filled in, so the sample
         // demonstrates parameter binding even when the LLM paraphrases the
         // tool result.
-        _logger.LogInformation(
-            "translate tool called: text={Text}, translator={Translator} (from [FromServices]), model={Model} (from [FromKeyedServices(\"premium\")]), options={Options} (from the AI)",
-            text,
-            translator.GetType().Name,
-            model.Name,
-            options);
+        if (options.Verbose)
+        {
+            logger.LogInformation(
+                "translate tool called: text={Text}, translator={Translator}, model={Model}, options={Options}",
+                text,
+                translator.GetType().Name,
+                model.Name,
+                options);
+        }
 
-        var translated = translator.Translate(text);
-        return options.Verbose
-            ? $"[model: {model.Name}] {text} => {translated}"
-            : translated;
+        return translator.Translate(text, options.Verbose);
     }
 }
-
