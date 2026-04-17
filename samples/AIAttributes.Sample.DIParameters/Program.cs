@@ -78,7 +78,7 @@ var chat = new ChatClientBuilder(root.GetRequiredService<IChatClient>())
     .UseFunctionInvocation()
     .Build(root);
 
-var tools = TranslatorTools.Default.GetTools();
+var tools = TranslatorTools.Default.Tools;
 var options = new ChatOptions { Tools = [.. tools] };
 
 Console.WriteLine($"{tools.Count} tool(s) registered:");

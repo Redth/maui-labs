@@ -9,7 +9,7 @@ public class AIToolContextTests
     [Fact]
     public void Context_creates_tools_from_source_types()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.Equal(3, tools.Count);
         Assert.Contains(tools, t => t.Name == "test_tool");
@@ -27,7 +27,7 @@ public class AIToolContextTests
     [Fact]
     public void Context_with_multiple_sources_aggregates_tools()
     {
-        var tools = CompositeToolContext.Default.GetTools();
+        var tools = CompositeToolContext.Default.Tools;
 
         Assert.Equal(4, tools.Count); // 3 from TestToolService + 1 from MultiParamService
         Assert.Contains(tools, t => t.Name == "test_tool");

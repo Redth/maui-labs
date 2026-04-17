@@ -9,7 +9,7 @@ public class AIFunctionRegistrationTests
     [Fact]
     public void Multiple_source_types_are_aggregated()
     {
-        var tools = RegistrationTestToolContext.Default.GetTools();
+        var tools = RegistrationTestToolContext.Default.Tools;
 
         Assert.True(tools.Count >= 4, $"Expected at least 4 tools, got {tools.Count}");
         Assert.Contains(tools, t => t.Name == "test_tool");
@@ -20,7 +20,7 @@ public class AIFunctionRegistrationTests
     [Fact]
     public void Explicit_type_scanning_registers_expected_tools()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.Equal(3, tools.Count);
     }
@@ -29,17 +29,17 @@ public class AIFunctionRegistrationTests
     public void Default_context_instance_is_a_singleton()
     {
         // SEMANTIC CHANGE: Previously tools were resolved through DI and registered as
-        // singleton AITool instances. The generator now emits GetTools() that returns a
+        // singleton AITool instances. The generator now emits a Tools property that returns
         // fresh `new AITool[] { new Tool(), ... }` each call — tool instances are NOT
         // shared across calls. What IS a singleton is the context itself (Default static).
-        // This test now verifies that, and that two GetTools() calls produce the same
+        // This test now verifies that, and that two .Tools accesses produce the same
         // shape (same count and tool names in the same order).
         var first = TestToolContext.Default;
         var second = TestToolContext.Default;
         Assert.Same(first, second);
 
-        var toolsA = first.GetTools();
-        var toolsB = second.GetTools();
+        var toolsA = first.Tools;
+        var toolsB = second.Tools;
 
         Assert.Equal(toolsA.Count, toolsB.Count);
         for (var i = 0; i < toolsA.Count; i++)

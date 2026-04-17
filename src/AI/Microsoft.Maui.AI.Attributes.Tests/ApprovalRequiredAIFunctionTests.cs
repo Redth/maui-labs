@@ -9,7 +9,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_true_wraps_in_approval_required_ai_function()
     {
-        var tools = AllApprovalToolContext.Default.GetTools();
+        var tools = AllApprovalToolContext.Default.Tools;
 
         Assert.Single(tools);
         Assert.IsType<ApprovalRequiredAIFunction>(tools[0]);
@@ -19,7 +19,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_false_does_not_wrap()
     {
-        foreach (var tool in TestToolContext.Default.GetTools())
+        foreach (var tool in TestToolContext.Default.Tools)
         {
             Assert.IsNotType<ApprovalRequiredAIFunction>(tool);
         }
@@ -28,7 +28,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Mixed_service_wraps_only_flagged_methods()
     {
-        var tools = ApprovalMixedToolContext.Default.GetTools();
+        var tools = ApprovalMixedToolContext.Default.Tools;
 
         Assert.Equal(3, tools.Count);
         Assert.IsNotType<ApprovalRequiredAIFunction>(tools.Single(t => t.Name == "safe_read"));
@@ -39,7 +39,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_preserves_tool_name_and_description()
     {
-        var wrapped = ApprovalMixedToolContext.Default.GetTools().Single(t => t.Name == "dangerous_write");
+        var wrapped = ApprovalMixedToolContext.Default.Tools.Single(t => t.Name == "dangerous_write");
 
         Assert.IsType<ApprovalRequiredAIFunction>(wrapped);
         Assert.Equal("dangerous_write", wrapped.Name);

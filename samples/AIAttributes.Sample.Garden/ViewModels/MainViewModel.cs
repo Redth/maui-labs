@@ -215,7 +215,7 @@ public sealed class MainViewModel(
     private void RefreshAvailableTools()
     {
         AvailableTools.Clear();
-        var tools = GardenShopTools.Default.GetTools();
+        var tools = GardenShopTools.Default.Tools;
         foreach (var tool in tools.OrderBy(t => t.Name))
             AvailableTools.Add(new ToolInfoViewModel(tool.Name, tool.Description ?? ""));
     }
@@ -234,7 +234,7 @@ public sealed class MainViewModel(
 
         try
         {
-            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.GetTools()] };
+            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.Tools] };
             await SendAndProcessResponseAsync(options);
         }
         catch (Exception ex)
@@ -329,7 +329,7 @@ public sealed class MainViewModel(
             _history.Add(new ChatMessage(ChatRole.User, [response]));
             AddMessage(ChatMessageKind.Tool, approved ? "\u2705 Approved" : "\u274c Rejected");
 
-            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.GetTools()] };
+            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.Tools] };
             await SendAndProcessResponseAsync(options);
         }
         catch (Exception ex)

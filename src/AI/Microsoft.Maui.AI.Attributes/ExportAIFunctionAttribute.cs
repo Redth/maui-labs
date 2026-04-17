@@ -7,7 +7,7 @@ namespace Microsoft.Maui.AI.Attributes;
 /// Methods with this attribute are discovered by the source generator on any
 /// <see cref="AIToolContext"/> that lists the declaring type via
 /// <see cref="AIToolSourceAttribute"/>, and surfaced through
-/// <c>TContext.Default.GetTools()</c>.
+/// <c>TContext.Default.Tools</c>.
 /// </summary>
 /// <remarks>
 /// The method may be either a public instance method on a type that is

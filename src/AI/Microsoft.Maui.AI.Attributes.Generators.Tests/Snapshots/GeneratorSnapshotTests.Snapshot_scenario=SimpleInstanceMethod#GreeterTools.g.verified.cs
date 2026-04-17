@@ -21,12 +21,15 @@ namespace Sample
         public static GreeterTools Default { get; } = new GreeterTools();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
         {
-            return new global::Microsoft.Extensions.AI.AITool[]
+            get
             {
-                new GreeterService_Greet_Tool(),
-            };
+                return new global::Microsoft.Extensions.AI.AITool[]
+                {
+                    new GreeterService_Greet_Tool(),
+                };
+            }
         }
 
         private sealed class GreeterService_Greet_Tool : global::Microsoft.Extensions.AI.AIFunction

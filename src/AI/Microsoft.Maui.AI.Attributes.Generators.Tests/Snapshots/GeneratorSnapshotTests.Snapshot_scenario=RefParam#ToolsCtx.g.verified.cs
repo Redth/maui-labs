@@ -21,11 +21,14 @@ namespace Sample
         public static ToolsCtx Default { get; } = new ToolsCtx();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
         {
-            return new global::Microsoft.Extensions.AI.AITool[]
+            get
             {
-            };
+                return new global::Microsoft.Extensions.AI.AITool[]
+                {
+                };
+            }
         }
 
     }

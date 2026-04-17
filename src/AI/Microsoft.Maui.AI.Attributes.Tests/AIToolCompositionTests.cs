@@ -14,7 +14,7 @@ public class AIToolCompositionTests
             "get_current_date",
             "Gets the current date");
 
-        IList<AITool> allTools = [classicTool, .. TestToolContext.Default.GetTools()];
+        IList<AITool> allTools = [classicTool, .. TestToolContext.Default.Tools];
 
         Assert.Equal(4, allTools.Count);
         Assert.Contains(allTools, t => t.Name == "test_tool");
@@ -26,7 +26,7 @@ public class AIToolCompositionTests
     [Fact]
     public void Ad_hoc_tools_can_be_spread_into_options()
     {
-        var registeredTools = TestToolContext.Default.GetTools();
+        var registeredTools = TestToolContext.Default.Tools;
 
         var adHocTool = AIFunctionFactory.Create(
             (string query) => $"Search results for: {query}",
@@ -48,7 +48,7 @@ public class AIToolCompositionTests
             "answer_everything",
             "The answer to everything");
 
-        IList<AITool> allTools = [classic, .. TestToolContext.Default.GetTools()];
+        IList<AITool> allTools = [classic, .. TestToolContext.Default.Tools];
 
         Assert.Equal(4, allTools.Count);
         Assert.Equal("answer_everything", allTools[0].Name);

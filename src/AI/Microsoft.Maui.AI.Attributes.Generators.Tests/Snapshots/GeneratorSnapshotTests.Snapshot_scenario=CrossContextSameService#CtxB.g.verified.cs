@@ -21,12 +21,15 @@ namespace Sample
         public static CtxB Default { get; } = new CtxB();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
         {
-            return new global::Microsoft.Extensions.AI.AITool[]
+            get
             {
-                new Shared_Do_Tool(),
-            };
+                return new global::Microsoft.Extensions.AI.AITool[]
+                {
+                    new Shared_Do_Tool(),
+                };
+            }
         }
 
         private sealed class Shared_Do_Tool : global::Microsoft.Extensions.AI.AIFunction

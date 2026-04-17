@@ -7,16 +7,16 @@ service, one static service, one console REPL.
 
 - `[ExportAIFunction]` on regular instance methods (resolved via DI) **and**
   on `static` methods (no DI required).
-- `[AIToolSource(typeof(Service))]` on an empty `partial class : AIToolContext`
-  — the source generator fills it in at build time.
-- `Tools.Default.GetTools()` as the headline API for getting the tool list.
-  No `services.AddAITools<T>()` registration ceremony.
+- Multiple `[AIToolSource]` attributes on a single `partial class : AIToolContext`
+  — the source generator merges them into one context.
+- `HelloTools.Default.Tools` as the headline API for getting the tool list.
+  No registration ceremony.
 - `ChatClientBuilder.UseFunctionInvocation().Build(sp)` wiring the service
   provider through to each tool invocation.
 
 ## Run
 
-All four `AIAttributes.Sample.*` apps share one `UserSecretsId`
+All `AIAttributes.Sample.*` apps share one `UserSecretsId`
 (`ai-attributes-secrets`), so you configure the endpoint once:
 
 ```bash
@@ -27,23 +27,19 @@ dotnet user-secrets --id ai-attributes-secrets set "AI:DeploymentName" "<deploym
 dotnet run --project samples/AIAttributes.Sample.Hello
 ```
 
-Type a prompt like `What's the weather in Paris?` and the model will call the
-`get_temperature` or `get_forecast` tool.
+Type a prompt like `What's the forecast in Paris?` and the model will call the
+`get_forecast` tool.
 
 ## When to look at this sample
 
 You are new to the library and want to see the smallest end-to-end wiring.
-Move on to one of the other samples once you want to see scopes, approval
-flows, or DI parameter binding.
+Move on to one of the other samples once you want to see approval flows or
+DI parameter binding.
 
 ## Inspecting the generated source
 
 This csproj sets `EmitCompilerGeneratedFiles=true` so you can see exactly
-what `Microsoft.Maui.AI.Attributes.Generators` emits for each tool context.
-It is **not required for the sample to  delete the property if yourun** 
-don't care about generator output.
-
-After a build, look under:
+what the source generator emits. After a build, look under:
 
 ```
 artifacts/obj/<ProjectName>/<Config>/<TargetFramework>/generated/Microsoft.Maui.AI.Attributes.Generators/Microsoft.Maui.AI.Attributes.Generators.AIToolContextGenerator/*.g.cs

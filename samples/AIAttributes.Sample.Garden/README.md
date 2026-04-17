@@ -23,7 +23,7 @@ using only Singleton registrations**, by letting the view model own a plain
 ## Three tool flavors enabled by `Microsoft.Maui.AI.Attributes`
 
 All tool methods are **`static`** — no instance, no registration-as-type needed.
-`GardenShopTools.Default.GetTools()` returns every tool across all three
+`GardenShopTools.Default.Tools` returns every tool across all three
 `[AIToolSource]` groups.
 
 | Group | DI dependencies | Example |

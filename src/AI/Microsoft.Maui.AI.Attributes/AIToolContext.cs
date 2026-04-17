@@ -6,7 +6,7 @@ namespace Microsoft.Maui.AI.Attributes;
 
 /// <summary>
 /// Base class for source-generated AI tool contexts. Subclasses decorated with
-/// <see cref="AIToolSourceAttribute"/> have their <see cref="GetTools"/> override implemented
+/// <see cref="AIToolSourceAttribute"/> have their <see cref="Tools"/> override implemented
 /// by the source generator at compile time.
 /// </summary>
 /// <remarks>
@@ -17,7 +17,7 @@ namespace Microsoft.Maui.AI.Attributes;
 public abstract class AIToolContext
 {
     /// <summary>
-    /// Returns the AI tools defined by this context. The returned list is built once and does
+    /// Gets the AI tools defined by this context. The returned list is built once and does
     /// not capture any <see cref="IServiceProvider"/>; tools whose backing method requires
     /// services read them from <see cref="AIFunctionArguments.Services"/> at invocation time.
     /// </summary>
@@ -27,7 +27,7 @@ public abstract class AIToolContext
     /// the tool. <see cref="Microsoft.Extensions.AI.ChatClientBuilderChatClientExtensions.UseFunctionInvocation"/>
     /// combined with <c>ChatClientBuilder.Build(IServiceProvider)</c> does this automatically.
     /// </remarks>
-    public abstract IReadOnlyList<AITool> GetTools();
+    public abstract IReadOnlyList<AITool> Tools { get; }
 
     /// <summary>
     /// Helpers used by generated code. These are not intended for direct use by applications.

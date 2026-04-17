@@ -469,27 +469,30 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             indent = "    ";
         }
 
-        // Emit the partial class body: Default + GetTools.
+        // Emit the partial class body: Default + Tools.
         sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}");
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}    /// <summary>Gets the default singleton instance of this tool context.</summary>");
         sb.AppendLine($"{indent}    public static {model.ClassName} Default {{ get; }} = new {model.ClassName}();");
         sb.AppendLine();
 
-        // GetTools()
+        // Tools property
         sb.AppendLine($"{indent}    /// <inheritdoc />");
-        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()");
+        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools");
         sb.AppendLine($"{indent}    {{");
-        sb.AppendLine($"{indent}        return new global::Microsoft.Extensions.AI.AITool[]");
+        sb.AppendLine($"{indent}        get");
         sb.AppendLine($"{indent}        {{");
+        sb.AppendLine($"{indent}            return new global::Microsoft.Extensions.AI.AITool[]");
+        sb.AppendLine($"{indent}            {{");
         foreach (var st in model.SourceTypes)
         {
             foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}            {WrapApproval($"new {m.GeneratedClassName}()", m.ApprovalRequired)},");
+                sb.AppendLine($"{indent}                {WrapApproval($"new {m.GeneratedClassName}()", m.ApprovalRequired)},");
             }
         }
-        sb.AppendLine($"{indent}        }};");
+        sb.AppendLine($"{indent}            }};");
+        sb.AppendLine($"{indent}        }}");
         sb.AppendLine($"{indent}    }}");
 
         // Emit tool classes as nested private classes inside the context class — avoids

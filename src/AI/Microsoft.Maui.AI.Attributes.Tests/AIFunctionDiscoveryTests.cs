@@ -9,7 +9,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Discovers_three_tools_from_test_service()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.Equal(3, tools.Count);
     }
@@ -17,7 +17,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Uses_custom_name_from_attribute()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.Contains(tools, t => t.Name == "test_tool");
     }
@@ -25,7 +25,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Falls_back_to_method_name_when_no_name_is_set()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.Contains(tools, t => t.Name == "GetCount");
     }
@@ -33,7 +33,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Uses_description_from_attribute()
     {
-        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "test_tool");
+        var tool = TestToolContext.Default.Tools.First(t => t.Name == "test_tool");
 
         Assert.Equal("A test tool", tool.Description);
     }
@@ -41,7 +41,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Uses_description_fallback_from_description_attribute()
     {
-        var tool = DescriptionFallbackToolContext.Default.GetTools().First(t => t.Name == "fallback_desc");
+        var tool = DescriptionFallbackToolContext.Default.Tools.First(t => t.Name == "fallback_desc");
 
         Assert.Equal("Method-level description from DescriptionAttribute", tool.Description);
     }
@@ -49,7 +49,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Ignores_methods_without_export_attribute()
     {
-        var tools = TestToolContext.Default.GetTools();
+        var tools = TestToolContext.Default.Tools;
 
         Assert.DoesNotContain(tools, t => t.Name == "InternalMethod");
     }

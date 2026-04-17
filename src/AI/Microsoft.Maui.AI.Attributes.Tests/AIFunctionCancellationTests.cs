@@ -13,7 +13,7 @@ public class AIFunctionCancellationTests
         services.AddSingleton<CancellableToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = CancellableToolContext.Default.GetTools().First(t => t.Name == "cancellable_tool") as AIFunction;
+        var tool = CancellableToolContext.Default.Tools.First(t => t.Name == "cancellable_tool") as AIFunction;
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -30,7 +30,7 @@ public class AIFunctionCancellationTests
         services.AddSingleton<CancellableToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = CancellableToolContext.Default.GetTools().First(t => t.Name == "cancellable_tool") as AIFunction;
+        var tool = CancellableToolContext.Default.Tools.First(t => t.Name == "cancellable_tool") as AIFunction;
         var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" }) { Services = provider };
 
         var result = await tool!.InvokeAsync(args);

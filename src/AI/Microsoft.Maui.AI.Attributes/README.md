@@ -39,21 +39,21 @@ using Microsoft.Maui.AI.Attributes;
 public partial class GardenTools : AIToolContext { }
 ```
 
-The **source generator** scans each `[AIToolSource]` type for `[ExportAIFunction]` methods at compile time and emits a sealed `AIFunction` subclass per method, plus a `Default` singleton instance and a `GetTools()` method on the context. No reflection on the invocation path. AOT-friendly.
+The **source generator** scans each `[AIToolSource]` type for `[ExportAIFunction]` methods at compile time and emits a sealed `AIFunction` subclass per method, plus a `Default` singleton instance and a `Tools` method on the context. No reflection on the invocation path. AOT-friendly.
 
 ### 3. Get the tools
 
 ```csharp
 // Headline pattern — no DI registration needed.
-IReadOnlyList<AITool> tools = GardenTools.Default.GetTools();
+IReadOnlyList<AITool> tools = GardenTools.Default.Tools;
 ```
 
-That's the whole API. `Default` is a static singleton; `GetTools()` returns the same `AITool[]` every time. Pass it straight into any chat client.
+That's the whole API. `Default` is a static singleton; `Tools` returns the same `AITool[]` every time. Pass it straight into any chat client.
 
 ### 4. Wire tools into an `IChatClient`
 
 ```csharp
-var tools = GardenTools.Default.GetTools();
+var tools = GardenTools.Default.Tools;
 
 var client = innerChatClient.AsBuilder()
     .UseFunctionInvocation()
@@ -86,7 +86,7 @@ public static class GreetingService
 [AIToolSource(typeof(GreetingService))]
 public partial class GreetingTools : AIToolContext { }
 
-var tool = (AIFunction)GreetingTools.Default.GetTools().First(t => t.Name == "say_hello");
+var tool = (AIFunction)GreetingTools.Default.Tools.First(t => t.Name == "say_hello");
 var result = await tool.InvokeAsync(
     new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "Ada" }));
 // result == "Hello, Ada!"
@@ -130,7 +130,7 @@ _sessionScope = _rootProvider.CreateScope();
 
 _sessionClient = new ChatClientBuilder(_innerChatClient)
     .UseFunctionInvocation(configure: fic =>
-        fic.AdditionalTools = [.. GardenTools.Default.GetTools()])
+        fic.AdditionalTools = [.. GardenTools.Default.Tools])
     .Build(_sessionScope.ServiceProvider);
 ```
 
@@ -156,7 +156,7 @@ This library ships as two projects:
 |---|---|
 | `ExportAIFunctionAttribute` | Marks a method as an AI tool. Set `ApprovalRequired = true` to require approval. |
 | `AIToolSourceAttribute` | Declares which type contributes tools to a context. |
-| `AIToolContext` | Base class for source-generated tool contexts. Exposes the abstract `GetTools()` method that the generator overrides. The static `Default` property is also generated. |
+| `AIToolContext` | Base class for source-generated tool contexts. Exposes the abstract `Tools` method that the generator overrides. The static `Default` property is also generated. |
 | `FromServicesAttribute` | Resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`). |
 
 ## Mixing in hand-crafted tools
@@ -164,7 +164,7 @@ This library ships as two projects:
 Generated tools are plain `AITool` instances, so they compose with anything:
 
 ```csharp
-var tools = new List<AITool>(GardenTools.Default.GetTools())
+var tools = new List<AITool>(GardenTools.Default.Tools)
 {
     AIFunctionFactory.Create(
         () => DateTime.UtcNow.ToString("o"),
@@ -181,7 +181,7 @@ The repository ships three focused samples under `samples/`. Each tells exactly 
 
 | Sample | Type | Demonstrates |
 |---|---|---|
-| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.GetTools()`. |
+| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.Tools`. |
 | [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
 | [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
 

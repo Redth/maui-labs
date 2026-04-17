@@ -21,13 +21,16 @@ namespace Sample
         public static ToolsCtx Default { get; } = new ToolsCtx();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
         {
-            return new global::Microsoft.Extensions.AI.AITool[]
+            get
             {
-                new SvcA_DoA_Tool(),
-                new SvcB_DoB_Tool(),
-            };
+                return new global::Microsoft.Extensions.AI.AITool[]
+                {
+                    new SvcA_DoA_Tool(),
+                    new SvcB_DoB_Tool(),
+                };
+            }
         }
 
         private sealed class SvcA_DoA_Tool : global::Microsoft.Extensions.AI.AIFunction

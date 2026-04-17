@@ -64,7 +64,7 @@ public class DIParameterBindingTests
         services.AddSingleton<ContactsToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)ContactsToolContext.Default.GetTools().First(t => t.Name == "from_services_tool");
+        var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "from_services_tool");
         var schema = tool.JsonSchema.ToString();
         Assert.DoesNotContain("\"book\"", schema);
         Assert.Contains("\"name\"", schema);
@@ -81,7 +81,7 @@ public class DIParameterBindingTests
         services.AddSingleton<ContactsToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)ContactsToolContext.Default.GetTools().First(t => t.Name == "abstract_from_services_tool");
+        var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "abstract_from_services_tool");
         Assert.DoesNotContain("\"t\"", tool.JsonSchema.ToString());
 
         var result = await tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["text"] = "hi" }) { Services = provider });
@@ -93,7 +93,7 @@ public class DIParameterBindingTests
     {
         // No DI inference: an interface parameter without [FromServices] is treated as
         // a JSON-bound argument (same as reflection-based AIFunctionFactory).
-        var tool = (AIFunction)ContactsToolContext.Default.GetTools().First(t => t.Name == "unannotated_interface_tool");
+        var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "unannotated_interface_tool");
         Assert.Contains("\"book\"", tool.JsonSchema.ToString());
     }
 
@@ -105,7 +105,7 @@ public class DIParameterBindingTests
         services.AddSingleton<ContactsToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)ContactsToolContext.Default.GetTools().First(t => t.Name == "from_keyed_tool");
+        var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "from_keyed_tool");
         var result = await tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "carol" }) { Services = provider });
         Assert.Equal("addr:carol", result?.ToString());
     }
@@ -119,7 +119,7 @@ public class DIParameterBindingTests
         services.AddSingleton<ContactsToolService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)ContactsToolContext.Default.GetTools().First(t => t.Name == "from_keyed_tool");
+        var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "from_keyed_tool");
         await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
             tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "x" }) { Services = provider }).AsTask());
     }

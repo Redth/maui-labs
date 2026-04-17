@@ -26,7 +26,7 @@ public class AIFunctionScopedLifetimeTests
         services.AddScoped<InvocationCounterService>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.Tools.First(t => t.Name == "counter_tool") as AIFunction;
         var args = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => tool!.InvokeAsync(args).AsTask());
@@ -39,7 +39,7 @@ public class AIFunctionScopedLifetimeTests
         services.AddScoped<InvocationCounterService>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.Tools.First(t => t.Name == "counter_tool") as AIFunction;
 
         using var scope = provider.CreateScope();
         var args1 = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = scope.ServiceProvider };
@@ -59,7 +59,7 @@ public class AIFunctionScopedLifetimeTests
         services.AddScoped<InvocationCounterService>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.Tools.First(t => t.Name == "counter_tool") as AIFunction;
 
         using var scope1 = provider.CreateScope();
         var args1 = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = scope1.ServiceProvider };
@@ -80,7 +80,7 @@ public class AIFunctionScopedLifetimeTests
         services.AddScoped<InvocationCounterService>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.Tools.First(t => t.Name == "counter_tool") as AIFunction;
         var result = await tool!.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider });
 
         Assert.Equal(1, GetIntResult(result));

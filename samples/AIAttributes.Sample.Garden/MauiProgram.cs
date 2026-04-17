@@ -40,7 +40,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
 
         // ── AI Tools (source-generated) ─────────────────────────────
-        // GardenShopTools.Default.GetTools() returns the AI tool list. No
+        // GardenShopTools.Default.Tools returns the AI tool list. No
         // DI registration needed — the source generator emits a static
         // singleton on the context. Each tool reads
         // AIFunctionArguments.Services at invocation time, which is
