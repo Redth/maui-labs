@@ -9,10 +9,11 @@
 
     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="0">
 
-        <!-- Header -->
+        <!-- Header — same height as the garden panel header (56px). -->
         <Border Grid.Row="0"
                 BackgroundColor="#5B8C5A"
                 Padding="16,14"
+                HeightRequest="56"
                 StrokeThickness="0">
             <Grid ColumnDefinitions="*,Auto">
                 <Label Text="🌿 Garden AI"
@@ -26,8 +27,8 @@
                         TextColor="#5B8C5A"
                         FontSize="13"
                         FontAttributes="Bold"
-                        CornerRadius="16"
-                        Padding="12,6"
+                        CornerRadius="14"
+                        Padding="12,4"
                         VerticalOptions="Center" />
             </Grid>
         </Border>
@@ -129,46 +130,41 @@
                            TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
 
                     <!--
-                        Nested CollectionView with GridItemsLayout wraps the
-                        cards across two columns and auto-sizes every row to
-                        the tallest item, giving uniform card heights per row
-                        and no horizontal overflow.
+                        FlexLayout wrap re-flows children correctly on parent
+                        resize (both shrink AND grow), unlike GridItemsLayout
+                        which caches its measured span. Each card has a fixed
+                        width so columns snap cleanly as the window changes.
                     -->
-                    <CollectionView Grid.Row="3"
-                                    ItemsSource="{Binding AvailableTools}"
-                                    AutomationId="ToolList"
-                                    SelectionMode="None"
-                                    HorizontalOptions="Center"
-                                    MaximumWidthRequest="520">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout Orientation="Vertical"
-                                             Span="2"
-                                             HorizontalItemSpacing="8"
-                                             VerticalItemSpacing="8" />
-                        </CollectionView.ItemsLayout>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ToolInfoViewModel">
-                                <Border Padding="10,8"
-                                        HorizontalOptions="Fill"
-                                        VerticalOptions="Fill"
-                                        BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
-                                        Stroke="{AppThemeBinding Light=#CFE0CD, Dark=#3A4A3A}"
-                                        StrokeThickness="1"
-                                        StrokeShape="RoundRectangle 8">
-                                    <VerticalStackLayout Spacing="2">
-                                        <Label Text="{Binding Name}"
-                                               FontAttributes="Bold"
-                                               FontSize="14"
-                                               TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
-                                        <Label Text="{Binding Description}"
-                                               FontSize="11"
-                                               LineBreakMode="WordWrap"
-                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
-                                    </VerticalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                    <ScrollView Grid.Row="3" VerticalScrollBarVisibility="Default">
+                        <FlexLayout BindableLayout.ItemsSource="{Binding AvailableTools}"
+                                    Wrap="Wrap"
+                                    JustifyContent="Center"
+                                    AlignItems="Start"
+                                    AlignContent="Start">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ToolInfoViewModel">
+                                    <Border Margin="4"
+                                            Padding="10,8"
+                                            WidthRequest="220"
+                                            BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
+                                            Stroke="{AppThemeBinding Light=#CFE0CD, Dark=#3A4A3A}"
+                                            StrokeThickness="1"
+                                            StrokeShape="RoundRectangle 8">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="{Binding Name}"
+                                                   FontAttributes="Bold"
+                                                   FontSize="14"
+                                                   TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
+                                            <Label Text="{Binding Description}"
+                                                   FontSize="11"
+                                                   LineBreakMode="WordWrap"
+                                                   TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </FlexLayout>
+                    </ScrollView>
                 </Grid>
             </CollectionView.EmptyView>
         </CollectionView>

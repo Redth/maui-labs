@@ -25,19 +25,20 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
-    public ObservableCollection<GardenPlantViewModel> GardenPlants { get; } = [];
+    public ObservableCollection<LocationGroup> GardenPlants { get; } = [];
 
     /// <summary>
-    /// Seed prompts shown as one-tap chips. Deliberately tomato-themed so
-    /// a user can walk the full tool story — add → care-guide → remove
-    /// (which hits the approval flow) — without typing.
+    /// Seed prompts shown as one-tap chips. Each prompt is fully
+    /// self-contained so the assistant can execute the tool call without
+    /// a follow-up clarifying question, and they reuse the same nickname
+    /// ("Tommy") so a user can walk add → water → remove cleanly.
     /// </summary>
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
-        "Add a tomato to my garden",
-        "Care guide for tomato",
-        "Water my tomato",
-        "Remove the tomato",
+        "Add a tomato called Tommy on the kitchen windowsill",
+        "Give me a quick care guide for tomatoes",
+        "Water Tommy",
+        "Remove Tommy from my garden",
     ];
 
     private bool _isBusy;
@@ -130,9 +131,15 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     private void RefreshGardenPanel()
     {
         GardenPlants.Clear();
-        foreach (var plant in Garden.ListMyGarden())
-            GardenPlants.Add(new GardenPlantViewModel(plant));
+        var groups = Garden.ListMyGarden()
+            .GroupBy(p => p.Location, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+        foreach (var g in groups)
+            GardenPlants.Add(new LocationGroup(g.Key, g.Select(p => new GardenPlantViewModel(p))));
     }
+
+    private IEnumerable<GardenPlantViewModel> AllGardenPlants =>
+        GardenPlants.SelectMany(g => g);
 
     /// <summary>
     /// Extracts the <c>nickname</c> argument from a pending approval call
@@ -151,13 +158,13 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         if (string.IsNullOrWhiteSpace(nickname))
             return;
 
-        foreach (var p in GardenPlants)
+        foreach (var p in AllGardenPlants)
             p.IsPendingRemoval = string.Equals(p.Nickname, nickname, StringComparison.OrdinalIgnoreCase);
     }
 
     private void ClearPendingRemoval()
     {
-        foreach (var p in GardenPlants)
+        foreach (var p in AllGardenPlants)
             p.IsPendingRemoval = false;
     }
 

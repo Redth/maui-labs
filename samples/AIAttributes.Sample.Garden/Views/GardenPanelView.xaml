@@ -3,31 +3,39 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Views.GardenPanelView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             MinimumWidthRequest="220"
+             MaximumWidthRequest="360">
 
     <!--
          Bound to the scoped GardenService data for the current chat session.
          Clears when New Chat creates a new DI scope, making the scoped-lifetime
-         story visible at runtime.
+         story visible at runtime. Grouped by Location so adding plants to the
+         same spot clusters them under one "📍 Kitchen windowsill · 2" header.
     -->
-    <Border WidthRequest="260"
-            BackgroundColor="{AppThemeBinding Light=#F0F7EF, Dark=#1A241A}"
+    <Border BackgroundColor="{AppThemeBinding Light=#F0F7EF, Dark=#1A241A}"
             Stroke="{AppThemeBinding Light=#D0E0CF, Dark=#2A3A2A}"
             StrokeThickness="0,0,0,0"
             Padding="0">
         <Grid RowDefinitions="Auto,*">
+
+            <!-- Header — kept in lockstep with the chat header height. -->
             <Border Grid.Row="0"
                     BackgroundColor="#5B8C5A"
-                    Padding="14,12"
+                    Padding="16,14"
+                    HeightRequest="56"
                     StrokeThickness="0">
                 <Label Text="🌱 Your Garden"
                        TextColor="White"
-                       FontSize="14"
-                       FontAttributes="Bold" />
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center" />
             </Border>
+
             <CollectionView Grid.Row="1"
                             AutomationId="GardenList"
                             Margin="0,4,0,0"
+                            IsGrouped="True"
                             ItemsSource="{Binding GardenPlants}">
                 <CollectionView.EmptyView>
                     <Label Text="No plants yet. Ask the assistant to add some."
@@ -37,6 +45,17 @@
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap" />
                 </CollectionView.EmptyView>
+
+                <CollectionView.GroupHeaderTemplate>
+                    <DataTemplate x:DataType="vm:LocationGroup">
+                        <Label Text="{Binding Header}"
+                               FontAttributes="Bold"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}"
+                               Padding="14,10,10,4" />
+                    </DataTemplate>
+                </CollectionView.GroupHeaderTemplate>
+
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:GardenPlantViewModel">
                         <Grid Margin="10,4">
@@ -58,9 +77,6 @@
                                         <Label Text="{Binding Species}"
                                                FontSize="11"
                                                TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
-                                        <Label Text="{Binding Location, StringFormat='📍 {0}'}"
-                                               FontSize="11"
-                                               TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
                                     </VerticalStackLayout>
                                 </Grid>
                             </Border>
