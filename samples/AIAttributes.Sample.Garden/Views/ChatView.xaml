@@ -202,32 +202,62 @@
             </CollectionView.EmptyView>
         </CollectionView>
 
-        <!-- Input area -->
-        <Grid Grid.Row="2"
-              Padding="12,8,12,12"
-              ColumnDefinitions="*,Auto"
-              ColumnSpacing="8"
-              IsVisible="{Binding IsInputVisible}"
-              BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}">
-            <Entry AutomationId="ChatInput"
-                   Text="{Binding InputText}"
-                   IsEnabled="{Binding IsNotBusy}"
-                   Placeholder="Ask about plants..."
-                   ReturnType="Send"
-                   ReturnCommand="{Binding SendCommand}"
-                   FontSize="14" />
-            <Button Grid.Column="1"
-                    Text="Send"
-                    AutomationId="SendButton"
-                    Command="{Binding SendCommand}"
-                    IsEnabled="{Binding IsNotBusy}"
-                    BackgroundColor="#5B8C5A"
-                    TextColor="White"
-                    FontSize="14"
-                    CornerRadius="8"
-                    Padding="16,8"
-                    VerticalOptions="Center" />
-        </Grid>
+        <!-- Input area (with suggestion chips always visible above). -->
+        <VerticalStackLayout Grid.Row="2"
+                             IsVisible="{Binding IsInputVisible}"
+                             Spacing="0"
+                             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}">
+
+            <!-- Persistent chip rail. One-tap prompts that drive a tomato walkthrough. -->
+            <ScrollView Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Never"
+                        Padding="12,8,12,0">
+                <HorizontalStackLayout BindableLayout.ItemsSource="{Binding SuggestionPrompts}"
+                                       Spacing="6">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border BackgroundColor="{AppThemeBinding Light=#E8F2E6, Dark=#2E3A2C}"
+                                    Stroke="{AppThemeBinding Light=#B8D4B4, Dark=#3A4A3A}"
+                                    StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 16"
+                                    Padding="0">
+                                <Button Text="{Binding}"
+                                        FontSize="12"
+                                        TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}"
+                                        BackgroundColor="Transparent"
+                                        BorderWidth="0"
+                                        Padding="12,6"
+                                        Command="{Binding Source={x:Reference ThisView}, Path=BindingContext.RunSuggestionCommand}"
+                                        CommandParameter="{Binding}" />
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
+            </ScrollView>
+
+            <Grid Padding="12,8,12,12"
+                  ColumnDefinitions="*,Auto"
+                  ColumnSpacing="8">
+                <Entry AutomationId="ChatInput"
+                       Text="{Binding InputText}"
+                       IsEnabled="{Binding IsNotBusy}"
+                       Placeholder="Ask about plants..."
+                       ReturnType="Send"
+                       ReturnCommand="{Binding SendCommand}"
+                       FontSize="14" />
+                <Button Grid.Column="1"
+                        Text="Send"
+                        AutomationId="SendButton"
+                        Command="{Binding SendCommand}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        BackgroundColor="#5B8C5A"
+                        TextColor="White"
+                        FontSize="14"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        VerticalOptions="Center" />
+            </Grid>
+        </VerticalStackLayout>
 
         <!-- Approval area -->
         <Grid Grid.Row="2"

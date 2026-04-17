@@ -25,18 +25,19 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
-    public ObservableCollection<PlantEntry> GardenPlants { get; } = [];
+    public ObservableCollection<GardenPlantViewModel> GardenPlants { get; } = [];
 
     /// <summary>
-    /// Seed prompts shown as one-tap chips in the empty view so the user
-    /// can immediately exercise the registered tools.
+    /// Seed prompts shown as one-tap chips. Deliberately tomato-themed so
+    /// a user can walk the full tool story — add → care-guide → remove
+    /// (which hits the approval flow) — without typing.
     /// </summary>
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
-        "Add basil to my kitchen windowsill",
-        "What plants are easy to grow indoors?",
-        "Water everything in my garden",
-        "Give me a care guide for tomatoes",
+        "Add a tomato to my garden",
+        "Care guide for tomato",
+        "Water my tomato",
+        "Remove the tomato",
     ];
 
     private bool _isBusy;
@@ -118,6 +119,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         Messages.Clear();
         _pendingApproval = null;
         IsApprovalPending = false;
+        ClearPendingRemoval();
 
         RefreshAvailableTools();
         RefreshGardenPanel();
@@ -129,7 +131,34 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     {
         GardenPlants.Clear();
         foreach (var plant in Garden.ListMyGarden())
-            GardenPlants.Add(plant);
+            GardenPlants.Add(new GardenPlantViewModel(plant));
+    }
+
+    /// <summary>
+    /// Extracts the <c>nickname</c> argument from a pending approval call
+    /// and flags the matching plant so the panel can ghost it.
+    /// </summary>
+    private void MarkPendingRemoval(ToolApprovalRequestContent approval)
+    {
+        if (approval.ToolCall is not FunctionCallContent fcc)
+            return;
+        if (!string.Equals(fcc.Name, "remove_from_garden", StringComparison.Ordinal))
+            return;
+        if (fcc.Arguments is null || !fcc.Arguments.TryGetValue("nickname", out var raw))
+            return;
+
+        var nickname = raw?.ToString();
+        if (string.IsNullOrWhiteSpace(nickname))
+            return;
+
+        foreach (var p in GardenPlants)
+            p.IsPendingRemoval = string.Equals(p.Nickname, nickname, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ClearPendingRemoval()
+    {
+        foreach (var p in GardenPlants)
+            p.IsPendingRemoval = false;
     }
 
     /// <summary>
@@ -226,6 +255,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
             var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name : "tool";
             ApprovalText = $"\ud83d\udd12 {name} \u2014 approve?";
             IsApprovalPending = true;
+            MarkPendingRemoval(_pendingApproval);
             return;
         }
 
@@ -241,6 +271,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         var approval = _pendingApproval;
         _pendingApproval = null;
         IsApprovalPending = false;
+        ClearPendingRemoval();
         IsBusy = true;
 
         try

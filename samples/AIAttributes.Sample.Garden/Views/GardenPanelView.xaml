@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:models="clr-namespace:AIAttributes.Sample.Garden.Models"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Views.GardenPanelView"
              x:DataType="vm:MainViewModel">
@@ -39,30 +38,48 @@
                            LineBreakMode="WordWrap" />
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:PlantEntry">
-                        <Border Margin="10,4"
-                                Padding="10,8"
-                                BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
-                                StrokeThickness="0"
-                                StrokeShape="RoundRectangle 8">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                <Label Grid.Column="0"
-                                       Text="{Binding Emoji}"
-                                       FontSize="22"
+                    <DataTemplate x:DataType="vm:GardenPlantViewModel">
+                        <Grid Margin="10,4">
+                            <!-- Plant card (ghosts when this plant is pending removal). -->
+                            <Border Padding="10,8"
+                                    BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
+                                    StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 8"
+                                    Opacity="{Binding IsPendingRemoval, Converter={StaticResource BoolToDimOpacity}}">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Emoji}"
+                                           FontSize="22"
+                                           VerticalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="{Binding Nickname}"
+                                               FontAttributes="Bold"
+                                               FontSize="13" />
+                                        <Label Text="{Binding Species}"
+                                               FontSize="11"
+                                               TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
+                                        <Label Text="{Binding Location, StringFormat='📍 {0}'}"
+                                               FontSize="11"
+                                               TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                            <!-- Approval-pending overlay. -->
+                            <Border IsVisible="{Binding IsPendingRemoval}"
+                                    BackgroundColor="#AAC62828"
+                                    StrokeThickness="1"
+                                    Stroke="#C62828"
+                                    StrokeShape="RoundRectangle 8"
+                                    HorizontalOptions="Fill"
+                                    VerticalOptions="Fill">
+                                <Label Text="🔒 Pending removal"
+                                       TextColor="White"
+                                       FontSize="12"
+                                       FontAttributes="Bold"
+                                       HorizontalOptions="Center"
                                        VerticalOptions="Center" />
-                                <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                    <Label Text="{Binding Nickname}"
-                                           FontAttributes="Bold"
-                                           FontSize="13" />
-                                    <Label Text="{Binding Species}"
-                                           FontSize="11"
-                                           TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
-                                    <Label Text="{Binding Location, StringFormat='📍 {0}'}"
-                                           FontSize="11"
-                                           TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
-                                </VerticalStackLayout>
-                            </Grid>
-                        </Border>
+                            </Border>
+                        </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
