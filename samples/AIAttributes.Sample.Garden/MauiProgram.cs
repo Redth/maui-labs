@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.DevFlow.Agent;
 using AIAttributes.Sample.Garden.Services;
+using AIAttributes.Sample.Garden.ViewModels;
 
 namespace AIAttributes.Sample.Garden;
 
@@ -52,6 +53,7 @@ public static class MauiProgram
         builder.AddOpenAIServices();
 
         // ── Pages ───────────────────────────────────────────────────
+        builder.Services.AddTransient<MainViewModel>();
         builder.Services.AddTransient<MainPage>();
 
 #if DEBUG

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:AIAttributes.Sample.Garden.Models"
+             xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
+             x:Class="AIAttributes.Sample.Garden.Views.GardenPanelView"
+             x:DataType="vm:MainViewModel">
+
+    <!--
+         Bound to the scoped GardenService data for the current chat session.
+         Clears when New Chat creates a new DI scope, making the scoped-lifetime
+         story visible at runtime.
+    -->
+    <Border WidthRequest="260"
+            BackgroundColor="{AppThemeBinding Light=#F0F7EF, Dark=#1A241A}"
+            Stroke="{AppThemeBinding Light=#D0E0CF, Dark=#2A3A2A}"
+            StrokeThickness="0,0,0,0"
+            Padding="0">
+        <Grid RowDefinitions="Auto,*">
+            <Border Grid.Row="0"
+                    BackgroundColor="#5B8C5A"
+                    Padding="14,12"
+                    StrokeThickness="0">
+                <Label Text="🌱 Your Garden"
+                       TextColor="White"
+                       FontSize="14"
+                       FontAttributes="Bold" />
+            </Border>
+            <CollectionView Grid.Row="1"
+                            AutomationId="GardenList"
+                            Margin="0,4,0,0"
+                            ItemsSource="{Binding GardenPlants}">
+                <CollectionView.EmptyView>
+                    <Label Text="No plants yet. Ask the assistant to add some."
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light=#7A8A7A, Dark=#8AA08A}"
+                           Padding="14,20"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap" />
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PlantEntry">
+                        <Border Margin="10,4"
+                                Padding="10,8"
+                                BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding Nickname}"
+                                       FontAttributes="Bold"
+                                       FontSize="13" />
+                                <Label Text="{Binding Species}"
+                                       FontSize="11"
+                                       TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
+                                <Label Text="{Binding Location, StringFormat='📍 {0}'}"
+                                       FontSize="11"
+                                       TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+    </Border>
+
+</ContentView>

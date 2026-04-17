@@ -1,4 +1,4 @@
-using AIAttributes.Sample.Garden.Models;
+using AIAttributes.Sample.Garden.ViewModels;
 
 namespace AIAttributes.Sample.Garden;
 
