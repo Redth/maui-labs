@@ -109,9 +109,9 @@ public class WeatherService
 /// </summary>
 public static class GreetingService
 {
-    [Description("Greets someone by name in plain English.")]
+    [Description("Greets someone by name and gives them a lucky number.")]
     [ExportAIFunction("say_hello")]
     public static string SayHello(
         [Description("The name of the person to greet")] string name)
-        => $"Hello, {name}!";
+        => $"Hello, {name}! Your lucky number is {Random.Shared.Next(1, 100)}.";
 }
