@@ -111,57 +111,59 @@
                  Welcomes the user and lists the tools registered in DI.
             -->
             <CollectionView.EmptyView>
-                <ScrollView>
-                    <VerticalStackLayout Padding="24" Spacing="16"
-                                         HorizontalOptions="Center">
-                        <Label Text="🌿"
-                               FontSize="56"
-                               HorizontalOptions="Center" />
-                        <Label Text="Welcome to your new garden"
-                               FontSize="20"
-                               FontAttributes="Bold"
-                               HorizontalTextAlignment="Center"
-                               TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
-                        <Label Text="Ask about plants, build your garden, or request care guides. The assistant can use these tools:"
-                               FontSize="13"
-                               HorizontalTextAlignment="Center"
-                               MaximumWidthRequest="380"
-                               LineBreakMode="WordWrap"
-                               TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
+                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                    <Label Grid.Row="0"
+                           Text="🌿"
+                           FontSize="56"
+                           HorizontalOptions="Center" />
+                    <Label Grid.Row="1"
+                           Text="Welcome to your new garden"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" />
+                    <Label Grid.Row="2"
+                           Text="Ask about plants, build your garden, or request care guides. The assistant can use these tools:"
+                           FontSize="13"
+                           HorizontalTextAlignment="Center"
+                           LineBreakMode="WordWrap"
+                           TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
 
-                        <!--
-                            BindableLayout instead of a nested CollectionView.
-                            A fixed-height CollectionView inside a ScrollView
-                            clips the last item and its scrollbar is awkward;
-                            BindableLayout lets every row flow naturally and
-                            scroll with the outer ScrollView.
-                        -->
-                        <VerticalStackLayout WidthRequest="420"
-                                             Spacing="4"
-                                             BindableLayout.ItemsSource="{Binding AvailableTools}"
-                                             AutomationId="ToolList">
+                    <!--
+                        FlexLayout with Wrap=Wrap lays out the tool cards in
+                        a responsive grid that fits the available width. No
+                        horizontal scroll, no clipped rows.
+                    -->
+                    <ScrollView Grid.Row="3" Orientation="Vertical">
+                        <FlexLayout BindableLayout.ItemsSource="{Binding AvailableTools}"
+                                    AutomationId="ToolList"
+                                    Wrap="Wrap"
+                                    JustifyContent="Center"
+                                    AlignItems="Start"
+                                    AlignContent="Start">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ToolInfoViewModel">
-                                    <Border Padding="12,8"
+                                    <Border WidthRequest="200"
+                                            Margin="4"
+                                            Padding="10,8"
                                             BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
                                             StrokeThickness="0"
                                             StrokeShape="RoundRectangle 8">
                                         <VerticalStackLayout Spacing="2">
                                             <Label Text="{Binding Name}"
                                                    FontAttributes="Bold"
-                                                   FontSize="13"
+                                                   FontSize="12"
                                                    TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
                                             <Label Text="{Binding Description}"
-                                                   FontSize="12"
+                                                   FontSize="11"
                                                    LineBreakMode="WordWrap"
                                                    TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
                                         </VerticalStackLayout>
                                     </Border>
                                 </DataTemplate>
                             </BindableLayout.ItemTemplate>
-                        </VerticalStackLayout>
-                    </VerticalStackLayout>
-                </ScrollView>
+                        </FlexLayout>
+                    </ScrollView>
+                </Grid>
             </CollectionView.EmptyView>
         </CollectionView>
 
