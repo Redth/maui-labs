@@ -16,7 +16,7 @@
                 HeightRequest="56"
                 StrokeThickness="0">
             <Grid ColumnDefinitions="*,Auto">
-                <Label Text="🌿 Garden AI"
+                <Label Text="🛒 Garden Shop AI"
                        FontSize="20" FontAttributes="Bold"
                        TextColor="White" VerticalOptions="Center" />
                 <Button Grid.Column="1"
@@ -114,16 +114,16 @@
             <CollectionView.EmptyView>
                 <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
                     <Label Grid.Row="0"
-                           Text="🌿"
+                           Text="🛒"
                            FontSize="56"
                            HorizontalOptions="Center" />
                     <Label Grid.Row="1"
-                           Text="Welcome to your new garden"
+                           Text="Welcome to the garden shop"
                            FontSize="20"
                            FontAttributes="Bold"
                            HorizontalTextAlignment="Center" />
                     <Label Grid.Row="2"
-                           Text="Tap a chip below to get started, or ask anything about plants. The assistant can use these tools:"
+                           Text="Tap a chip below to get started, or browse the catalog. The assistant can use these tools:"
                            FontSize="13"
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap"
@@ -208,7 +208,7 @@
                 <Entry AutomationId="ChatInput"
                        Text="{Binding InputText}"
                        IsEnabled="{Binding IsNotBusy}"
-                       Placeholder="Ask about plants..."
+                       Placeholder="Ask about products..."
                        ReturnType="Send"
                        ReturnCommand="{Binding SendCommand}"
                        FontSize="14" />

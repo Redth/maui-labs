@@ -5,40 +5,50 @@ using System.Windows.Input;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
-/// Top-level view model bound to <see cref="MainPage"/> and its child views.
-/// Owns the chat loop, DI session scope, and mutable UI state.
+/// Top-level view model bound to <see cref="MainPage"/>. Owns the chat loop,
+/// the per-session <see cref="ChatSession"/>, and projects the singleton
+/// <see cref="OrderArchive"/> into the UI.
 /// </summary>
-public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient innerChatClient) : INotifyPropertyChanged
+/// <remarks>
+/// No <c>IServiceScope</c> anywhere. Per-session state is a plain object
+/// owned by this view model and published to AI tools via
+/// <see cref="ICurrentSession"/>.
+/// </remarks>
+public sealed class MainViewModel(
+    IServiceProvider rootProvider,
+    IChatClient innerChatClient,
+    ChatSessionFactory sessionFactory,
+    ICurrentSession currentSession,
+    OrderArchive archive) : INotifyPropertyChanged
 {
-    private readonly IServiceProvider _rootProvider = rootProvider;
-    private readonly IChatClient _innerChatClient = innerChatClient;
+    private readonly IChatClient _chatClient = new ChatClientBuilder(innerChatClient)
+        .UseFunctionInvocation()
+        .Build(rootProvider);
 
-    private IServiceScope? _sessionScope;
-    private IChatClient? _sessionClient;
     private List<ChatMessage> _history = [];
     private ToolApprovalRequestContent? _pendingApproval;
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
-    public ObservableCollection<LocationGroup> GardenPlants { get; } = [];
+    public ObservableCollection<CategoryGroup> ShoppingList { get; } = [];
+    public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
+    public ObservableCollection<DraftViewModel> Drafts { get; } = [];
 
     /// <summary>
-    /// Seed prompts shown as one-tap chips. Each prompt is fully
-    /// self-contained so the assistant can execute the tool call without
-    /// a follow-up clarifying question, and they reuse the same nickname
-    /// ("Tommy") so a user can walk add → water → remove cleanly.
+    /// Seed prompts shown as one-tap chips. Each prompt is fully self-contained
+    /// so the assistant can execute the tool call without a follow-up question.
     /// </summary>
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
-        "Add a tomato called Tommy on the kitchen windowsill",
-        "Give me a quick care guide for tomatoes",
-        "Water Tommy",
-        "Remove Tommy from my garden",
+        "Add 5 packs of tomato seeds and a hand trowel to my list",
+        "Show me my list",
+        "Check out my list",
+        "List my past orders",
+        "Re-order my last order",
     ];
 
     private bool _isBusy;
@@ -71,14 +81,18 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         private set => Set(ref _approvalText, value);
     }
 
+    private string _shoppingListTotal = "$0.00";
+    public string ShoppingListTotal
+    {
+        get => _shoppingListTotal;
+        private set => Set(ref _shoppingListTotal, value);
+    }
+
     public ICommand NewChatCommand => new Command(StartNewSession);
     public ICommand SendCommand => new Command(async () => await SendAsync());
     public ICommand ApproveCommand => new Command(async () => await ResolveApprovalAsync(approved: true));
     public ICommand RejectCommand => new Command(async () => await ResolveApprovalAsync(approved: false, reason: "User rejected"));
 
-    /// <summary>
-    /// Fills the input with a suggestion and sends it immediately.
-    /// </summary>
     public ICommand RunSuggestionCommand => new Command<string>(async prompt =>
     {
         if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
@@ -90,92 +104,118 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
 
-    public void Initialize() => StartNewSession();
+    public void Initialize()
+    {
+        archive.Changed += RefreshArchive;
+        StartNewSession();
+        RefreshAvailableTools();
+        RefreshArchive();
+    }
 
     /// <summary>
-    /// Creates a new DI scope, a new chat history, and a fresh chat client.
-    /// The scoped <see cref="GardenService"/> is recreated too, which is why
-    /// the "Your Garden" side panel clears on New Chat.
+    /// "New Chat": save the current shopping list as a draft (if any),
+    /// cancel any in-flight tool calls, then publish a fresh
+    /// <see cref="ChatSession"/>. No DI scope manipulation involved.
     /// </summary>
     private void StartNewSession()
     {
-        _sessionScope?.Dispose();
-        _sessionScope = _rootProvider.CreateScope();
+        var previous = currentSession.Session;
+        var pendingItems = previous.Snapshot();
+        if (pendingItems.Count > 0)
+            archive.SaveDraft(pendingItems);
+
+        try { previous.Cts.Cancel(); } catch { /* best effort */ }
+
+        var fresh = sessionFactory.Create();
+        fresh.ListChanged += RefreshShoppingList;
+        currentSession.Set(fresh);
+
         _history =
         [
             new(ChatRole.System,
                 """
-                You are a helpful gardening assistant. Help users browse plants, 
-                manage their garden, and get care advice. Be concise and friendly.
+                You are a helpful garden-shop assistant. Help the user browse seeds, soil,
+                tools, and equipment, manage their shopping list, and review past orders.
+                Use search_products to discover items by name or category. When the user
+                says "check out" call checkout_list and let the approval flow run. Be
+                concise and friendly.
                 """)
         ];
-
-        // FunctionInvokingChatClient is built per session so the session
-        // scope's IServiceProvider is passed into AIFunctionArguments.Services
-        // for every tool invocation.
-        _sessionClient = new ChatClientBuilder(_innerChatClient)
-            .UseFunctionInvocation()
-            .Build(_sessionScope.ServiceProvider);
 
         Messages.Clear();
         _pendingApproval = null;
         IsApprovalPending = false;
-        ClearPendingRemoval();
-
-        RefreshAvailableTools();
-        RefreshGardenPanel();
+        RefreshShoppingList();
     }
 
-    private GardenService Garden => _sessionScope!.ServiceProvider.GetRequiredService<GardenService>();
-
-    private void RefreshGardenPanel()
+    private void RefreshShoppingList()
     {
-        GardenPlants.Clear();
-        var groups = Garden.ListMyGarden()
-            .GroupBy(p => p.Location, StringComparer.OrdinalIgnoreCase)
+        ShoppingList.Clear();
+        var items = currentSession.Session.Snapshot();
+        var groups = items
+            .GroupBy(i => i.Product.Category, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
         foreach (var g in groups)
-            GardenPlants.Add(new LocationGroup(g.Key, g.Select(p => new GardenPlantViewModel(p))));
+            ShoppingList.Add(new CategoryGroup(g.Key, g.Select(i => new ShoppingListItemViewModel(i))));
+        ShoppingListTotal = items.Sum(i => i.Subtotal).ToString("C");
     }
 
-    private IEnumerable<GardenPlantViewModel> AllGardenPlants =>
-        GardenPlants.SelectMany(g => g);
+    private void RefreshArchive()
+    {
+        PastOrders.Clear();
+        foreach (var o in archive.Orders)
+            PastOrders.Add(new OrderViewModel(o));
+        Drafts.Clear();
+        foreach (var d in archive.Drafts)
+            Drafts.Add(new DraftViewModel(d));
+    }
+
+    private IEnumerable<ShoppingListItemViewModel> AllListItems =>
+        ShoppingList.SelectMany(g => g);
 
     /// <summary>
-    /// Extracts the <c>nickname</c> argument from a pending approval call
-    /// and flags the matching plant so the panel can ghost it.
+    /// Marks list items affected by an in-flight approval so the panel can ghost them.
     /// </summary>
-    private void MarkPendingRemoval(ToolApprovalRequestContent approval)
+    private void MarkPendingFromApproval(ToolApprovalRequestContent approval)
     {
         if (approval.ToolCall is not FunctionCallContent fcc)
             return;
-        if (!string.Equals(fcc.Name, "remove_from_garden", StringComparison.Ordinal))
-            return;
-        if (fcc.Arguments is null || !fcc.Arguments.TryGetValue("nickname", out var raw))
-            return;
 
-        var nickname = raw?.ToString();
-        if (string.IsNullOrWhiteSpace(nickname))
-            return;
-
-        foreach (var p in AllGardenPlants)
-            p.IsPendingRemoval = string.Equals(p.Nickname, nickname, StringComparison.OrdinalIgnoreCase);
+        switch (fcc.Name)
+        {
+            case "checkout_list":
+                foreach (var i in AllListItems) i.Pending = PendingAction.Checkout;
+                break;
+            case "cancel_list":
+                foreach (var i in AllListItems) i.Pending = PendingAction.Cancel;
+                break;
+            case "remove_from_list" when fcc.Arguments?.TryGetValue("skuOrName", out var raw) == true:
+            {
+                var query = raw?.ToString();
+                if (string.IsNullOrWhiteSpace(query))
+                    return;
+                var product = ProductCatalog.FindByName(query!);
+                if (product is null)
+                    return;
+                foreach (var i in AllListItems)
+                    i.Pending = string.Equals(i.Sku, product.Sku, StringComparison.OrdinalIgnoreCase)
+                        ? PendingAction.Remove
+                        : PendingAction.None;
+                break;
+            }
+        }
     }
 
-    private void ClearPendingRemoval()
+    private void ClearPending()
     {
-        foreach (var p in AllGardenPlants)
-            p.IsPendingRemoval = false;
+        foreach (var i in AllListItems)
+            i.Pending = PendingAction.None;
     }
 
-    /// <summary>
-    /// Rebuilds <see cref="AvailableTools"/> from <c>GardenTools.Default</c> so
-    /// the empty-state view reflects every tool emitted by the source generator.
-    /// </summary>
     private void RefreshAvailableTools()
     {
         AvailableTools.Clear();
-        var tools = GardenTools.Default.GetTools();
+        var tools = GardenShopTools.Default.GetTools();
         foreach (var tool in tools.OrderBy(t => t.Name))
             AvailableTools.Add(new ToolInfoViewModel(tool.Name, tool.Description ?? ""));
     }
@@ -183,7 +223,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     private async Task SendAsync()
     {
         var text = InputText?.Trim();
-        if (string.IsNullOrWhiteSpace(text) || IsBusy || _sessionClient is null)
+        if (string.IsNullOrWhiteSpace(text) || IsBusy)
             return;
 
         InputText = string.Empty;
@@ -194,8 +234,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
 
         try
         {
-            var tools = GardenTools.Default.GetTools();
-            var options = new ChatOptions { Tools = [.. tools] };
+            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.GetTools()] };
             await SendAndProcessResponseAsync(options);
         }
         catch (Exception ex)
@@ -205,7 +244,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         finally
         {
             IsBusy = false;
-            RefreshGardenPanel();
+            RefreshShoppingList();
         }
     }
 
@@ -215,7 +254,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         ChatMessageViewModel? assistantMessage = null;
         var updates = new List<ChatResponseUpdate>();
 
-        await foreach (var update in _sessionClient!.GetStreamingResponseAsync(_history, options))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, currentSession.Session.Cts.Token))
         {
             updates.Add(update);
 
@@ -224,6 +263,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
                 switch (content)
                 {
                     case ToolApprovalRequestContent approval:
+                    {
                         var toolName = approval.ToolCall is FunctionCallContent fcc ? fcc.Name : "unknown";
                         var args = approval.ToolCall is FunctionCallContent fc && fc.Arguments is not null
                             ? string.Join(", ", fc.Arguments.Select(kv => $"{kv.Key}: {kv.Value}"))
@@ -231,17 +271,20 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
                         AddMessage(ChatMessageKind.Tool, $"\u26a0\ufe0f Approval required: {toolName}({args})");
                         _pendingApproval = approval;
                         break;
+                    }
 
                     case FunctionCallContent call:
                         AddMessage(ChatMessageKind.Tool, $"\ud83d\udd27 Calling: {call.Name}");
                         break;
 
                     case FunctionResultContent result:
+                    {
                         var resultText = result.Result?.ToString() ?? "(no result)";
                         if (resultText.Length > 200)
                             resultText = resultText[..200] + "...";
                         AddMessage(ChatMessageKind.Tool, $"\u2705 Result: {resultText}");
                         break;
+                    }
 
                     case TextContent tc when tc.Text is not null:
                         responseText += tc.Text;
@@ -261,7 +304,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
             var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name : "tool";
             ApprovalText = $"\ud83d\udd12 {name} \u2014 approve?";
             IsApprovalPending = true;
-            MarkPendingRemoval(_pendingApproval);
+            MarkPendingFromApproval(_pendingApproval);
             return;
         }
 
@@ -271,13 +314,13 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
 
     private async Task ResolveApprovalAsync(bool approved, string? reason = null)
     {
-        if (_pendingApproval is null || _sessionClient is null)
+        if (_pendingApproval is null)
             return;
 
         var approval = _pendingApproval;
         _pendingApproval = null;
         IsApprovalPending = false;
-        ClearPendingRemoval();
+        ClearPending();
         IsBusy = true;
 
         try
@@ -286,8 +329,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
             _history.Add(new ChatMessage(ChatRole.User, [response]));
             AddMessage(ChatMessageKind.Tool, approved ? "\u2705 Approved" : "\u274c Rejected");
 
-            var tools = GardenTools.Default.GetTools();
-            var options = new ChatOptions { Tools = [.. tools] };
+            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.GetTools()] };
             await SendAndProcessResponseAsync(options);
         }
         catch (Exception ex)
@@ -297,7 +339,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         finally
         {
             IsBusy = false;
-            RefreshGardenPanel();
+            RefreshShoppingList();
         }
     }
 
@@ -309,7 +351,6 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         return vm;
     }
 
-    // ── INotifyPropertyChanged plumbing ─────────────────────────────
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null, params string[] alsoNotify)

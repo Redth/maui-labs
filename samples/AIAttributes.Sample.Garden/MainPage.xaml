@@ -10,7 +10,7 @@
 
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="0">
         <views:ChatView Grid.Column="0" />
-        <views:GardenPanelView Grid.Column="1" />
+        <views:WorkspacePanelView Grid.Column="1" />
     </Grid>
 
 </ContentPage>

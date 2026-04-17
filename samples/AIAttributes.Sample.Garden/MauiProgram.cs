@@ -1,14 +1,13 @@
 using System.ClientModel;
 using System.Reflection;
+using AIAttributes.Sample.Garden.Services;
+using AIAttributes.Sample.Garden.ViewModels;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
-using Microsoft.Maui.AI.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.DevFlow.Agent;
-using AIAttributes.Sample.Garden.Services;
-using AIAttributes.Sample.Garden.ViewModels;
 
 namespace AIAttributes.Sample.Garden;
 
@@ -25,7 +24,6 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
-        // Load user secrets embedded as resource
         builder.Configuration.AddUserSecrets();
 
 #if DEBUG
@@ -33,24 +31,20 @@ public static class MauiProgram
 #endif
 
         // ── Services ────────────────────────────────────────────────
-        //
-        // Singleton: shared across ALL chat sessions. The plant catalog
-        // is static data that never changes.
-        builder.Services.AddSingleton<PlantCatalogService>();
-
-        // Scoped: one instance per DI scope. Each chat session creates
-        // its own scope (see MainPage), so the user's garden resets on
-        // "New Chat". This is the core demonstration of this sample.
-        builder.Services.AddScoped<GardenService>();
+        // Everything is a singleton. There is no AddScoped, no
+        // CreateScope() — this is the Phase 2 punchline. Per-session
+        // state lives on a plain ChatSession object owned by the view
+        // model and published to AI tools through ICurrentSession.
+        builder.Services.AddSingleton<OrderArchive>();
+        builder.Services.AddSingleton<ChatSessionFactory>();
+        builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
 
         // ── AI Tools (source-generated) ─────────────────────────────
-        //
-        // The source generator discovers [ExportAIFunction] methods at compile
-        // time and emits GardenTools.Default with a GetTools() method. Tools
-        // are NOT registered into DI — they're consumed at the call site via
-        // GardenTools.Default.GetTools() and read AIFunctionArguments.Services
-        // at invocation time.
-        // No runtime reflection is used.
+        // GardenShopTools.Default.GetTools() returns the AI tool list. No
+        // DI registration needed — the source generator emits a static
+        // singleton on the context. Each tool reads
+        // AIFunctionArguments.Services at invocation time, which is
+        // populated by UseFunctionInvocation().Build(sp) below.
 
         // ── AI Client ───────────────────────────────────────────────
         builder.AddOpenAIServices();
@@ -103,9 +97,8 @@ public static class MauiProgram
             new ApiKeyCredential(apiKey));
         var chatClient = azureClient.GetChatClient(deploymentName);
 
-        // Register the raw IChatClient (no middleware).
-        // MainPage builds the FunctionInvokingChatClient pipeline per session
-        // so each session scope's services are used for tool resolution.
+        // Raw IChatClient — the view model wraps it in
+        // ChatClientBuilder(...).UseFunctionInvocation().Build(sp).
         builder.Services.AddSingleton<IChatClient>(chatClient.AsIChatClient());
 
         return builder;
