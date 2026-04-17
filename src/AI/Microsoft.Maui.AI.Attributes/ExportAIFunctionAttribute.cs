@@ -17,7 +17,7 @@ namespace Microsoft.Maui.AI.Attributes;
 /// <see cref="System.ComponentModel.DescriptionAttribute"/>.
 /// Return values are automatically serialized by Microsoft.Extensions.AI.
 /// </remarks>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
 public sealed class ExportAIFunctionAttribute : Attribute
 {
     /// <summary>

@@ -1,4 +1,6 @@
+using System.ComponentModel;
 using AIAttributes.Sample.Garden.Models;
+using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.Services;
 
@@ -7,6 +9,8 @@ namespace AIAttributes.Sample.Garden.Services;
 /// </summary>
 public static class ProductCatalog
 {
+    [ExportAIFunction("list_all_products")]
+    [Description("Returns every product in the garden shop catalog.")]
     public static IReadOnlyList<Product> All { get; } =
     [
         // Seeds
@@ -32,6 +36,29 @@ public static class ProductCatalog
         new("tool-hose",       "50 ft Garden Hose",       "Equipment", 29.99m, "💦"),
         new("tool-watering",   "Watering Can (1 gal)",    "Equipment", 14.99m, "🚿"),
     ];
+
+    [ExportAIFunction("search_products")]
+    [Description("Searches the garden shop catalog by name, category, or sku. Returns every product when no query is given.")]
+    public static List<Product> SearchProducts(
+        [Description("Optional text to filter by product name, sku, or category. Leave blank to list everything.")]
+        string? query = null)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return [.. All];
+
+        var q = query.Trim();
+        return [.. All.Where(p =>
+            p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+            p.Sku.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+            p.Category.Contains(q, StringComparison.OrdinalIgnoreCase))];
+    }
+
+    [ExportAIFunction("get_product")]
+    [Description("Looks up a single product by sku or exact name.")]
+    public static Product? GetProduct(
+        [Description("The product sku or exact name (e.g., 'seed-tomato' or 'Heirloom Tomato Seeds').")]
+        string skuOrName)
+        => FindByName(skuOrName);
 
     public static Product? Find(string sku) =>
         All.FirstOrDefault(p => string.Equals(p.Sku, sku, StringComparison.OrdinalIgnoreCase));

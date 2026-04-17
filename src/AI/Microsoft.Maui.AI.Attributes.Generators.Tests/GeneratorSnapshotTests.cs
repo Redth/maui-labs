@@ -55,6 +55,9 @@ public class GeneratorSnapshotTests
     [InlineData(nameof(Inputs.RefParam))]
     [InlineData(nameof(Inputs.OutParam))]
     [InlineData(nameof(Inputs.InParam))]
+    [InlineData(nameof(Inputs.StaticProperty))]
+    [InlineData(nameof(Inputs.InstanceProperty))]
+    [InlineData(nameof(Inputs.MixedMethodsAndProperties))]
     public Task Snapshot(string scenario)
     {
         var source = Inputs.Get(scenario);

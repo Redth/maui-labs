@@ -420,6 +420,63 @@ internal static class Inputs
         public partial class ToolsCtx : AIToolContext { }
         """;
 
+    public const string StaticProperty = """
+        using System.Collections.Generic;
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public static class Catalog
+        {
+            [ExportAIFunction("list_all")]
+            [Description("Returns every item in the catalog.")]
+            public static IReadOnlyList<string> All { get; } = new[] { "apple", "banana" };
+        }
+
+        [AIToolSource(typeof(Catalog))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
+    public const string InstanceProperty = """
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class Svc
+        {
+            [ExportAIFunction("current_count")]
+            [Description("Gets the current count.")]
+            public int Count { get; set; }
+        }
+
+        [AIToolSource(typeof(Svc))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
+    public const string MixedMethodsAndProperties = """
+        using System.Collections.Generic;
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public static class Store
+        {
+            [ExportAIFunction("list_items")]
+            [Description("All items.")]
+            public static IReadOnlyList<string> Items { get; } = new[] { "x" };
+
+            [ExportAIFunction("find_item")]
+            [Description("Find by name.")]
+            public static string? Find(string name) => name;
+        }
+
+        [AIToolSource(typeof(Store))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
     public static string Get(string name) => name switch
     {
         nameof(SimpleInstanceMethod) => SimpleInstanceMethod,
@@ -449,6 +506,9 @@ internal static class Inputs
         nameof(RefParam) => RefParam,
         nameof(OutParam) => OutParam,
         nameof(InParam) => InParam,
+        nameof(StaticProperty) => StaticProperty,
+        nameof(InstanceProperty) => InstanceProperty,
+        nameof(MixedMethodsAndProperties) => MixedMethodsAndProperties,
         _ => throw new KeyNotFoundException(name),
     };
 }

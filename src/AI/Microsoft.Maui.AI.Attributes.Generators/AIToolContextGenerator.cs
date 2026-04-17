@@ -257,7 +257,82 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 description,
                 approvalRequired,
                 method.IsStatic,
+                IsProperty: false,
                 parameters,
+                returnInfo,
+                baseClassName));
+        }
+
+        // Also scan properties with [ExportAIFunction].
+        foreach (var member in typeSymbol.GetMembers())
+        {
+            ct.ThrowIfCancellationRequested();
+
+            if (member is not IPropertySymbol prop)
+                continue;
+            if (prop.IsIndexer || prop.IsWriteOnly || prop.GetMethod is null)
+                continue;
+            if (prop.DeclaredAccessibility != Accessibility.Public && prop.DeclaredAccessibility != Accessibility.Internal)
+                continue;
+
+            var exportAttr = prop.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+            if (exportAttr is null)
+                continue;
+
+            string? name = null;
+            string? description = null;
+            bool approvalRequired = false;
+
+            if (exportAttr.ConstructorArguments.Length >= 1 &&
+                exportAttr.ConstructorArguments[0].Value is string ctorName)
+            {
+                name = ctorName;
+            }
+            foreach (var na in exportAttr.NamedArguments)
+            {
+                switch (na.Key)
+                {
+                    case "Name": name = na.Value.Value as string; break;
+                    case "Description": description = na.Value.Value as string; break;
+                    case "ApprovalRequired": approvalRequired = na.Value.Value is true; break;
+                }
+            }
+
+            if (description is null)
+            {
+                var descAttr = prop.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
+                if (descAttr is not null &&
+                    descAttr.ConstructorArguments.Length >= 1 &&
+                    descAttr.ConstructorArguments[0].Value is string d)
+                {
+                    description = d;
+                }
+            }
+
+            var toolName = name ?? prop.Name;
+            var returnInfo = AnalyzeReturnType(prop.Type);
+
+            var baseClassName = $"{SanitizeIdentifier(typeSymbol.Name)}_{SanitizeIdentifier(prop.Name)}_Tool";
+            if (nameCollisions.TryGetValue(baseClassName, out var count))
+            {
+                nameCollisions[baseClassName] = count + 1;
+                baseClassName = $"{baseClassName}_{count + 1}";
+            }
+            else
+            {
+                nameCollisions[baseClassName] = 0;
+            }
+
+            methods.Add(new MethodModel(
+                prop.Name,
+                toolName,
+                description,
+                approvalRequired,
+                prop.IsStatic,
+                IsProperty: true,
+                ImmutableArray<ParameterModel>.Empty,
                 returnInfo,
                 baseClassName));
         }
@@ -553,18 +628,32 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         var bindingFlags = m.IsStatic
             ? "global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static"
             : "global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance";
-        sb.AppendLine($"{indent}    private static global::System.Reflection.MethodInfo GetTargetMethod()");
-        sb.AppendLine($"{indent}    {{");
-        sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
-        sb.Append($"{indent}        var paramTypes = new global::System.Type[] {{ ");
-        foreach (var p in m.Parameters)
+        if (m.IsProperty)
         {
-            sb.Append($"typeof({p.UnannotatedTypeName}), ");
+            sb.AppendLine($"{indent}    private static global::System.Reflection.MethodInfo GetTargetMethod()");
+            sb.AppendLine($"{indent}    {{");
+            sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
+            sb.AppendLine($"{indent}        var prop = serviceType.GetProperty({Escape(m.MethodName)}, {bindingFlags})");
+            sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target property {st.FullyQualifiedName}.{m.MethodName}.")});");
+            sb.AppendLine($"{indent}        return prop.GetMethod");
+            sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Property {st.FullyQualifiedName}.{m.MethodName} has no getter.")});");
+            sb.AppendLine($"{indent}    }}");
         }
-        sb.AppendLine("};");
-        sb.AppendLine($"{indent}        return serviceType.GetMethod({Escape(m.MethodName)}, {bindingFlags}, null, paramTypes, null)");
-        sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target method {st.FullyQualifiedName}.{m.MethodName}.")});");
-        sb.AppendLine($"{indent}    }}");
+        else
+        {
+            sb.AppendLine($"{indent}    private static global::System.Reflection.MethodInfo GetTargetMethod()");
+            sb.AppendLine($"{indent}    {{");
+            sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
+            sb.Append($"{indent}        var paramTypes = new global::System.Type[] {{ ");
+            foreach (var p in m.Parameters)
+            {
+                sb.Append($"typeof({p.UnannotatedTypeName}), ");
+            }
+            sb.AppendLine("};");
+            sb.AppendLine($"{indent}        return serviceType.GetMethod({Escape(m.MethodName)}, {bindingFlags}, null, paramTypes, null)");
+            sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target method {st.FullyQualifiedName}.{m.MethodName}.")});");
+            sb.AppendLine($"{indent}    }}");
+        }
         sb.AppendLine();
 
         // Schema builder (uses IncludeParameter to exclude DI-bound parameters).
@@ -625,9 +714,11 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             EmitParameterBinding(sb, indent + "        ", local, p);
         }
 
-        // Call & await — static methods call via the type; instance methods go through __service.
+        // Call & await — static members call via the type; instance members go through __service.
         var receiver = m.IsStatic ? st.FullyQualifiedName : "__service";
-        var callExpr = $"{receiver}.{m.MethodName}({string.Join(", ", argNames)})";
+        var callExpr = m.IsProperty
+            ? $"{receiver}.{m.MethodName}"
+            : $"{receiver}.{m.MethodName}({string.Join(", ", argNames)})";
         switch (m.ReturnInfo.Shape)
         {
             case ReturnShape.Void:
@@ -757,6 +848,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         string? Description,
         bool ApprovalRequired,
         bool IsStatic,
+        bool IsProperty,
         ImmutableArray<ParameterModel> Parameters,
         ReturnInfo ReturnInfo,
         string GeneratedClassName);
@@ -808,7 +900,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             new(
                 "MAUIAI003",
                 DiagnosticSeverity.Warning,
-                $"[AIToolSource(typeof({typeName}))] references a type with no [ExportAIFunction] methods.",
+                $"[AIToolSource(typeof({typeName}))] references a type with no [ExportAIFunction] members.",
                 location);
 
         public static DiagnosticInfo UnserializableParameter(string methodName, string paramName, string typeName, Location? location) =>
