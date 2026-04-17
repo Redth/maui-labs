@@ -16,9 +16,6 @@ public sealed class Cart(string id)
 
     public IReadOnlyList<ListItem> Items => _items;
 
-    /// <summary>Raised whenever the shopping list changes.</summary>
-    public event Action? ListChanged;
-
     public ListItem AddOrIncrement(Product product, int quantity)
     {
         if (quantity <= 0)
@@ -36,7 +33,6 @@ public sealed class Cart(string id)
             updated = new ListItem(product, quantity);
             _items.Add(updated);
         }
-        ListChanged?.Invoke();
         return updated;
     }
 
@@ -54,7 +50,6 @@ public sealed class Cart(string id)
 
         var updated = _items[idx] with { Quantity = newQuantity };
         _items[idx] = updated;
-        ListChanged?.Invoke();
         return updated;
     }
 
@@ -64,7 +59,6 @@ public sealed class Cart(string id)
         if (idx < 0)
             return false;
         _items.RemoveAt(idx);
-        ListChanged?.Invoke();
         return true;
     }
 
@@ -75,6 +69,5 @@ public sealed class Cart(string id)
         if (_items.Count == 0)
             return;
         _items.Clear();
-        ListChanged?.Invoke();
     }
 }

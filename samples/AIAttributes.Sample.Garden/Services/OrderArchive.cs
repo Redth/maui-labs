@@ -16,9 +16,6 @@ public sealed class OrderArchive
     [ExportAIFunction("list_past_orders")]
     public IReadOnlyList<Order> Orders => _orders;
 
-    /// <summary>Raised whenever the archive contents change.</summary>
-    public event Action? Changed;
-
     public Order Place(IReadOnlyList<ListItem> items)
     {
         var order = new Order(
@@ -26,7 +23,6 @@ public sealed class OrderArchive
             PlacedAt: DateTime.Now,
             Items: [.. items]);
         _orders.Insert(0, order);
-        Changed?.Invoke();
         return order;
     }
 

@@ -17,10 +17,4 @@ public partial class MainPage : ContentPage
         base.OnAppearing();
         _viewModel.Initialize();
     }
-
-    protected override void OnDisappearing()
-    {
-        _viewModel.TearDown();
-        base.OnDisappearing();
-    }
 }

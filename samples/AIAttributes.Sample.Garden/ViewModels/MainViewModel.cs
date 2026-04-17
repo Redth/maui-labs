@@ -80,29 +80,19 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         _initialized = true;
 
-        _archive.Changed += RefreshArchive;
         StartNewSession();
         RefreshAvailableTools();
         RefreshArchive();
-    }
-
-    /// <summary>Called from <see cref="MainPage.OnDisappearing"/>.</summary>
-    public void TearDown()
-    {
-        _archive.Changed -= RefreshArchive;
-        _currentCart.Cart.ListChanged -= RefreshShoppingList;
     }
 
     [RelayCommand]
     private void StartNewSession()
     {
         var previous = _currentCart.Cart;
-        previous.ListChanged -= RefreshShoppingList;
         try { previous.Cts.Cancel(); } catch { /* best effort */ }
         previous.Cts.Dispose();
 
         var fresh = new Cart($"cart-{Guid.NewGuid():N}");
-        fresh.ListChanged += RefreshShoppingList;
         _currentCart.Set(fresh);
 
         _history =
@@ -149,6 +139,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
             RefreshShoppingList();
+            RefreshArchive();
         }
     }
 
@@ -328,6 +319,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
             RefreshShoppingList();
+            RefreshArchive();
         }
     }
 

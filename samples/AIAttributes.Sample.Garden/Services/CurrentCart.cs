@@ -14,13 +14,7 @@ public sealed class CurrentCart
 
     public Cart Cart => _cart;
 
-    public event Action<Cart>? Changed;
-
-    public void Set(Cart cart)
-    {
-        _cart = cart;
-        Changed?.Invoke(cart);
-    }
+    public void Set(Cart cart) => _cart = cart;
 
     // ── AI Tool Methods ──────────────────────────────────────
 
