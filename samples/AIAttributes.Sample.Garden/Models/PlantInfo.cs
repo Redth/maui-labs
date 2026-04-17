@@ -8,4 +8,5 @@ public record PlantInfo(
     string ScientificName,
     string Category,
     string SunlightNeeds,
-    int WateringFrequencyDays);
+    int WateringFrequencyDays,
+    string Emoji);

@@ -33,7 +33,7 @@ public class GardenService
         if (existing is not null)
             throw new InvalidOperationException($"A plant named '{nickname}' already exists in your garden.");
 
-        var entry = new PlantEntry(nickname, species, location, DateTime.Now);
+        var entry = new PlantEntry(nickname, species, location, DateTime.Now, PlantEmoji.ForSpecies(species));
         _garden.Add(entry);
         return entry;
     }

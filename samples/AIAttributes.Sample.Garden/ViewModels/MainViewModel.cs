@@ -27,6 +27,18 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
     public ObservableCollection<PlantEntry> GardenPlants { get; } = [];
 
+    /// <summary>
+    /// Seed prompts shown as one-tap chips in the empty view so the user
+    /// can immediately exercise the registered tools.
+    /// </summary>
+    public IReadOnlyList<string> SuggestionPrompts { get; } =
+    [
+        "Add basil to my kitchen windowsill",
+        "What plants are easy to grow indoors?",
+        "Water everything in my garden",
+        "Give me a care guide for tomatoes",
+    ];
+
     private bool _isBusy;
     public bool IsBusy
     {
@@ -62,6 +74,17 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     public ICommand ApproveCommand => new Command(async () => await ResolveApprovalAsync(approved: true));
     public ICommand RejectCommand => new Command(async () => await ResolveApprovalAsync(approved: false, reason: "User rejected"));
 
+    /// <summary>
+    /// Fills the input with a suggestion and sends it immediately.
+    /// </summary>
+    public ICommand RunSuggestionCommand => new Command<string>(async prompt =>
+    {
+        if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
+            return;
+        InputText = prompt;
+        await SendAsync();
+    });
+
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
 
@@ -79,7 +102,10 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
         _history =
         [
             new(ChatRole.System,
-                "You are a helpful gardening assistant. Help users browse plants, manage their garden, and get care advice. Be concise and friendly.")
+                """
+                You are a helpful gardening assistant. Help users browse plants, 
+                manage their garden, and get care advice. Be concise and friendly.
+                """)
         ];
 
         // FunctionInvokingChatClient is built per session so the session

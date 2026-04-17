@@ -8,4 +8,5 @@ public record PlantEntry(
     string Species,
     string Location,
     DateTime AddedAt,
+    string Emoji,
     DateTime? LastWatered = null);

@@ -45,17 +45,23 @@
                                 BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
                                 StrokeThickness="0"
                                 StrokeShape="RoundRectangle 8">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding Nickname}"
-                                       FontAttributes="Bold"
-                                       FontSize="13" />
-                                <Label Text="{Binding Species}"
-                                       FontSize="11"
-                                       TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
-                                <Label Text="{Binding Location, StringFormat='📍 {0}'}"
-                                       FontSize="11"
-                                       TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
-                            </VerticalStackLayout>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Grid.Column="0"
+                                       Text="{Binding Emoji}"
+                                       FontSize="22"
+                                       VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="{Binding Nickname}"
+                                           FontAttributes="Bold"
+                                           FontSize="13" />
+                                    <Label Text="{Binding Species}"
+                                           FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#8FBF8F}" />
+                                    <Label Text="{Binding Location, StringFormat='📍 {0}'}"
+                                           FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#888, Dark=#AAA}" />
+                                </VerticalStackLayout>
+                            </Grid>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

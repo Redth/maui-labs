@@ -12,16 +12,16 @@ public class PlantCatalogService
 {
     private static readonly List<PlantInfo> Catalog =
     [
-        new("Tomato", "Solanum lycopersicum", "Vegetable", "Full Sun", 2),
-        new("Basil", "Ocimum basilicum", "Herb", "Full Sun", 1),
-        new("Lavender", "Lavandula angustifolia", "Herb", "Full Sun", 7),
-        new("Fern", "Nephrolepis exaltata", "Houseplant", "Low Light", 3),
-        new("Mint", "Mentha spicata", "Herb", "Partial Sun", 2),
-        new("Sunflower", "Helianthus annuus", "Flower", "Full Sun", 3),
-        new("Aloe Vera", "Aloe barbadensis", "Succulent", "Full Sun", 14),
-        new("Snake Plant", "Dracaena trifasciata", "Houseplant", "Low Light", 14),
-        new("Rosemary", "Salvia rosmarinus", "Herb", "Full Sun", 5),
-        new("Pepper", "Capsicum annuum", "Vegetable", "Full Sun", 2),
+        new("Tomato", "Solanum lycopersicum", "Vegetable", "Full Sun", 2, PlantEmoji.ForSpecies("Tomato")),
+        new("Basil", "Ocimum basilicum", "Herb", "Full Sun", 1, PlantEmoji.ForSpecies("Basil")),
+        new("Lavender", "Lavandula angustifolia", "Herb", "Full Sun", 7, PlantEmoji.ForSpecies("Lavender")),
+        new("Fern", "Nephrolepis exaltata", "Houseplant", "Low Light", 3, PlantEmoji.ForSpecies("Fern")),
+        new("Mint", "Mentha spicata", "Herb", "Partial Sun", 2, PlantEmoji.ForSpecies("Mint")),
+        new("Sunflower", "Helianthus annuus", "Flower", "Full Sun", 3, PlantEmoji.ForSpecies("Sunflower")),
+        new("Aloe Vera", "Aloe barbadensis", "Succulent", "Full Sun", 14, PlantEmoji.ForSpecies("Aloe Vera")),
+        new("Snake Plant", "Dracaena trifasciata", "Houseplant", "Low Light", 14, PlantEmoji.ForSpecies("Snake Plant")),
+        new("Rosemary", "Salvia rosmarinus", "Herb", "Full Sun", 5, PlantEmoji.ForSpecies("Rosemary")),
+        new("Pepper", "Capsicum annuum", "Vegetable", "Full Sun", 2, PlantEmoji.ForSpecies("Pepper")),
     ];
 
     private static readonly Dictionary<string, CareGuide> CareGuides = new(StringComparer.OrdinalIgnoreCase)
