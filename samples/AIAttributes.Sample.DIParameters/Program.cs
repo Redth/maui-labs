@@ -4,6 +4,7 @@ using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Maui.AI.Attributes;
 
 // This sample focuses on the parameter binding shapes Microsoft.Maui.AI.Attributes
@@ -40,12 +41,23 @@ if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(endpoint) || string.IsN
 
 var services = new ServiceCollection();
 
+// Logging. PigLatinTranslator takes an ILogger<T> in its constructor — this
+// demonstrates nested DI: the [FromServices] ITranslator parameter resolves
+// to PigLatinTranslator, which in turn needs a logger.
+services.AddLogging(b =>
+    b.AddSimpleConsole(o =>
+    {
+        o.SingleLine = true;
+        o.IncludeScopes = false;
+        o.TimestampFormat = null;
+    }));
+
 // Backing service that owns the [ExportAIFunction] method.
 services.AddSingleton<TranslatorService>();
 
-// Inferred DI: ITranslator is an interface. The generator sees the parameter
-// type is abstract and emits a `sp.GetRequiredService<ITranslator>()` call
-// at invocation time, hiding it from the AI model's schema.
+// [FromServices] ITranslator resolves to this implementation. It in turn takes
+// ILogger<PigLatinTranslator> in its constructor, so the full dependency chain
+// is: tool method → ITranslator → ILogger<T>.
 services.AddSingleton<ITranslator, PigLatinTranslator>();
 
 // Keyed DI: [FromKeyedServices("premium")] pulls this specific instance.

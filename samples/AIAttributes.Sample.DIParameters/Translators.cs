@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace AIAttributes.Sample.DIParameters;
 
 /// <summary>
@@ -10,9 +12,26 @@ public interface ITranslator
     string Translate(string text);
 }
 
+/// <summary>
+/// Takes <see cref="ILogger{T}"/> as a constructor dependency — this exercises
+/// <em>nested</em> DI: the tool method asks for <c>ITranslator</c>, which the
+/// container resolves to this type, which in turn needs a logger. The logger
+/// is produced by the standard <c>AddLogging()</c> registration and appears
+/// in the console output, making the resolution chain visible.
+/// </summary>
 public sealed class PigLatinTranslator : ITranslator
 {
-    public string Translate(string text) =>
-        string.Join(' ', text.Split(' ').Select(w =>
+    private readonly ILogger<PigLatinTranslator> _logger;
+
+    public PigLatinTranslator(ILogger<PigLatinTranslator> logger)
+    {
+        _logger = logger;
+    }
+
+    public string Translate(string text)
+    {
+        _logger.LogInformation("Translating {WordCount} word(s) to pig latin.", text.Split(' ').Length);
+        return string.Join(' ', text.Split(' ').Select(w =>
             w.Length > 1 ? w[1..] + w[0] + "ay" : w));
+    }
 }

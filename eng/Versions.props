@@ -26,6 +26,7 @@
     <MicrosoftExtensionsHttpVersion>10.0.5</MicrosoftExtensionsHttpVersion>
     <MicrosoftExtensionsHostingVersion>10.0.5</MicrosoftExtensionsHostingVersion>
     <MicrosoftExtensionsLoggingAbstractionsVersion>10.0.5</MicrosoftExtensionsLoggingAbstractionsVersion>
+    <MicrosoftExtensionsLoggingConsoleVersion>10.0.5</MicrosoftExtensionsLoggingConsoleVersion>
     <MicrosoftExtensionsLoggingDebugVersion>10.0.5</MicrosoftExtensionsLoggingDebugVersion>
     <MicrosoftExtensionsConfigurationJsonVersion>10.0.5</MicrosoftExtensionsConfigurationJsonVersion>
     <MicrosoftExtensionsConfigurationUserSecretsVersion>10.0.5</MicrosoftExtensionsConfigurationUserSecretsVersion>
