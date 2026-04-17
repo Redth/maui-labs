@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 
@@ -6,22 +6,10 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// View model for one chat message row. <see cref="Text"/> is mutable so a
 /// streaming assistant reply can be updated in place while bound.
 /// </summary>
-public sealed class ChatMessageViewModel(ChatMessageKind kind, string text) : INotifyPropertyChanged
+public sealed partial class ChatMessageViewModel(ChatMessageKind kind, string text) : ObservableObject
 {
-    private string _text = text;
-
     public ChatMessageKind Kind { get; } = kind;
 
-    public string Text
-    {
-        get => _text;
-        set
-        {
-            if (_text == value) return;
-            _text = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Text)));
-        }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
+    [ObservableProperty]
+    private string _text = text;
 }

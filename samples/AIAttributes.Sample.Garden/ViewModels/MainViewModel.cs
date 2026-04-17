@@ -1,9 +1,8 @@
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Windows.Input;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.AI;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
@@ -13,19 +12,28 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// the per-session <see cref="ChatSession"/>, and projects the singleton
 /// <see cref="OrderArchive"/> into the UI.
 /// </summary>
-public sealed class MainViewModel(
-    IServiceProvider rootProvider,
-    IChatClient innerChatClient,
-    CurrentSession currentSession,
-    OrderArchive archive) : INotifyPropertyChanged
+public sealed partial class MainViewModel : ObservableObject
 {
-    private readonly IChatClient _chatClient = new ChatClientBuilder(innerChatClient)
-        .UseFunctionInvocation()
-        .Build(rootProvider);
+    private readonly IChatClient _chatClient;
+    private readonly CurrentSession _currentSession;
+    private readonly OrderArchive _archive;
 
     private List<ChatMessage> _history = [];
     private ToolApprovalRequestContent? _pendingApproval;
     private bool _initialized;
+
+    public MainViewModel(
+        IServiceProvider rootProvider,
+        IChatClient innerChatClient,
+        CurrentSession currentSession,
+        OrderArchive archive)
+    {
+        _chatClient = new ChatClientBuilder(innerChatClient)
+            .UseFunctionInvocation()
+            .Build(rootProvider);
+        _currentSession = currentSession;
+        _archive = archive;
+    }
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
@@ -41,48 +49,26 @@ public sealed class MainViewModel(
         "Re-order my last order",
     ];
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotBusy))]
     private bool _isBusy;
-    public bool IsBusy
-    {
-        get => _isBusy;
-        private set => Set(ref _isBusy, value, nameof(IsBusy), nameof(IsNotBusy));
-    }
+
     public bool IsNotBusy => !IsBusy;
 
+    [ObservableProperty]
     private string? _inputText;
-    public string? InputText
-    {
-        get => _inputText;
-        set => Set(ref _inputText, value);
-    }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInputVisible))]
     private bool _isApprovalPending;
-    public bool IsApprovalPending
-    {
-        get => _isApprovalPending;
-        private set => Set(ref _isApprovalPending, value, nameof(IsApprovalPending), nameof(IsInputVisible));
-    }
+
     public bool IsInputVisible => !IsApprovalPending;
 
+    [ObservableProperty]
     private string _approvalText = "";
-    public string ApprovalText
-    {
-        get => _approvalText;
-        private set => Set(ref _approvalText, value);
-    }
 
+    [ObservableProperty]
     private string _shoppingListTotal = "$0.00";
-    public string ShoppingListTotal
-    {
-        get => _shoppingListTotal;
-        private set => Set(ref _shoppingListTotal, value);
-    }
-
-    public ICommand NewChatCommand { get; private set; } = new Command(() => { });
-    public ICommand SendCommand { get; private set; } = new Command(() => { });
-    public ICommand ApproveCommand { get; private set; } = new Command(() => { });
-    public ICommand RejectCommand { get; private set; } = new Command(() => { });
-    public ICommand RunSuggestionCommand { get; private set; } = new Command<string>(_ => { });
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
@@ -94,20 +80,7 @@ public sealed class MainViewModel(
             return;
         _initialized = true;
 
-        // Wire commands (can't capture `this` in field initializers with primary ctors)
-        NewChatCommand = new Command(StartNewSession);
-        SendCommand = new Command(async () => await SafeAsync(SendAsync));
-        ApproveCommand = new Command(async () => await SafeAsync(() => ResolveApprovalAsync(approved: true)));
-        RejectCommand = new Command(async () => await SafeAsync(() => ResolveApprovalAsync(approved: false, reason: "User rejected")));
-        RunSuggestionCommand = new Command<string>(async prompt =>
-        {
-            if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
-                return;
-            InputText = prompt;
-            await SafeAsync(SendAsync);
-        });
-
-        archive.Changed += RefreshArchive;
+        _archive.Changed += RefreshArchive;
         StartNewSession();
         RefreshAvailableTools();
         RefreshArchive();
@@ -116,32 +89,21 @@ public sealed class MainViewModel(
     /// <summary>Called from <see cref="MainPage.OnDisappearing"/>.</summary>
     public void TearDown()
     {
-        archive.Changed -= RefreshArchive;
-        currentSession.Session.ListChanged -= RefreshShoppingList;
+        _archive.Changed -= RefreshArchive;
+        _currentSession.Session.ListChanged -= RefreshShoppingList;
     }
 
-    private async Task SafeAsync(Func<Task> action)
-    {
-        try
-        {
-            await action();
-        }
-        catch (Exception ex)
-        {
-            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
-        }
-    }
-
+    [RelayCommand]
     private void StartNewSession()
     {
-        var previous = currentSession.Session;
+        var previous = _currentSession.Session;
         previous.ListChanged -= RefreshShoppingList;
         try { previous.Cts.Cancel(); } catch { /* best effort */ }
         previous.Cts.Dispose();
 
         var fresh = new ChatSession($"session-{Guid.NewGuid():N}");
         fresh.ListChanged += RefreshShoppingList;
-        currentSession.Set(fresh);
+        _currentSession.Set(fresh);
 
         _history =
         [
@@ -161,10 +123,54 @@ public sealed class MainViewModel(
         RefreshShoppingList();
     }
 
+    [RelayCommand]
+    private async Task SendAsync()
+    {
+        var text = InputText?.Trim();
+        if (string.IsNullOrWhiteSpace(text) || IsBusy)
+            return;
+
+        InputText = string.Empty;
+        IsBusy = true;
+
+        AddMessage(ChatMessageKind.User, text);
+        _history.Add(new ChatMessage(ChatRole.User, text));
+
+        try
+        {
+            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.Tools] };
+            await SendAndProcessResponseAsync(options);
+        }
+        catch (Exception ex)
+        {
+            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+            RefreshShoppingList();
+        }
+    }
+
+    [RelayCommand]
+    private async Task ApproveAsync() => await ResolveApprovalAsync(approved: true);
+
+    [RelayCommand]
+    private async Task RejectAsync() => await ResolveApprovalAsync(approved: false, reason: "User rejected");
+
+    [RelayCommand]
+    private async Task RunSuggestionAsync(string? prompt)
+    {
+        if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
+            return;
+        InputText = prompt;
+        await SendAsync();
+    }
+
     private void RefreshShoppingList()
     {
         ShoppingList.Clear();
-        var items = currentSession.Session.Snapshot();
+        var items = _currentSession.Session.Snapshot();
         var groups = items
             .GroupBy(i => i.Product.Category, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
@@ -176,7 +182,7 @@ public sealed class MainViewModel(
     private void RefreshArchive()
     {
         PastOrders.Clear();
-        foreach (var o in archive.Orders)
+        foreach (var o in _archive.Orders)
             PastOrders.Add(new OrderViewModel(o));
     }
 
@@ -230,41 +236,13 @@ public sealed class MainViewModel(
             AvailableTools.Add(new ToolInfoViewModel(tool.Name, tool.Description ?? ""));
     }
 
-    private async Task SendAsync()
-    {
-        var text = InputText?.Trim();
-        if (string.IsNullOrWhiteSpace(text) || IsBusy)
-            return;
-
-        InputText = string.Empty;
-        IsBusy = true;
-
-        AddMessage(ChatMessageKind.User, text);
-        _history.Add(new ChatMessage(ChatRole.User, text));
-
-        try
-        {
-            var options = new ChatOptions { Tools = [.. GardenShopTools.Default.Tools] };
-            await SendAndProcessResponseAsync(options);
-        }
-        catch (Exception ex)
-        {
-            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
-        }
-        finally
-        {
-            IsBusy = false;
-            RefreshShoppingList();
-        }
-    }
-
     private async Task SendAndProcessResponseAsync(ChatOptions options)
     {
         var responseText = string.Empty;
         ChatMessageViewModel? assistantMessage = null;
         var updates = new List<ChatResponseUpdate>();
 
-        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, currentSession.Session.Cts.Token))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentSession.Session.Cts.Token))
         {
             updates.Add(update);
 
@@ -359,18 +337,5 @@ public sealed class MainViewModel(
         Messages.Add(vm);
         MessageAdded?.Invoke(vm);
         return vm;
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    private void Set<T>(ref T field, T value, [CallerMemberName] string? name = null, params string[] alsoNotify)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value))
-            return;
-        field = value;
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        foreach (var other in alsoNotify)
-            if (other != name)
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(other));
     }
 }

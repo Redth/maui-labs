@@ -18,7 +18,7 @@
                 <Button Grid.Column="1"
                         Text="New Chat"
                         AutomationId="NewChatButton"
-                        Command="{Binding NewChatCommand}"
+                        Command="{Binding StartNewSessionCommand}"
                         BackgroundColor="Transparent"
                         TextColor="White"
                         BorderColor="White"

@@ -22,7 +22,7 @@
                 <Button Grid.Column="1"
                         Text="New Chat"
                         AutomationId="NewChatButton"
-                        Command="{Binding NewChatCommand}"
+                        Command="{Binding StartNewSessionCommand}"
                         BackgroundColor="#E3F2E3"
                         TextColor="#5B8C5A"
                         FontSize="13"
