@@ -133,36 +133,36 @@
                         a responsive grid that fits the available width. No
                         horizontal scroll, no clipped rows.
                     -->
-                    <ScrollView Grid.Row="3" Orientation="Vertical">
-                        <FlexLayout BindableLayout.ItemsSource="{Binding AvailableTools}"
-                                    AutomationId="ToolList"
-                                    Wrap="Wrap"
-                                    JustifyContent="Center"
-                                    AlignItems="Start"
-                                    AlignContent="Start">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ToolInfoViewModel">
-                                    <Border WidthRequest="200"
-                                            Margin="4"
-                                            Padding="10,8"
-                                            BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
-                                            StrokeThickness="0"
-                                            StrokeShape="RoundRectangle 8">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding Name}"
-                                                   FontAttributes="Bold"
-                                                   FontSize="12"
-                                                   TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
-                                            <Label Text="{Binding Description}"
-                                                   FontSize="11"
-                                                   LineBreakMode="WordWrap"
-                                                   TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </FlexLayout>
-                    </ScrollView>
+                    <FlexLayout Grid.Row="3"
+                                BindableLayout.ItemsSource="{Binding AvailableTools}"
+                                AutomationId="ToolList"
+                                Wrap="Wrap"
+                                JustifyContent="Center"
+                                AlignItems="Start"
+                                AlignContent="Start">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ToolInfoViewModel">
+                                <Border WidthRequest="200"
+                                        Margin="4"
+                                        Padding="10,8"
+                                        BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
+                                        Stroke="{AppThemeBinding Light=#CFE0CD, Dark=#3A4A3A}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Name}"
+                                               FontAttributes="Bold"
+                                               FontSize="14"
+                                               TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
+                                        <Label Text="{Binding Description}"
+                                               FontSize="11"
+                                               LineBreakMode="WordWrap"
+                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
                 </Grid>
             </CollectionView.EmptyView>
         </CollectionView>
