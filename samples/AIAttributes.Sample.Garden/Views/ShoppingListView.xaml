@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
+             xmlns:conv="clr-namespace:AIAttributes.Sample.Garden.Converters"
+             x:Class="AIAttributes.Sample.Garden.Views.ShoppingListView"
+             x:DataType="vm:MainViewModel">
+
+    <ContentView.Resources>
+        <conv:BoolToDimOpacityConverter x:Key="DimWhenPending" />
+    </ContentView.Resources>
+
+    <Grid RowDefinitions="56,*,Auto">
+
+        <Border Grid.Row="0"
+                BackgroundColor="#5B8C5A"
+                StrokeThickness="0"
+                Padding="16,0">
+            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                <Label Text="🛒 Current List"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="White" VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="New Chat"
+                        AutomationId="NewChatButton"
+                        Command="{Binding NewChatCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="White"
+                        BorderColor="White"
+                        BorderWidth="1"
+                        FontSize="12"
+                        CornerRadius="6"
+                        Padding="10,4"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding ShoppingList}"
+                        IsGrouped="True"
+                        SelectionMode="None"
+                        Margin="0,8,0,0">
+            <CollectionView.GroupHeaderTemplate>
+                <DataTemplate x:DataType="vm:CategoryGroup">
+                    <Label Text="{Binding Header}"
+                           FontSize="12"
+                           FontAttributes="Bold"
+                           TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#A8C8A6}"
+                           Padding="14,10,14,4" />
+                </DataTemplate>
+            </CollectionView.GroupHeaderTemplate>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                    <Grid Padding="14,4">
+                        <Border BackgroundColor="{AppThemeBinding Light=White, Dark=#243024}"
+                                Stroke="{AppThemeBinding Light=#D5E5D2, Dark=#3A4A38}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8"
+                                Padding="10,8"
+                                Opacity="{Binding IsPending, Converter={StaticResource DimWhenPending}}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <Label Text="{Binding Emoji}"
+                                       FontSize="22"
+                                       VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding Name}"
+                                           FontSize="14"
+                                           FontAttributes="Bold" />
+                                    <Label Text="{Binding QuantityLine}"
+                                           FontSize="11"
+                                           TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="2"
+                                       Text="{Binding PendingLabel}"
+                                       IsVisible="{Binding IsPending}"
+                                       FontSize="11"
+                                       FontAttributes="Italic"
+                                       TextColor="#B07000"
+                                       VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Padding="24" Spacing="6"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
+                    <Label Text="🌱"
+                           FontSize="36"
+                           HorizontalOptions="Center" />
+                    <Label Text="Your list is empty."
+                           FontSize="13"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
+                    <Label Text="Ask the assistant to add seeds, soil, or tools."
+                           FontSize="11"
+                           HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light=#7A8A7A, Dark=#6A8068}" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <Border Grid.Row="2"
+                BackgroundColor="{AppThemeBinding Light=#E8F2E6, Dark=#22301F}"
+                StrokeThickness="0"
+                Padding="14,10">
+            <Label Text="{Binding ShoppingListTotal}"
+                   FontSize="13"
+                   FontAttributes="Bold"
+                   HorizontalOptions="End"
+                   TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
+        </Border>
+    </Grid>
+
+</ContentView>

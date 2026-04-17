@@ -3,14 +3,9 @@ using AIAttributes.Sample.Garden.Models;
 namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
-/// Per-chat-session state. A plain CLR object — NOT registered in DI as scoped.
-/// Owned by the view model; published to tools through <see cref="ICurrentSession"/>.
+/// Mutable shopping list for one chat conversation. The view model creates
+/// a new instance on "New Chat" and publishes it via <see cref="CurrentSession"/>.
 /// </summary>
-/// <remarks>
-/// This is the Phase 2 punchline: real desktop and mobile apps don't need
-/// <c>IServiceScope</c> to model "per-conversation state" — they just hold
-/// the per-session object on the view model.
-/// </remarks>
 public sealed class ChatSession(string id)
 {
     private readonly List<ListItem> _items = [];

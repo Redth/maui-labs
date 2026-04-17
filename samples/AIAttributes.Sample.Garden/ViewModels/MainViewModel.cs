@@ -13,16 +13,10 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// the per-session <see cref="ChatSession"/>, and projects the singleton
 /// <see cref="OrderArchive"/> into the UI.
 /// </summary>
-/// <remarks>
-/// No <c>IServiceScope</c> anywhere. Per-session state is a plain object
-/// owned by this view model and published to AI tools via
-/// <see cref="ICurrentSession"/>.
-/// </remarks>
 public sealed class MainViewModel(
     IServiceProvider rootProvider,
     IChatClient innerChatClient,
-    ChatSessionFactory sessionFactory,
-    ICurrentSession currentSession,
+    CurrentSession currentSession,
     OrderArchive archive) : INotifyPropertyChanged
 {
     private readonly IChatClient _chatClient = new ChatClientBuilder(innerChatClient)
@@ -36,12 +30,7 @@ public sealed class MainViewModel(
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
     public ObservableCollection<CategoryGroup> ShoppingList { get; } = [];
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
-    public ObservableCollection<DraftViewModel> Drafts { get; } = [];
 
-    /// <summary>
-    /// Seed prompts shown as one-tap chips. Each prompt is fully self-contained
-    /// so the assistant can execute the tool call without a follow-up question.
-    /// </summary>
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
         "Add 5 packs of tomato seeds and a hand trowel to my list",
@@ -112,21 +101,12 @@ public sealed class MainViewModel(
         RefreshArchive();
     }
 
-    /// <summary>
-    /// "New Chat": save the current shopping list as a draft (if any),
-    /// cancel any in-flight tool calls, then publish a fresh
-    /// <see cref="ChatSession"/>. No DI scope manipulation involved.
-    /// </summary>
     private void StartNewSession()
     {
         var previous = currentSession.Session;
-        var pendingItems = previous.Snapshot();
-        if (pendingItems.Count > 0)
-            archive.SaveDraft(pendingItems);
-
         try { previous.Cts.Cancel(); } catch { /* best effort */ }
 
-        var fresh = sessionFactory.Create();
+        var fresh = new ChatSession($"session-{Guid.NewGuid():N}");
         fresh.ListChanged += RefreshShoppingList;
         currentSession.Set(fresh);
 
@@ -165,9 +145,6 @@ public sealed class MainViewModel(
         PastOrders.Clear();
         foreach (var o in archive.Orders)
             PastOrders.Add(new OrderViewModel(o));
-        Drafts.Clear();
-        foreach (var d in archive.Drafts)
-            Drafts.Add(new DraftViewModel(d));
     }
 
     private IEnumerable<ShoppingListItemViewModel> AllListItems =>

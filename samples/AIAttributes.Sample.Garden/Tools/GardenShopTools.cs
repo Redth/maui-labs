@@ -7,9 +7,8 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.Garden.Tools;
 
 /// <summary>
-/// Catalog browse tools — no DI of any kind. The catalog is pure static data
-/// so every method here is a <c>static</c> tool and the generator emits a
-/// fully DI-free <see cref="Microsoft.Extensions.AI.AIFunction"/>.
+/// Catalog browse tools. The catalog is static data so these are pure static
+/// methods with no <c>[FromServices]</c> parameters.
 /// </summary>
 public static class CatalogTools
 {
@@ -38,16 +37,15 @@ public static class CatalogTools
 }
 
 /// <summary>
-/// Per-session shopping list tools. Reads the active <see cref="ChatSession"/>
-/// from the singleton <see cref="ICurrentSession"/> so per-session state
-/// flows in without any <c>IServiceScope</c>.
+/// Shopping list tools. Reads the active <see cref="ChatSession"/> from
+/// <see cref="CurrentSession"/> to add, remove, and manage items.
 /// </summary>
 public static class ShoppingListTools
 {
     [Description("Adds a product to the current shopping list, or increments the quantity if it's already there.")]
     [ExportAIFunction("add_to_list")]
     public static string AddToList(
-        [FromServices] ICurrentSession current,
+        [FromServices] CurrentSession current,
         [Description("The product sku or name to add (e.g., 'seed-tomato' or 'Heirloom Tomato Seeds').")] string skuOrName,
         [Description("How many to add. Defaults to 1.")] int quantity = 1)
     {
@@ -60,7 +58,7 @@ public static class ShoppingListTools
     [Description("Sets a new quantity for an item already on the list. Setting it to 0 removes the item.")]
     [ExportAIFunction("change_qty")]
     public static string ChangeQuantity(
-        [FromServices] ICurrentSession current,
+        [FromServices] CurrentSession current,
         [Description("The product sku or name on the list.")] string skuOrName,
         [Description("The new quantity. Use 0 to remove the item.")] int quantity)
     {
@@ -75,7 +73,7 @@ public static class ShoppingListTools
     [Description("Removes a product from the current shopping list entirely.")]
     [ExportAIFunction("remove_from_list")]
     public static string RemoveFromList(
-        [FromServices] ICurrentSession current,
+        [FromServices] CurrentSession current,
         [Description("The product sku or name to remove.")] string skuOrName)
     {
         var product = ProductCatalog.FindByName(skuOrName)
@@ -88,13 +86,13 @@ public static class ShoppingListTools
     [Description("Returns every item currently on the shopping list with quantity, unit price, and subtotal.")]
     [ExportAIFunction("show_list")]
     public static IReadOnlyList<ListItem> ShowList(
-        [FromServices] ICurrentSession current)
+        [FromServices] CurrentSession current)
         => current.Session.Snapshot();
 
-    [Description("Checks the current shopping list out as a finalized order. Moves it to the singleton order archive and clears the list.")]
+    [Description("Checks the current shopping list out as a finalized order and clears the list.")]
     [ExportAIFunction("checkout_list", ApprovalRequired = true)]
     public static string CheckoutList(
-        [FromServices] ICurrentSession current,
+        [FromServices] CurrentSession current,
         [FromServices] OrderArchive archive)
     {
         var items = current.Session.Snapshot();
@@ -106,10 +104,10 @@ public static class ShoppingListTools
         return $"Order {order.Id} placed with {order.Items.Count} item(s) totalling {order.Total:C}.";
     }
 
-    [Description("Discards every item from the current shopping list without saving it.")]
+    [Description("Discards every item from the current shopping list.")]
     [ExportAIFunction("cancel_list", ApprovalRequired = true)]
     public static string CancelList(
-        [FromServices] ICurrentSession current)
+        [FromServices] CurrentSession current)
     {
         var count = current.Session.Snapshot().Count;
         if (count == 0)
@@ -120,28 +118,21 @@ public static class ShoppingListTools
 }
 
 /// <summary>
-/// Read tools for the durable, singleton archive. Show that singletons are
-/// the natural home for cross-session data.
+/// Tools for browsing the order archive.
 /// </summary>
 public static class OrderArchiveTools
 {
-    [Description("Lists every past order from the singleton archive, newest first.")]
+    [Description("Lists every past order, newest first.")]
     [ExportAIFunction("list_past_orders")]
     public static IReadOnlyList<Order> ListPastOrders(
         [FromServices] OrderArchive archive)
         => archive.Orders;
 
-    [Description("Lists every saved-as-draft shopping list from the archive, newest first. Drafts are created automatically when the user starts a new chat without checking out.")]
-    [ExportAIFunction("list_drafts")]
-    public static IReadOnlyList<Draft> ListDrafts(
-        [FromServices] OrderArchive archive)
-        => archive.Drafts;
-
-    [Description("Copies every item from a past order onto the current shopping list. Useful for re-buying the same kit.")]
+    [Description("Copies every item from a past order onto the current shopping list.")]
     [ExportAIFunction("reorder")]
     public static string Reorder(
         [FromServices] OrderArchive archive,
-        [FromServices] ICurrentSession current,
+        [FromServices] CurrentSession current,
         [Description("The id of the past order to copy (from list_past_orders).")] string orderId)
     {
         var order = archive.FindOrder(orderId)

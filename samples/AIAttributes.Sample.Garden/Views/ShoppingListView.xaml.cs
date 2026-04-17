@@ -1,8 +1,8 @@
 namespace AIAttributes.Sample.Garden.Views;
 
-public partial class WorkspacePanelView : ContentView
+public partial class ShoppingListView : ContentView
 {
-    public WorkspacePanelView()
+    public ShoppingListView()
     {
         InitializeComponent();
     }

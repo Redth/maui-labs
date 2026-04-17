@@ -30,26 +30,11 @@ public static class MauiProgram
         builder.AddMauiDevFlowAgent();
 #endif
 
-        // ── Services ────────────────────────────────────────────────
-        // Everything is a singleton. There is no AddScoped, no
-        // CreateScope() — this is the Phase 2 punchline. Per-session
-        // state lives on a plain ChatSession object owned by the view
-        // model and published to AI tools through ICurrentSession.
         builder.Services.AddSingleton<OrderArchive>();
-        builder.Services.AddSingleton<ChatSessionFactory>();
-        builder.Services.AddSingleton<ICurrentSession, CurrentSession>();
+        builder.Services.AddSingleton<CurrentSession>();
 
-        // ── AI Tools (source-generated) ─────────────────────────────
-        // GardenShopTools.Default.Tools returns the AI tool list. No
-        // DI registration needed — the source generator emits a static
-        // singleton on the context. Each tool reads
-        // AIFunctionArguments.Services at invocation time, which is
-        // populated by UseFunctionInvocation().Build(sp) below.
-
-        // ── AI Client ───────────────────────────────────────────────
         builder.AddOpenAIServices();
 
-        // ── Pages ───────────────────────────────────────────────────
         builder.Services.AddTransient<MainViewModel>();
         builder.Services.AddTransient<MainPage>();
 
@@ -97,8 +82,6 @@ public static class MauiProgram
             new ApiKeyCredential(apiKey));
         var chatClient = azureClient.GetChatClient(deploymentName);
 
-        // Raw IChatClient — the view model wraps it in
-        // ChatClientBuilder(...).UseFunctionInvocation().Build(sp).
         builder.Services.AddSingleton<IChatClient>(chatClient.AsIChatClient());
 
         return builder;

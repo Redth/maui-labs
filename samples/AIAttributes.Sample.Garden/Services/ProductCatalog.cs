@@ -3,8 +3,7 @@ using AIAttributes.Sample.Garden.Models;
 namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
-/// Read-only product catalog for the garden shop. Pure static data — no DI,
-/// no state. Consumed directly by the source generator as a tool source.
+/// Hard-coded product catalog for the garden shop.
 /// </summary>
 public static class ProductCatalog
 {
