@@ -1,5 +1,4 @@
 using AIAttributes.Sample.Garden.Services;
-using AIAttributes.Sample.Garden.Tools;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden;
@@ -9,6 +8,6 @@ namespace AIAttributes.Sample.Garden;
 /// Use <c>GardenShopTools.Default.Tools</c> to get the full tool list.
 /// </summary>
 [AIToolSource(typeof(ProductCatalog))]
-[AIToolSource(typeof(ShoppingListTools))]
-[AIToolSource(typeof(OrderArchiveTools))]
+[AIToolSource(typeof(CurrentCart))]
+[AIToolSource(typeof(OrderArchive))]
 public partial class GardenShopTools : AIToolContext { }
