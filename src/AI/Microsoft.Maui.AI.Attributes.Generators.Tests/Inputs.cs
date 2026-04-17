@@ -156,6 +156,42 @@ internal static class Inputs
         public partial class ToolsCtx : AIToolContext { }
         """;
 
+    public const string FromServicesOnInterface = """
+        using Microsoft.Extensions.DependencyInjection;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface ICache { }
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string name, [FromServices] ICache cache) => name;
+        }
+
+        [AIToolSource(typeof(Svc))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
+    public const string FromServicesOnConcreteClass = """
+        using Microsoft.Extensions.DependencyInjection;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class CacheImpl { }
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string name, [FromServices] CacheImpl cache) => name;
+        }
+
+        [AIToolSource(typeof(Svc))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
     public const string InferredDIInterface = """
         using Microsoft.Maui.AI.Attributes;
 
@@ -446,6 +482,8 @@ internal static class Inputs
         nameof(IServiceProviderAndArgsInjection) => IServiceProviderAndArgsInjection,
         nameof(FromKeyedServicesString) => FromKeyedServicesString,
         nameof(FromKeyedServicesNullKey) => FromKeyedServicesNullKey,
+        nameof(FromServicesOnInterface) => FromServicesOnInterface,
+        nameof(FromServicesOnConcreteClass) => FromServicesOnConcreteClass,
         nameof(InferredDIInterface) => InferredDIInterface,
         nameof(InferredDIAbstractClass) => InferredDIAbstractClass,
         nameof(FromArgumentsOnInterface) => FromArgumentsOnInterface,

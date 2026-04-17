@@ -157,6 +157,7 @@ This library ships as two projects:
 | `ExportAIFunctionAttribute` | Marks a method as an AI tool |
 | `AIToolSourceAttribute` | Declares which service contributes tools to a context |
 | `AIToolContext` | Base class for source-generated tool contexts |
+| `FromServicesAttribute` | Explicitly resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`) |
 | `FromArgumentsAttribute` | Forces an interface/abstract parameter to be bound from the argument dictionary (instead of the default DI inference) |
 | `AddAITools<T>()` | Extension method to register tools from a context |
 

@@ -37,6 +37,8 @@ public class GeneratorSnapshotTests
     [InlineData(nameof(Inputs.IServiceProviderAndArgsInjection))]
     [InlineData(nameof(Inputs.FromKeyedServicesString))]
     [InlineData(nameof(Inputs.FromKeyedServicesNullKey))]
+    [InlineData(nameof(Inputs.FromServicesOnInterface))]
+    [InlineData(nameof(Inputs.FromServicesOnConcreteClass))]
     [InlineData(nameof(Inputs.InferredDIInterface))]
     [InlineData(nameof(Inputs.InferredDIAbstractClass))]
     [InlineData(nameof(Inputs.FromArgumentsOnInterface))]

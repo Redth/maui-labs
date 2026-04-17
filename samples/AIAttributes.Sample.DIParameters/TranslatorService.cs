@@ -5,9 +5,9 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.DIParameters;
 
 /// <summary>
-/// Options the AI model supplies as part of the tool call. Even though
-/// this type is DI-resolvable, <c>[FromArguments]</c> on the parameter
-/// forces it into the tool schema instead of being inferred from DI.
+/// Options the AI model supplies as part of the tool call. A plain record
+/// (not an interface/abstract class) so the generator schemas it by default
+/// — no explicit attribute is needed to keep it in the tool schema.
 /// </summary>
 public sealed record TranslationOptions(bool Verbose = false);
 
@@ -17,14 +17,14 @@ public class TranslatorService
     [ExportAIFunction("translate")]
     public string Translate(
         [Description("The text to translate")] string text,
-        // Inferred DI: interface parameter pulled from the IServiceProvider
-        // at invocation time. Not part of the tool schema.
-        ITranslator translator,
+        // Explicit DI: the ITranslator here is interface-inferred too, but
+        // [FromServices] makes the intent explicit and is required for
+        // concrete/class services.
+        [FromServices] ITranslator translator,
         // Explicit keyed DI: resolved via [FromKeyedServices].
         [FromKeyedServices("premium")] IModelProvider model,
-        // [FromArguments] forces a DI-resolvable type to be treated as a
-        // model argument instead — the AI fills it in per call.
-        [FromArguments] TranslationOptions options,
+        // A plain record — no attribute needed. The AI fills it in per call.
+        TranslationOptions options,
         // Direct CancellationToken support — never appears in the schema.
         CancellationToken ct)
     {
@@ -35,3 +35,4 @@ public class TranslatorService
             : translated;
     }
 }
+
