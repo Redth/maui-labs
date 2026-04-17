@@ -4,9 +4,9 @@ namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
 /// Mutable shopping list for one chat conversation. The view model creates
-/// a new instance on "New Chat" and publishes it via <see cref="CurrentSession"/>.
+/// a new instance on "New Chat" and publishes it via <see cref="CurrentCart"/>.
 /// </summary>
-public sealed class ChatSession(string id)
+public sealed class Cart(string id)
 {
     private readonly List<ListItem> _items = [];
 

@@ -1,70 +1,39 @@
 using System.ComponentModel;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.Tools;
 
 /// <summary>
-/// Catalog browse tools. The catalog is static data so these are pure static
-/// methods with no <c>[FromServices]</c> parameters.
-/// </summary>
-public static class CatalogTools
-{
-    [Description("Searches the garden shop catalog. Returns every product when no query is given, or filters by name, category, or sku.")]
-    [ExportAIFunction("search_products")]
-    public static List<Product> SearchProducts(
-        [Description("Optional text to filter by product name, sku, or category. Leave blank to list everything.")]
-        string? query = null)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-            return [.. ProductCatalog.All];
-
-        var q = query.Trim();
-        return [.. ProductCatalog.All.Where(p =>
-            p.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-            p.Sku.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-            p.Category.Contains(q, StringComparison.OrdinalIgnoreCase))];
-    }
-
-    [Description("Looks up a single product by sku or exact name.")]
-    [ExportAIFunction("get_product")]
-    public static Product? GetProduct(
-        [Description("The product sku or exact name (e.g., 'seed-tomato' or 'Heirloom Tomato Seeds').")]
-        string skuOrName)
-        => ProductCatalog.FindByName(skuOrName);
-}
-
-/// <summary>
-/// Shopping list tools. Reads the active <see cref="ChatSession"/> from
-/// <see cref="CurrentSession"/> to add, remove, and manage items.
+/// Shopping list tools. Reads the active <see cref="Cart"/> from
+/// <see cref="CurrentCart"/> to add, remove, and manage items.
 /// </summary>
 public static class ShoppingListTools
 {
     [Description("Adds a product to the current shopping list, or increments the quantity if it's already there.")]
     [ExportAIFunction("add_to_list")]
     public static string AddToList(
-        [FromServices] CurrentSession current,
+        [FromServices] CurrentCart current,
         [Description("The product sku or name to add (e.g., 'seed-tomato' or 'Heirloom Tomato Seeds').")] string skuOrName,
         [Description("How many to add. Defaults to 1.")] int quantity = 1)
     {
         var product = ProductCatalog.FindByName(skuOrName)
             ?? throw new InvalidOperationException($"No product matched '{skuOrName}'. Try search_products to browse the catalog.");
-        var item = current.Session.AddOrIncrement(product, quantity);
+        var item = current.Cart.AddOrIncrement(product, quantity);
         return $"Added {quantity}× {product.Emoji} {product.Name}. Now {item.Quantity} on the list (subtotal {item.Subtotal:C}).";
     }
 
     [Description("Sets a new quantity for an item already on the list. Setting it to 0 removes the item.")]
     [ExportAIFunction("change_qty")]
     public static string ChangeQuantity(
-        [FromServices] CurrentSession current,
+        [FromServices] CurrentCart current,
         [Description("The product sku or name on the list.")] string skuOrName,
         [Description("The new quantity. Use 0 to remove the item.")] int quantity)
     {
         var product = ProductCatalog.FindByName(skuOrName)
             ?? throw new InvalidOperationException($"No product matched '{skuOrName}'.");
-        var updated = current.Session.ChangeQuantity(product.Sku, quantity);
+        var updated = current.Cart.ChangeQuantity(product.Sku, quantity);
         return updated is null
             ? $"Removed {product.Emoji} {product.Name} from the list."
             : $"Set {product.Emoji} {product.Name} to {updated.Quantity} (subtotal {updated.Subtotal:C}).";
@@ -73,12 +42,12 @@ public static class ShoppingListTools
     [Description("Removes a product from the current shopping list entirely.")]
     [ExportAIFunction("remove_from_list")]
     public static string RemoveFromList(
-        [FromServices] CurrentSession current,
+        [FromServices] CurrentCart current,
         [Description("The product sku or name to remove.")] string skuOrName)
     {
         var product = ProductCatalog.FindByName(skuOrName)
             ?? throw new InvalidOperationException($"No product matched '{skuOrName}'.");
-        return current.Session.Remove(product.Sku)
+        return current.Cart.Remove(product.Sku)
             ? $"Removed {product.Emoji} {product.Name} from the list."
             : $"{product.Name} wasn't on the list.";
     }
@@ -86,59 +55,33 @@ public static class ShoppingListTools
     [Description("Returns every item currently on the shopping list with quantity, unit price, and subtotal.")]
     [ExportAIFunction("show_list")]
     public static IReadOnlyList<ListItem> ShowList(
-        [FromServices] CurrentSession current)
-        => current.Session.Snapshot();
+        [FromServices] CurrentCart current)
+        => current.Cart.Snapshot();
 
     [Description("Checks the current shopping list out as a finalized order and clears the list.")]
     [ExportAIFunction("checkout_list", ApprovalRequired = true)]
     public static string CheckoutList(
-        [FromServices] CurrentSession current,
+        [FromServices] CurrentCart current,
         [FromServices] OrderArchive archive)
     {
-        var items = current.Session.Snapshot();
+        var items = current.Cart.Snapshot();
         if (items.Count == 0)
             return "The shopping list is empty — nothing to check out.";
 
         var order = archive.Place(items);
-        current.Session.Clear();
+        current.Cart.Clear();
         return $"Order {order.Id} placed with {order.Items.Count} item(s) totalling {order.Total:C}.";
     }
 
     [Description("Discards every item from the current shopping list.")]
     [ExportAIFunction("cancel_list", ApprovalRequired = true)]
     public static string CancelList(
-        [FromServices] CurrentSession current)
+        [FromServices] CurrentCart current)
     {
-        var count = current.Session.Snapshot().Count;
+        var count = current.Cart.Snapshot().Count;
         if (count == 0)
             return "The shopping list is already empty.";
-        current.Session.Clear();
+        current.Cart.Clear();
         return $"Discarded {count} item(s) from the shopping list.";
-    }
-}
-
-/// <summary>
-/// Tools for browsing the order archive.
-/// </summary>
-public static class OrderArchiveTools
-{
-    [Description("Lists every past order, newest first.")]
-    [ExportAIFunction("list_past_orders")]
-    public static IReadOnlyList<Order> ListPastOrders(
-        [FromServices] OrderArchive archive)
-        => archive.Orders;
-
-    [Description("Copies every item from a past order onto the current shopping list.")]
-    [ExportAIFunction("reorder")]
-    public static string Reorder(
-        [FromServices] OrderArchive archive,
-        [FromServices] CurrentSession current,
-        [Description("The id of the past order to copy (from list_past_orders).")] string orderId)
-    {
-        var order = archive.FindOrder(orderId)
-            ?? throw new InvalidOperationException($"No past order with id '{orderId}'. Call list_past_orders to see available ids.");
-        foreach (var item in order.Items)
-            current.Session.AddOrIncrement(item.Product, item.Quantity);
-        return $"Copied {order.Items.Count} item(s) from {order.Id} onto the current list.";
     }
 }

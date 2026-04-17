@@ -6,7 +6,7 @@ with a garden-shop shopping assistant.
 - **`ProductCatalog`** — browse/search a hard-coded catalog of seeds, soil,
   fertilizer, tools, and equipment.
 - **`OrderArchive`** — committed orders. Survives "New Chat".
-- **`ChatSession`** — mutable shopping list owned by the current chat session.
+- **`Cart`** — mutable shopping list owned by the current chat session.
   Cleared when you start a new chat.
 
 The left column is the AI chat; the right column shows the current shopping
@@ -20,7 +20,7 @@ every tool across all three `[AIToolSource]` groups.
 | Group | DI dependencies | Tools |
 |---|---|---|
 | `CatalogTools` | None — pure static. | `search_products`, `get_product` |
-| `ShoppingListTools` | `[FromServices] CurrentSession` — the active session. | `add_to_list`, `checkout_list` (approval required) |
+| `ShoppingListTools` | `[FromServices] CurrentCart` — the active session. | `add_to_list`, `checkout_list` (approval required) |
 | `OrderArchiveTools` | `[FromServices] OrderArchive` — singleton. | `list_past_orders`, `reorder` |
 
 ## Approval flow

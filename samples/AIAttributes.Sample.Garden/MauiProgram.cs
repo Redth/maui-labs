@@ -31,7 +31,7 @@ public static class MauiProgram
 #endif
 
         builder.Services.AddSingleton<OrderArchive>();
-        builder.Services.AddSingleton<CurrentSession>();
+        builder.Services.AddSingleton<CurrentCart>();
 
         builder.AddOpenAIServices();
 

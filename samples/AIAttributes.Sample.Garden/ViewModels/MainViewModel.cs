@@ -9,13 +9,13 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
 /// Top-level view model bound to <see cref="MainPage"/>. Owns the chat loop,
-/// the per-session <see cref="ChatSession"/>, and projects the singleton
+/// the per-session <see cref="Cart"/>, and projects the singleton
 /// <see cref="OrderArchive"/> into the UI.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IChatClient _chatClient;
-    private readonly CurrentSession _currentSession;
+    private readonly CurrentCart _currentCart;
     private readonly OrderArchive _archive;
 
     private List<ChatMessage> _history = [];
@@ -25,13 +25,13 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(
         IServiceProvider rootProvider,
         IChatClient innerChatClient,
-        CurrentSession currentSession,
+        CurrentCart currentCart,
         OrderArchive archive)
     {
         _chatClient = new ChatClientBuilder(innerChatClient)
             .UseFunctionInvocation()
             .Build(rootProvider);
-        _currentSession = currentSession;
+        _currentCart = currentCart;
         _archive = archive;
     }
 
@@ -90,20 +90,20 @@ public sealed partial class MainViewModel : ObservableObject
     public void TearDown()
     {
         _archive.Changed -= RefreshArchive;
-        _currentSession.Session.ListChanged -= RefreshShoppingList;
+        _currentCart.Cart.ListChanged -= RefreshShoppingList;
     }
 
     [RelayCommand]
     private void StartNewSession()
     {
-        var previous = _currentSession.Session;
+        var previous = _currentCart.Cart;
         previous.ListChanged -= RefreshShoppingList;
         try { previous.Cts.Cancel(); } catch { /* best effort */ }
         previous.Cts.Dispose();
 
-        var fresh = new ChatSession($"session-{Guid.NewGuid():N}");
+        var fresh = new Cart($"cart-{Guid.NewGuid():N}");
         fresh.ListChanged += RefreshShoppingList;
-        _currentSession.Set(fresh);
+        _currentCart.Set(fresh);
 
         _history =
         [
@@ -170,7 +170,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void RefreshShoppingList()
     {
         ShoppingList.Clear();
-        var items = _currentSession.Session.Snapshot();
+        var items = _currentCart.Cart.Snapshot();
         var groups = items
             .GroupBy(i => i.Product.Category, StringComparer.OrdinalIgnoreCase)
             .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
@@ -242,7 +242,7 @@ public sealed partial class MainViewModel : ObservableObject
         ChatMessageViewModel? assistantMessage = null;
         var updates = new List<ChatResponseUpdate>();
 
-        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentSession.Session.Cts.Token))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentCart.Cart.Cts.Token))
         {
             updates.Add(update);
 

@@ -1,6 +1,6 @@
 using AIAttributes.Sample.Garden.ViewModels;
 
-namespace AIAttributes.Sample.Garden;
+namespace AIAttributes.Sample.Garden.Views;
 
 /// <summary>
 /// Picks a message DataTemplate based on <see cref="ChatMessageViewModel.Kind"/>.

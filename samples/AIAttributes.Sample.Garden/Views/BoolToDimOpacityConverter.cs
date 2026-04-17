@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace AIAttributes.Sample.Garden.Converters;
+namespace AIAttributes.Sample.Garden.Views;
 
 /// <summary>
 /// Maps <c>true</c> to a dimmed opacity (e.g. for ghosting pending-removal
