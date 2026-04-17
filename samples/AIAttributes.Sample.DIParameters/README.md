@@ -7,12 +7,12 @@ A console app that shows the parameter shapes
 
 All on a single `[ExportAIFunction]` method:
 
-- **Inferred DI.** An `ITranslator translator` parameter is resolved from the
+- **`[FromServices]`.** An `ITranslator translator` parameter is resolved from the
   service provider at invocation time. The AI never sees it in the schema.
 - **Keyed DI.** `[FromKeyedServices("premium")] IModelProvider model` pulls
   the keyed registration.
-- **`[FromArguments]`.** Forces `TranslationOptions` — which would otherwise
-  be DI-resolvable — to appear as a tool argument filled in by the model.
+- **Plain record argument.** `TranslationOptions` has no attribute — the generator
+  treats it as a normal model-filled argument because it isn't marked for DI.
 - **`CancellationToken`.** Bound automatically; never in the schema.
 
 ## Why this exists
@@ -20,7 +20,8 @@ All on a single `[ExportAIFunction]` method:
 Other attribute-based libraries typically only wrap `ReflectionAIFunction`
 and expect you to hand-author `AIFunctionFactory.Create` calls to get DI
 support. This sample is the proof the source generator emits the same
-behaviour without runtime reflection.
+behaviour without runtime reflection — and adds first-class
+`[FromServices]`/`[FromKeyedServices]` attribute support on top.
 
 ## Run
 

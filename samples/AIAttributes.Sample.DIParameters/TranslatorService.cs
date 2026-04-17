@@ -17,9 +17,8 @@ public class TranslatorService
     [ExportAIFunction("translate")]
     public string Translate(
         [Description("The text to translate")] string text,
-        // Explicit DI: the ITranslator here is interface-inferred too, but
-        // [FromServices] makes the intent explicit and is required for
-        // concrete/class services.
+        // Explicit DI: [FromServices] resolves from IServiceProvider and
+        // excludes the parameter from the tool schema.
         [FromServices] ITranslator translator,
         // Explicit keyed DI: resolved via [FromKeyedServices].
         [FromKeyedServices("premium")] IModelProvider model,

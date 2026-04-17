@@ -36,21 +36,19 @@ internal sealed class EchoTranslator : TranslatorBase
 
 internal sealed class ContactsToolService
 {
-    [ExportAIFunction("inferred_di_tool")]
-    public string Find(IAddressBook book, string name) => book.Lookup(name);
+    [ExportAIFunction("from_services_tool")]
+    public string Find([FromServices] IAddressBook book, string name) => book.Lookup(name);
 
     [ExportAIFunction("from_keyed_tool")]
     public string FindKeyed(
         [FromKeyedServices("primary")] IAddressBook book,
         string name) => book.Lookup(name);
 
-    [ExportAIFunction("from_arguments_tool")]
-    public string FindExplicitArgs(
-        [FromArguments] IAddressBook book,
-        string name) => book.Lookup(name);
+    [ExportAIFunction("unannotated_interface_tool")]
+    public string FindUnannotated(IAddressBook book, string name) => book.Lookup(name);
 
-    [ExportAIFunction("abstract_inferred_tool")]
-    public string Translate(TranslatorBase t, string text) => t.Translate(text);
+    [ExportAIFunction("abstract_from_services_tool")]
+    public string Translate([FromServices] TranslatorBase t, string text) => t.Translate(text);
 }
 
 [AIToolSource(typeof(ContactsToolService))]
@@ -59,7 +57,7 @@ internal partial class ContactsToolContext : AIToolContext { }
 public class DIParameterBindingTests
 {
     [Fact]
-    public async Task Interface_parameter_is_inferred_as_DI_and_excluded_from_schema()
+    public async Task FromServices_interface_parameter_is_excluded_from_schema()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IAddressBook, AddressBook>();
@@ -67,7 +65,7 @@ public class DIParameterBindingTests
         services.AddAITools<ContactsToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "inferred_di_tool");
+        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "from_services_tool");
         var schema = tool.JsonSchema.ToString();
         Assert.DoesNotContain("\"book\"", schema);
         Assert.Contains("\"name\"", schema);
@@ -77,7 +75,7 @@ public class DIParameterBindingTests
     }
 
     [Fact]
-    public async Task Abstract_parameter_is_inferred_as_DI()
+    public async Task FromServices_abstract_parameter_is_excluded_from_schema()
     {
         var services = new ServiceCollection();
         services.AddSingleton<TranslatorBase, EchoTranslator>();
@@ -85,11 +83,25 @@ public class DIParameterBindingTests
         services.AddAITools<ContactsToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "abstract_inferred_tool");
+        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "abstract_from_services_tool");
         Assert.DoesNotContain("\"t\"", tool.JsonSchema.ToString());
 
         var result = await tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["text"] = "hi" }));
         Assert.Equal("echo:hi", result?.ToString());
+    }
+
+    [Fact]
+    public void Unannotated_interface_parameter_is_included_in_schema()
+    {
+        // No DI inference: an interface parameter without [FromServices] is treated as
+        // a JSON-bound argument (same as reflection-based AIFunctionFactory).
+        var services = new ServiceCollection();
+        services.AddSingleton<ContactsToolService>();
+        services.AddAITools<ContactsToolContext>();
+        using var provider = services.BuildServiceProvider();
+
+        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "unannotated_interface_tool");
+        Assert.Contains("\"book\"", tool.JsonSchema.ToString());
     }
 
     [Fact]
@@ -119,19 +131,5 @@ public class DIParameterBindingTests
         var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "from_keyed_tool");
         await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
             tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "x" })).AsTask());
-    }
-
-    [Fact]
-    public void FromArguments_attribute_includes_interface_param_in_schema()
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton<ContactsToolService>();
-        services.AddAITools<ContactsToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tool = (AIFunction)provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "from_arguments_tool");
-        // The interface param MUST be in the schema (though runtime deserialization will
-        // typically fail — the developer has explicitly asked for this behavior).
-        Assert.Contains("\"book\"", tool.JsonSchema.ToString());
     }
 }

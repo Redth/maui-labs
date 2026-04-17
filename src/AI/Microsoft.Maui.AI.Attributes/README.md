@@ -105,9 +105,7 @@ At compile time the source generator classifies each parameter and emits the rig
 | `AIFunctionArguments` | The raw argument bag. Not in schema. |
 | `[FromServices] IMyThing x` | `provider.GetRequiredService<IMyThing>()`. Not in schema. |
 | `[FromKeyedServices("k")] IMyThing x` | `provider.GetRequiredKeyedService<IMyThing>("k")`. Not in schema. |
-| `IMyThing x` (interface, no attribute) | Inferred DI — `provider.GetRequiredService<IMyThing>()`. Not in schema. A `MAUIAI001` info diagnostic records the inference. |
-| `[FromArguments] IMyThing x` | Escape hatch: include the interface in the schema and deserialize from JSON. |
-| Everything else (`string`, records, enums, collections, …) | Bound from the JSON argument dictionary. |
+| Everything else (`string`, records, enums, interfaces without `[FromServices]`, …) | Bound from the JSON argument dictionary. |
 
 The tool class never calls `AIFunctionFactory.Create` and never uses `MethodInfo.Invoke`. The generated code resolves the host service and each dependency from the service provider, reads arguments from the dictionary, and calls your method directly.
 
@@ -157,8 +155,7 @@ This library ships as two projects:
 | `ExportAIFunctionAttribute` | Marks a method as an AI tool |
 | `AIToolSourceAttribute` | Declares which service contributes tools to a context |
 | `AIToolContext` | Base class for source-generated tool contexts |
-| `FromServicesAttribute` | Explicitly resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`) |
-| `FromArgumentsAttribute` | Forces an interface/abstract parameter to be bound from the argument dictionary (instead of the default DI inference) |
+| `FromServicesAttribute` | Resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`) |
 | `AddAITools<T>()` | Extension method to register tools from a context |
 
 ## Samples
@@ -171,7 +168,7 @@ exactly one story, so pick whichever matches what you want to learn:
 | [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest possible end-to-end: one service, one attribute, one REPL. |
 | [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
 | [`AIAttributes.Sample.KeyedAgents`](../../../samples/AIAttributes.Sample.KeyedAgents) | MAUI | Multiple keyed tool sets in a single app (e.g. read-only vs mutation agent). |
-| [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: inferred DI, `[FromKeyedServices]`, `[FromArguments]`, `CancellationToken`. |
+| [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
 
 ## Hand-crafted tools alongside generated ones
 
@@ -211,7 +208,6 @@ Schema generation still goes through `AIJsonUtilities.CreateFunctionJsonSchema` 
 
 | ID | Severity | Meaning |
 |---|---|---|
-| `MAUIAI001` | Info | A parameter was inferred as a DI service because its type is an interface or abstract class. Use `[FromArguments]` to opt out. |
 | `MAUIAI002` | Warning | A parameter's type is unlikely to round-trip through JSON (e.g. delegate or pointer). Annotate with `[FromServices]` or change the signature. |
 | `MAUIAI003` | Warning | An `[AIToolSource(typeof(T))]` references a type that has no `[ExportAIFunction]` methods. |
 | `MAUIAI004` | Error | The method has an unsupported signature (generic method, `ref`/`out` parameters, etc.). |
@@ -244,7 +240,7 @@ The table below lists every place our behavior differs from `AIFunctionFactory.C
 | 3 | **Static methods** | Fails at `AIFunctionFactory.Create` time with `ArgumentException`. | Skipped silently by the generator. | A static method has no service to inject into; no DI resolution makes sense. If you need this, extract to an instance method or use `AIFunctionFactory.Create` directly for that one tool. |
 | 4 | **Instance disposal** | When `createInstanceFunc` is used, disposable instances are disposed after each invocation. | Not applicable — lifetimes are managed entirely by DI. | DI already manages `IDisposable`/`IAsyncDisposable` lifetimes; re-implementing it would conflict. |
 | 5 | **Automatic DI scope** | None (caller is responsible). | None (caller is responsible). | Matching behavior — neither library creates a scope automatically. **Your `IChatClient` pipeline must thread the appropriate `IServiceProvider` to `FunctionInvokingChatClient`**; see the sample app for a per-chat-session scope pattern. |
-| 6 | **`[FromServices]` / arbitrary DI parameters** | Unsupported by default (would attempt to JSON-serialize the interface). | Supported: parameters typed as `interface` / `abstract class` or annotated `[FromServices]`/`[FromKeyedServices]` are resolved from DI and excluded from the JSON schema. `[FromArguments]` opts back into JSON binding. | A deliberate ergonomic improvement — this is the main reason this library exists. Emits `MAUIAI001` (info) when inferred. |
+| 6 | **`[FromServices]` / arbitrary DI parameters** | Unsupported by default (would attempt to JSON-serialize the interface). | Supported via explicit `[FromServices]` and `[FromKeyedServices]` attributes. Parameters so-marked are resolved from DI and excluded from the JSON schema. | A deliberate ergonomic improvement — this is the main reason this library exists. There is **no implicit DI inference**: interface/abstract parameters without `[FromServices]` are still treated as JSON arguments, matching reflection behavior. |
 | 7 | **`[FromKeyedServices]` with missing key and default value** | Falls back to the parameter's default value. | Throws `InvalidOperationException` from `GetRequiredKeyedService<T>`. | Simplifies the emitted code; the registration-time contract is "this key must exist". If you need optional-keyed semantics, take `[FromKeyedServices] T? p = null` is not enough — inject `IServiceProvider` and call `GetKeyedService(...)` yourself. |
 | 8 | **`IServiceProvider?` parameter, `arguments.Services == null`** | Passes `null` to the method. | Passes the fallback provider captured at registration (never null as long as the tool was registered via `AddAITools<T>()`). | A consequence of (2): we always have *some* provider to give you. |
 | 9 | **`AIFunctionFactoryOptions`** (`Name`, `Description`, `AdditionalProperties`, `ExcludeResultSchema`, `ConfigureParameterBinding`, `MarshalResult`, `SerializerOptions`) | First-class — overrides every aspect of the produced tool. | Not exposed. Name/description come from `[ExportAIFunction]` and `[Description]`; parameter binding is decided at compile time; result marshaling uses the default JSON behavior. | The design goal of this library is compile-time correctness: runtime options that rewrite binding/marshaling behavior undercut that. If you need them, call `AIFunctionFactory.Create` directly for that one tool and mix it into your context via the `AITool` DI registrations (`AddAITools<T>()` preserves any `AITool`s registered before it). |

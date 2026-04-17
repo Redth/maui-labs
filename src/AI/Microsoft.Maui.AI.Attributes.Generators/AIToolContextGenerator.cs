@@ -25,8 +25,8 @@ namespace Microsoft.Maui.AI.Attributes.Generators;
 /// <c>MethodInfo.Invoke</c>.</item>
 /// <item>Binds each parameter at compile time:
 /// <c>CancellationToken</c>/<c>IServiceProvider</c>/<c>AIFunctionArguments</c> get special cases;
-/// <c>[FromServices]</c>/<c>[FromKeyedServices]</c>/interface-or-abstract parameters resolve from
-/// DI; everything else binds from the argument dictionary.</item>
+/// <c>[FromServices]</c>/<c>[FromKeyedServices]</c> parameters resolve from DI; everything else
+/// binds from the argument dictionary.</item>
 /// </list>
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
@@ -35,7 +35,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
     private const string AIToolContextFullName = "Microsoft.Maui.AI.Attributes.AIToolContext";
     private const string AIToolSourceAttributeFullName = "Microsoft.Maui.AI.Attributes.AIToolSourceAttribute";
     private const string ExportAIFunctionAttributeFullName = "Microsoft.Maui.AI.Attributes.ExportAIFunctionAttribute";
-    private const string FromArgumentsAttributeFullName = "Microsoft.Maui.AI.Attributes.FromArgumentsAttribute";
     private const string DescriptionAttributeFullName = "System.ComponentModel.DescriptionAttribute";
     private const string FromServicesAttributeFullName = "Microsoft.Extensions.DependencyInjection.FromServicesAttribute";
     private const string FromKeyedServicesAttributeFullName = "Microsoft.Extensions.DependencyInjection.FromKeyedServicesAttribute";
@@ -298,14 +297,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 // Fall back to JSON binding so compilation succeeds; it will fail at runtime if invoked.
                 kind = ParameterKind.JsonArgument;
             }
-            else if (kind == ParameterKind.InferredDI)
-            {
-                diagnostics.Add(DiagnosticInfo.InferredDI(
-                    method.ToDisplayString(),
-                    p.Name,
-                    typeName,
-                    p.Locations.FirstOrDefault()));
-            }
 
             list.Add(new ParameterModel(
                 p.Name,
@@ -356,11 +347,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             return ParameterKind.FromServices;
         }
 
-        if (p.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == FromArgumentsAttributeFullName))
-        {
-            return IsJsonBindable(p.Type) ? ParameterKind.JsonArgument : ParameterKind.Unknown;
-        }
-
         // Framework-provided types.
         if (fullName is CancellationTokenFullName or "global::" + CancellationTokenFullName)
             return ParameterKind.CancellationToken;
@@ -371,13 +357,8 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         if (p.Type.ToDisplayString() == AIFunctionArgumentsFullName)
             return ParameterKind.AIFunctionArguments;
 
-        // Infer DI for interface or abstract class parameters without explicit attribute.
-        if (p.Type.TypeKind == TypeKind.Interface)
-            return ParameterKind.InferredDI;
-        if (p.Type is INamedTypeSymbol { IsAbstract: true, TypeKind: TypeKind.Class })
-            return ParameterKind.InferredDI;
-
-        // Otherwise, bind from the argument dictionary (JSON).
+        // Otherwise, bind from the argument dictionary (JSON). No DI inference — users must
+        // mark DI parameters with [FromServices] / [FromKeyedServices].
         return IsJsonBindable(p.Type) ? ParameterKind.JsonArgument : ParameterKind.Unknown;
     }
 
@@ -701,7 +682,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 sb.AppendLine($"{indent}var {local} = arguments;");
                 break;
             case ParameterKind.FromServices:
-            case ParameterKind.InferredDI:
                 sb.AppendLine($"{indent}var {local} = __provider.GetRequiredService<{p.TypeName}>();");
                 break;
             case ParameterKind.FromKeyedServices:
@@ -756,7 +736,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         AIFunctionArguments,
         FromServices,
         FromKeyedServices,
-        InferredDI,
         Unknown,
     }
 
@@ -840,13 +819,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 "MAUIAI003",
                 DiagnosticSeverity.Warning,
                 $"[AIToolSource(typeof({typeName}))] references a type with no [ExportAIFunction] methods.",
-                location);
-
-        public static DiagnosticInfo InferredDI(string methodName, string paramName, string typeName, Location? location) =>
-            new(
-                "MAUIAI001",
-                DiagnosticSeverity.Info,
-                $"Parameter '{paramName}' ({typeName}) on '{methodName}' is an interface/abstract type and will be resolved from IServiceProvider. Apply [FromArguments] to include it in the tool schema instead.",
                 location);
 
         public static DiagnosticInfo UnserializableParameter(string methodName, string paramName, string typeName, Location? location) =>

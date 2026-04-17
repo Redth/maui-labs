@@ -9,10 +9,10 @@ using Microsoft.Maui.AI.Attributes;
 // This sample focuses on the parameter binding shapes Microsoft.Maui.AI.Attributes
 // supports — the stuff that makes it more than "attributes wrapping ReflectionAIFunction":
 //
-//   • inferred DI for interface/abstract parameters
+//   • [FromServices] for DI-resolved parameters
 //   • [FromKeyedServices] for keyed services
-//   • [FromArguments] to force a DI-able type into the tool schema
 //   • CancellationToken as a direct parameter
+//   • plain records / primitives bind from the argument dictionary (no annotation)
 //
 // See TranslatorService.Translate for the single tool.
 

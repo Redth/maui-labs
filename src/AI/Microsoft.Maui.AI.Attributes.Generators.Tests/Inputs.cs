@@ -192,57 +192,6 @@ internal static class Inputs
         public partial class ToolsCtx : AIToolContext { }
         """;
 
-    public const string InferredDIInterface = """
-        using Microsoft.Maui.AI.Attributes;
-
-        namespace Sample;
-
-        public interface IThing { string Value { get; } }
-
-        public class Svc
-        {
-            [ExportAIFunction]
-            public string Do(string name, IThing thing) => name + thing.Value;
-        }
-
-        [AIToolSource(typeof(Svc))]
-        public partial class ToolsCtx : AIToolContext { }
-        """;
-
-    public const string InferredDIAbstractClass = """
-        using Microsoft.Maui.AI.Attributes;
-
-        namespace Sample;
-
-        public abstract class ThingBase { public abstract string Value { get; } }
-
-        public class Svc
-        {
-            [ExportAIFunction]
-            public string Do(string name, ThingBase thing) => name + thing.Value;
-        }
-
-        [AIToolSource(typeof(Svc))]
-        public partial class ToolsCtx : AIToolContext { }
-        """;
-
-    public const string FromArgumentsOnInterface = """
-        using Microsoft.Maui.AI.Attributes;
-
-        namespace Sample;
-
-        public interface IThing { string Value { get; } }
-
-        public class Svc
-        {
-            [ExportAIFunction]
-            public string Do(string name, [FromArguments] IThing thing) => name;
-        }
-
-        [AIToolSource(typeof(Svc))]
-        public partial class ToolsCtx : AIToolContext { }
-        """;
-
     public const string ReturnTypeVoid = """
         using Microsoft.Maui.AI.Attributes;
 
@@ -484,9 +433,6 @@ internal static class Inputs
         nameof(FromKeyedServicesNullKey) => FromKeyedServicesNullKey,
         nameof(FromServicesOnInterface) => FromServicesOnInterface,
         nameof(FromServicesOnConcreteClass) => FromServicesOnConcreteClass,
-        nameof(InferredDIInterface) => InferredDIInterface,
-        nameof(InferredDIAbstractClass) => InferredDIAbstractClass,
-        nameof(FromArgumentsOnInterface) => FromArgumentsOnInterface,
         nameof(ReturnTypeVoid) => ReturnTypeVoid,
         nameof(ReturnTypeTask) => ReturnTypeTask,
         nameof(ReturnTypeValueTask) => ReturnTypeValueTask,

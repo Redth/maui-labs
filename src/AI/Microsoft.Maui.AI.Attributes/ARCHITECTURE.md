@@ -13,8 +13,7 @@ This is a compile-time, AOT-friendly, DI-aware replacement for `Microsoft.Extens
  [AIToolSource(typeof(S))]      3. Classify each parameter (CancellationToken,
  partial class Ctx                 IServiceProvider, AIFunctionArguments,
      : AIToolContext;              [FromServices], [FromKeyedServices],
-                                   [FromArguments], interface-infer-DI, or
-                                   JSON-bound).
+                                   or JSON-bound).
                                 4. Emit:
                                    a) A sealed private nested AIFunction
                                       subclass inside the context class.
@@ -40,7 +39,7 @@ private sealed class PlantCatalog_GetPlants_Tool : AIFunction
     // from the schema via AIJsonSchemaCreateOptions.IncludeParameter.
     private static readonly HashSet<string> s_schemaExcludedParameters = new()
     {
-        "db", // interface parameter → inferred DI
+        "db", // [FromServices] IPlantDb db
     };
 
     public PlantCatalog_GetPlants_Tool(IServiceProvider? fallback = null) => _fallback = fallback;
@@ -69,7 +68,7 @@ private sealed class PlantCatalog_GetPlants_Tool : AIFunction
     {
         var __provider = AIToolContext.Helpers.RequireServices(arguments, _fallback);
         var __service = __provider.GetRequiredService<PlantCatalog>();
-        var __arg_db = __provider.GetRequiredService<IPlantDb>();         // inferred DI
+        var __arg_db = __provider.GetRequiredService<IPlantDb>();         // [FromServices]
         var __arg_species = AIToolContext.Helpers.GetRequiredArg<string>(arguments, "species");
         var __arg_max = AIToolContext.Helpers.GetOptionalArg<int>(arguments, "max", 10);
         var __arg_ct = cancellationToken;
@@ -131,7 +130,6 @@ Follow-up: emit the JSON schema as a pre-computed string constant at generator t
 
 | ID | Severity | Description |
 |---|---|---|
-| `MAUIAI001` | Info | Parameter classified as inferred DI (interface/abstract, no `[FromServices]`/`[FromKeyedServices]`/`[FromArguments]`). |
 | `MAUIAI002` | Warning | Parameter type is unlikely to round-trip through JSON (e.g. delegates, pointers). |
 | `MAUIAI003` | Warning | `[AIToolSource]` references a type with no exportable methods. |
 | `MAUIAI004` | Error | Unsupported signature (generic method, `ref`/`out`/`in` parameter). |
@@ -143,7 +141,7 @@ Follow-up: emit the JSON schema as a pre-computed string constant at generator t
 | Build cost per tool | One-time reflection + marshaler build | Zero (emitted at compile time) |
 | Per-invocation overhead | Reflected marshalers + `MethodInfo.Invoke` | Direct method call |
 | Schema build | `CreateFunctionJsonSchema` on each factory call | `CreateFunctionJsonSchema` once (cached in `Lazy<>`) |
-| DI of parameters | Only via `ConfigureParameterBinding` in options | Built in: `[FromServices]`, `[FromKeyedServices]`, interface-inference, `[FromArguments]` |
+| DI of parameters | Only via `ConfigureParameterBinding` in options | Built in: `[FromServices]`, `[FromKeyedServices]` |
 | Scoping | Caller decides | Caller decides (same) |
 | AOT | Not clean | Hot path is clean; schema build is pending |
 
