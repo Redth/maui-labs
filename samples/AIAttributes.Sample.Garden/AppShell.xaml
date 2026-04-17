@@ -5,7 +5,6 @@
        x:Class="AIAttributes.Sample.Garden.AppShell"
        Title="Annotations Sample"
        Shell.FlyoutBehavior="Disabled"
-       Shell.NavBarHasShadow="True"
        Shell.BackgroundColor="#5B8C5A"
        Shell.ForegroundColor="White"
        Shell.TitleColor="White">

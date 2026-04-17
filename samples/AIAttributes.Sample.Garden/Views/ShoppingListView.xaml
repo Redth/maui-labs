@@ -2,13 +2,8 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
-             xmlns:conv="clr-namespace:AIAttributes.Sample.Garden.Converters"
              x:Class="AIAttributes.Sample.Garden.Views.ShoppingListView"
              x:DataType="vm:MainViewModel">
-
-    <ContentView.Resources>
-        <conv:BoolToDimOpacityConverter x:Key="DimWhenPending" />
-    </ContentView.Resources>
 
     <Grid RowDefinitions="56,*,Auto">
 
@@ -58,7 +53,7 @@
                                 StrokeThickness="1"
                                 StrokeShape="RoundRectangle 8"
                                 Padding="10,8"
-                                Opacity="{Binding IsPending, Converter={StaticResource DimWhenPending}}">
+                                Opacity="{Binding IsPending, Converter={StaticResource BoolToDimOpacity}}">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <Label Text="{Binding Emoji}"
                                        FontSize="22"

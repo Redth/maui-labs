@@ -42,14 +42,14 @@
                                 <Label Grid.Column="1" Text="{Binding Total}" FontSize="11" FontAttributes="Bold"
                                        TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
                             </Grid>
-                            <CollectionView ItemsSource="{Binding Lines}" SelectionMode="None">
-                                <CollectionView.ItemTemplate>
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Lines}">
+                                <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="vm:OrderLineViewModel">
                                         <Label Text="{Binding Line}" FontSize="10"
                                                TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
                                     </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

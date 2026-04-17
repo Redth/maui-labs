@@ -4,6 +4,8 @@ namespace AIAttributes.Sample.Garden.Views;
 
 public partial class ChatView : ContentView
 {
+    private MainViewModel? _previousVm;
+
     public ChatView()
     {
         InitializeComponent();
@@ -12,8 +14,13 @@ public partial class ChatView : ContentView
 
     private void OnBindingContextChanged(object? sender, EventArgs e)
     {
-        if (BindingContext is MainViewModel vm)
-            vm.MessageAdded += OnMessageAdded;
+        if (_previousVm is not null)
+            _previousVm.MessageAdded -= OnMessageAdded;
+
+        _previousVm = BindingContext as MainViewModel;
+
+        if (_previousVm is not null)
+            _previousVm.MessageAdded += OnMessageAdded;
     }
 
     private void OnMessageAdded(ChatMessageViewModel message)
@@ -21,7 +28,7 @@ public partial class ChatView : ContentView
         Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
         {
             try { MessagesView.ScrollTo(message, position: ScrollToPosition.End, animate: true); }
-            catch { /* item removed */ }
+            catch { /* item may have been removed */ }
         });
     }
 }

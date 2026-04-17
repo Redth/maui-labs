@@ -25,6 +25,7 @@ public sealed class MainViewModel(
 
     private List<ChatMessage> _history = [];
     private ToolApprovalRequestContent? _pendingApproval;
+    private bool _initialized;
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
@@ -77,34 +78,66 @@ public sealed class MainViewModel(
         private set => Set(ref _shoppingListTotal, value);
     }
 
-    public ICommand NewChatCommand => new Command(StartNewSession);
-    public ICommand SendCommand => new Command(async () => await SendAsync());
-    public ICommand ApproveCommand => new Command(async () => await ResolveApprovalAsync(approved: true));
-    public ICommand RejectCommand => new Command(async () => await ResolveApprovalAsync(approved: false, reason: "User rejected"));
-
-    public ICommand RunSuggestionCommand => new Command<string>(async prompt =>
-    {
-        if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
-            return;
-        InputText = prompt;
-        await SendAsync();
-    });
+    public ICommand NewChatCommand { get; private set; } = new Command(() => { });
+    public ICommand SendCommand { get; private set; } = new Command(() => { });
+    public ICommand ApproveCommand { get; private set; } = new Command(() => { });
+    public ICommand RejectCommand { get; private set; } = new Command(() => { });
+    public ICommand RunSuggestionCommand { get; private set; } = new Command<string>(_ => { });
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
 
+    /// <summary>Called once from <see cref="MainPage.OnAppearing"/>.</summary>
     public void Initialize()
     {
+        if (_initialized)
+            return;
+        _initialized = true;
+
+        // Wire commands (can't capture `this` in field initializers with primary ctors)
+        NewChatCommand = new Command(StartNewSession);
+        SendCommand = new Command(async () => await SafeAsync(SendAsync));
+        ApproveCommand = new Command(async () => await SafeAsync(() => ResolveApprovalAsync(approved: true)));
+        RejectCommand = new Command(async () => await SafeAsync(() => ResolveApprovalAsync(approved: false, reason: "User rejected")));
+        RunSuggestionCommand = new Command<string>(async prompt =>
+        {
+            if (string.IsNullOrWhiteSpace(prompt) || IsBusy)
+                return;
+            InputText = prompt;
+            await SafeAsync(SendAsync);
+        });
+
         archive.Changed += RefreshArchive;
         StartNewSession();
         RefreshAvailableTools();
         RefreshArchive();
     }
 
+    /// <summary>Called from <see cref="MainPage.OnDisappearing"/>.</summary>
+    public void TearDown()
+    {
+        archive.Changed -= RefreshArchive;
+        currentSession.Session.ListChanged -= RefreshShoppingList;
+    }
+
+    private async Task SafeAsync(Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (Exception ex)
+        {
+            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
+        }
+    }
+
     private void StartNewSession()
     {
         var previous = currentSession.Session;
+        previous.ListChanged -= RefreshShoppingList;
         try { previous.Cts.Cancel(); } catch { /* best effort */ }
+        previous.Cts.Dispose();
 
         var fresh = new ChatSession($"session-{Guid.NewGuid():N}");
         fresh.ListChanged += RefreshShoppingList;

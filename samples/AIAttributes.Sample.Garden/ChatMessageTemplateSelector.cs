@@ -18,12 +18,12 @@ public sealed class ChatMessageTemplateSelector : DataTemplateSelector
         item is ChatMessageViewModel m
             ? m.Kind switch
             {
-                ChatMessageKind.User => UserTemplate!,
-                ChatMessageKind.Assistant => AssistantTemplate!,
-                ChatMessageKind.Tool => ToolTemplate!,
-                ChatMessageKind.System => SystemTemplate!,
-                ChatMessageKind.Error => ErrorTemplate!,
-                _ => AssistantTemplate!,
+                ChatMessageKind.User => UserTemplate ?? throw new InvalidOperationException($"{nameof(UserTemplate)} not set"),
+                ChatMessageKind.Assistant => AssistantTemplate ?? throw new InvalidOperationException($"{nameof(AssistantTemplate)} not set"),
+                ChatMessageKind.Tool => ToolTemplate ?? throw new InvalidOperationException($"{nameof(ToolTemplate)} not set"),
+                ChatMessageKind.System => SystemTemplate ?? throw new InvalidOperationException($"{nameof(SystemTemplate)} not set"),
+                ChatMessageKind.Error => ErrorTemplate ?? throw new InvalidOperationException($"{nameof(ErrorTemplate)} not set"),
+                _ => AssistantTemplate ?? throw new InvalidOperationException($"{nameof(AssistantTemplate)} not set"),
             }
-            : AssistantTemplate!;
+            : AssistantTemplate ?? throw new InvalidOperationException($"{nameof(AssistantTemplate)} not set");
 }
