@@ -56,7 +56,10 @@ var chat = new ChatClientBuilder(root.GetRequiredService<IChatClient>())
 var tools = root.GetServices<AITool>().ToList();
 var options = new ChatOptions { Tools = [.. tools] };
 
-Console.WriteLine($"Hello. {tools.Count} tools registered.");
+Console.WriteLine($"{tools.Count} tool(s) registered:");
+foreach (var t in tools)
+    Console.WriteLine($"  - {t.Name}: {t.Description}");
+Console.WriteLine();
 Console.WriteLine("Try asking: \"What's the weather in Tokyo?\"");
 Console.WriteLine("Ctrl+C to exit.");
 Console.WriteLine();
