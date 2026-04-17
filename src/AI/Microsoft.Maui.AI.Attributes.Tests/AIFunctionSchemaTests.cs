@@ -9,12 +9,7 @@ public class AIFunctionSchemaTests
     [Fact]
     public void Json_schema_contains_parameter_info()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool");
+        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "test_tool");
         var function = Assert.IsAssignableFrom<AIFunctionDeclaration>(tool);
 
         Assert.Contains("input", function.JsonSchema.ToString());
@@ -23,13 +18,8 @@ public class AIFunctionSchemaTests
     [Fact]
     public void Schema_contains_parameter_description()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
         var tool = Assert.IsAssignableFrom<AIFunctionDeclaration>(
-            provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool"));
+            TestToolContext.Default.GetTools().First(t => t.Name == "test_tool"));
 
         Assert.Contains("input value", tool.JsonSchema.ToString());
     }
@@ -37,13 +27,8 @@ public class AIFunctionSchemaTests
     [Fact]
     public void Schema_matches_direct_factory_output()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
         var diTool = Assert.IsAssignableFrom<AIFunctionDeclaration>(
-            provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool"));
+            TestToolContext.Default.GetTools().First(t => t.Name == "test_tool"));
 
         var method = typeof(TestToolService).GetMethod(nameof(TestToolService.DoSomething))!;
         var directTool = AIFunctionFactory.Create(
@@ -57,12 +42,7 @@ public class AIFunctionSchemaTests
     [Fact]
     public void Approval_wrapped_tools_preserve_full_ai_visible_schema()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<ComplexSchemaService>();
-        services.AddAITools<ComplexSchemaToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var reflectedTool = provider.GetRequiredService<IEnumerable<AITool>>().Single(t => t.Name == "create_plant_profile");
+        var reflectedTool = ComplexSchemaToolContext.Default.GetTools().Single(t => t.Name == "create_plant_profile");
         var reflectedFunction = Assert.IsAssignableFrom<AIFunction>(reflectedTool);
 
         Assert.IsType<ApprovalRequiredAIFunction>(reflectedTool);

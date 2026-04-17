@@ -21,21 +21,11 @@ namespace Sample
         public static ToolsCtx Default { get; } = new ToolsCtx();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools(global::System.IServiceProvider serviceProvider)
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
         {
             return new global::Microsoft.Extensions.AI.AITool[]
             {
             };
-        }
-
-        /// <inheritdoc />
-        public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)
-        {
-        }
-
-        /// <inheritdoc />
-        public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, string key)
-        {
         }
 
     }

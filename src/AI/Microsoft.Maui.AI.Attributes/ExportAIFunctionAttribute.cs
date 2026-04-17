@@ -4,11 +4,15 @@ namespace Microsoft.Maui.AI.Attributes;
 
 /// <summary>
 /// Marks a method to be exported as an AI tool function.
-/// Methods with this attribute are discovered by <c>AddAITools(...)</c>
-/// and made available to AI clients as callable tools.
+/// Methods with this attribute are discovered by the source generator on any
+/// <see cref="AIToolContext"/> that lists the declaring type via
+/// <see cref="AIToolSourceAttribute"/>, and surfaced through
+/// <c>TContext.Default.GetTools()</c>.
 /// </summary>
 /// <remarks>
-/// The method must be a public instance method on a type that is registered in DI.
+/// The method may be either a public instance method on a type that is
+/// registered in DI, or a public <c>static</c> method (in which case no DI
+/// resolution happens for the host service).
 /// Method and parameter descriptions should preferably use
 /// <see cref="System.ComponentModel.DescriptionAttribute"/>.
 /// Return values are automatically serialized by Microsoft.Extensions.AI.

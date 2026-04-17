@@ -1,16 +1,18 @@
 # Hello — minimal console sample
 
-The smallest possible `Microsoft.Maui.AI.Attributes` app: one service, one
-attribute, one console REPL.
+The smallest possible `Microsoft.Maui.AI.Attributes` app: one DI-bound
+service, one static service, one console REPL.
 
 ## What this demonstrates
 
-- `[ExportAIFunction]` on regular methods of a regular class.
+- `[ExportAIFunction]` on regular instance methods (resolved via DI) **and**
+  on `static` methods (no DI required).
 - `[AIToolSource(typeof(Service))]` on an empty `partial class : AIToolContext`
   — the source generator fills it in at build time.
-- `services.AddAITools<WeatherTools>()` discovering every exported function.
-- `ChatClientBuilder.UseFunctionInvocation()` wiring the tools into an
-  `IChatClient` pipeline.
+- `Tools.Default.GetTools()` as the headline API for getting the tool list.
+  No `services.AddAITools<T>()` registration ceremony.
+- `ChatClientBuilder.UseFunctionInvocation().Build(sp)` wiring the service
+  provider through to each tool invocation.
 
 ## Run
 
@@ -31,8 +33,8 @@ Type a prompt like `What's the weather in Paris?` and the model will call the
 ## When to look at this sample
 
 You are new to the library and want to see the smallest end-to-end wiring.
-Move on to one of the other samples once you want to see scopes, keyed
-agents, or DI parameter binding.
+Move on to one of the other samples once you want to see scopes, approval
+flows, or DI parameter binding.
 
 ## Inspecting the generated source
 

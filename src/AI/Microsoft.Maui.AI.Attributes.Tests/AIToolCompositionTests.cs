@@ -9,18 +9,12 @@ public class AIToolCompositionTests
     [Fact]
     public void Classic_and_discovered_tools_coexist_in_enumerable()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-
         var classicTool = AIFunctionFactory.Create(
             () => "2024-01-15",
             "get_current_date",
             "Gets the current date");
-        services.AddSingleton<AITool>(classicTool);
 
-        using var provider = services.BuildServiceProvider();
-        var allTools = provider.GetRequiredService<IEnumerable<AITool>>().ToList();
+        IList<AITool> allTools = [classicTool, .. TestToolContext.Default.GetTools()];
 
         Assert.Equal(4, allTools.Count);
         Assert.Contains(allTools, t => t.Name == "test_tool");
@@ -32,12 +26,7 @@ public class AIToolCompositionTests
     [Fact]
     public void Ad_hoc_tools_can_be_spread_into_options()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-
-        using var provider = services.BuildServiceProvider();
-        var registeredTools = provider.GetRequiredService<IEnumerable<AITool>>().ToList();
+        var registeredTools = TestToolContext.Default.GetTools();
 
         var adHocTool = AIFunctionFactory.Create(
             (string query) => $"Search results for: {query}",
@@ -54,18 +43,12 @@ public class AIToolCompositionTests
     [Fact]
     public void Classic_tools_registered_before_add_ai_tools_preserve_order()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-
-        services.AddSingleton<AITool>(AIFunctionFactory.Create(
+        var classic = AIFunctionFactory.Create(
             () => 42,
             "answer_everything",
-            "The answer to everything"));
+            "The answer to everything");
 
-        services.AddAITools<TestToolContext>();
-
-        using var provider = services.BuildServiceProvider();
-        var allTools = provider.GetRequiredService<IEnumerable<AITool>>().ToList();
+        IList<AITool> allTools = [classic, .. TestToolContext.Default.GetTools()];
 
         Assert.Equal(4, allTools.Count);
         Assert.Equal("answer_everything", allTools[0].Name);

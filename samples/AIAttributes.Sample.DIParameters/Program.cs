@@ -64,8 +64,10 @@ services.AddSingleton<ITranslator, PigLatinTranslator>();
 services.AddKeyedSingleton<IModelProvider, PremiumModelProvider>("premium");
 services.AddKeyedSingleton<IModelProvider, FreeModelProvider>("free");
 
-// Tool registration.
-services.AddAITools<TranslatorTools>();
+// Tool composition — no DI registration needed; the source generator emits
+// a static Default singleton. Each generated tool reads AIFunctionArguments.Services
+// at invocation time, which ChatClientBuilder.UseFunctionInvocation().Build(sp)
+// populates with the root provider automatically.
 
 // Chat client.
 var azure = new AzureOpenAIClient(new Uri(endpoint), new ApiKeyCredential(apiKey));
@@ -76,7 +78,7 @@ var chat = new ChatClientBuilder(root.GetRequiredService<IChatClient>())
     .UseFunctionInvocation()
     .Build(root);
 
-var tools = root.GetServices<AITool>().ToList();
+var tools = TranslatorTools.Default.GetTools();
 var options = new ChatOptions { Tools = [.. tools] };
 
 Console.WriteLine($"{tools.Count} tool(s) registered:");

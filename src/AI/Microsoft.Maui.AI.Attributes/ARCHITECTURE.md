@@ -1,48 +1,42 @@
 # Architecture — Microsoft.Maui.AI.Attributes
 
-This is a compile-time, AOT-friendly, DI-aware replacement for `Microsoft.Extensions.AI.AIFunctionFactory.Create(MethodInfo, …)`. Where `ReflectionAIFunction` does all its work at runtime (reflect method, build marshalers, derive schema, `MethodInfo.Invoke` on each call), this package emits a sealed `AIFunction` subclass **per method** at build time.
+This is a compile-time, AOT-friendly, DI-aware replacement for `Microsoft.Extensions.AI.AIFunctionFactory.Create(MethodInfo, …)`. Where `ReflectionAIFunction` does all its work at runtime (reflect method, build marshalers, derive schema, `MethodInfo.Invoke` on each call), this package emits a sealed `AIFunction` subclass **per method** at build time, plus a `Default` singleton on the tool context.
 
 ## Compile-time pipeline
 
 ```
  Your code:                     Source generator (AIToolContextGenerator):
  [ExportAIFunction("x")]        1. Find partial classes deriving AIToolContext
- public async Task<Y> Foo(...)     via ForAttributeWithMetadataName.
+ public Task<Y> Foo(...)           via ForAttributeWithMetadataName.
  on service class S;            2. For each [AIToolSource(typeof(S))], scan S
-                                   for [ExportAIFunction] methods.
+                                   for [ExportAIFunction] methods (instance OR static).
  [AIToolSource(typeof(S))]      3. Classify each parameter (CancellationToken,
  partial class Ctx                 IServiceProvider, AIFunctionArguments,
      : AIToolContext;              [FromServices], [FromKeyedServices],
                                    or JSON-bound).
                                 4. Emit:
-                                   a) A sealed private nested AIFunction
-                                      subclass inside the context class.
-                                   b) Overrides of GetTools, RegisterTools,
-                                      RegisterTools(key) that `new` those
-                                      classes (wrapping in
-                                      ApprovalRequiredAIFunction when the
-                                      attribute says so).
+                                   a) A sealed private nested AIFunction subclass
+                                      per method.
+                                   b) A static `Default` singleton on the context.
+                                   c) An override of GetTools() that `new`s each
+                                      tool (wrapping in ApprovalRequiredAIFunction
+                                      when the attribute says so).
 ```
 
-### What the emitted `AIFunction` subclass looks like
+### What the emitted `AIFunction` subclass looks like (instance method)
 
 For `[ExportAIFunction("get_plants")] List<Plant> GetPlants(IPlantDb db, string species, int max = 10, CancellationToken ct = default)`:
 
 ```csharp
 private sealed class PlantCatalog_GetPlants_Tool : AIFunction
 {
-    private readonly IServiceProvider? _fallback;
     private static readonly Lazy<JsonElement> s_schema = new(BuildSchema);
     private static readonly Lazy<JsonElement?> s_returnSchema = new(BuildReturnSchema);
 
-    // Only populated with names bound from DI/special types, so they're excluded
-    // from the schema via AIJsonSchemaCreateOptions.IncludeParameter.
     private static readonly HashSet<string> s_schemaExcludedParameters = new()
     {
         "db", // [FromServices] IPlantDb db
     };
-
-    public PlantCatalog_GetPlants_Tool(IServiceProvider? fallback = null) => _fallback = fallback;
 
     public override string Name => "get_plants";
     public override string Description => "...";
@@ -66,7 +60,7 @@ private sealed class PlantCatalog_GetPlants_Tool : AIFunction
     protected override async ValueTask<object?> InvokeCoreAsync(
         AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
-        var __provider = AIToolContext.Helpers.RequireServices(arguments, _fallback);
+        var __provider = AIToolContext.Helpers.RequireServices(arguments);
         var __service = __provider.GetRequiredService<PlantCatalog>();
         var __arg_db = __provider.GetRequiredService<IPlantDb>();         // [FromServices]
         var __arg_species = AIToolContext.Helpers.GetRequiredArg<string>(arguments, "species");
@@ -78,6 +72,43 @@ private sealed class PlantCatalog_GetPlants_Tool : AIFunction
 }
 ```
 
+### What the emitted subclass looks like (static method, no DI)
+
+For `[ExportAIFunction("say_hello")] public static string SayHello(string name)`:
+
+```csharp
+private sealed class GreetingService_SayHello_Tool : AIFunction
+{
+    public override string Name => "say_hello";
+    // … schema as above …
+
+    protected override async ValueTask<object?> InvokeCoreAsync(
+        AIFunctionArguments arguments, CancellationToken cancellationToken)
+    {
+        // No __provider, no __service — static call.
+        var __arg_name = AIToolContext.Helpers.GetRequiredArg<string>(arguments, "name");
+        var __result = global::MyApp.GreetingService.SayHello(__arg_name);
+        return __result;
+    }
+}
+```
+
+The provider is only required when the tool actually needs it. A static method with zero DI parameters can be invoked with `new AIFunctionArguments(dict)` and no `Services` set.
+
+### What the emitted context looks like
+
+```csharp
+public partial class GardenTools
+{
+    public static GardenTools Default { get; } = new GardenTools();
+
+    public override IReadOnlyList<AITool> GetTools()
+        => new AITool[] { new PlantCatalog_GetPlants_Tool(), /* … */ };
+}
+```
+
+`Default` is the canonical singleton. `GetTools()` allocates the array on each call but the underlying `AIFunction` instances are stateless and safe to reuse. Most callers cache the result once at startup.
+
 All binding happens with statically-typed generic helpers. No `MethodInfo.Invoke`, no `AIFunctionFactory.Create`, no reflection on the hot path.
 
 ## Runtime flow
@@ -86,17 +117,17 @@ All binding happens with statically-typed generic helpers. No `MethodInfo.Invoke
  FunctionInvokingChatClient (from Microsoft.Extensions.AI)
      │
      │ sets AIFunctionArguments.Services = _functionInvocationServices
-     │ (whichever IServiceProvider it was constructed with)
+     │ (the IServiceProvider passed to .Build(sp))
      ▼
  AIFunction.InvokeAsync(args, ct)
      ▼
  generated-tool.InvokeCoreAsync
-     │ — uses args.Services ?? fallback
-     │ — resolves the host service (S) via GetRequiredService<S>()
-     │ — resolves each [FromServices]/[FromKeyedServices]/interface param
+     │ — if any DI parameter exists: __provider = RequireServices(args) (throws if null)
+     │ — if instance method: __service = __provider.GetRequiredService<S>()
+     │ — resolves each [FromServices]/[FromKeyedServices] param
      │ — reads JSON-bound params via Helpers.Get{Required,Optional}Arg<T>
      ▼
- calls your method directly
+ calls your method directly (instance or static)
      │
      ▼
  returns the raw CLR object; FunctionInvokingChatClient JSON-serializes it
@@ -104,14 +135,12 @@ All binding happens with statically-typed generic helpers. No `MethodInfo.Invoke
 
 ## Scope policy
 
-**We never create scopes.** The developer chooses the scope by how they register `IChatClient`:
+**We never create scopes.** The developer chooses the scope by how they build `IChatClient`:
 
-- Register singleton → root provider flows everywhere → scoped services fail under `ValidateScopes=true`, behave like singletons otherwise. Rarely what you want for per-session state.
-- Register scoped (or build the client per-session yourself) → each scope's `IServiceProvider` flows through `FunctionInvokingChatClient` → scoped services are fresh per session and consistent across tool calls within the session. Dispose the scope on "New Chat" for a full reset.
+- `Build(app.Services)` once at startup → root provider flows everywhere → scoped services fail under `ValidateScopes=true`, behave like singletons otherwise. Rarely what you want for per-session state.
+- `Build(scope.ServiceProvider)` per chat session → each scope's provider flows through `FunctionInvokingChatClient` → scoped services are fresh per session and consistent across tool calls within the session. Dispose the scope on "New Chat" for a full reset.
 
-The fallback provider (captured at `AddAITools`/`GetTools` time) only kicks in when `args.Services` is null — typically in unit-test scenarios where tests call `InvokeAsync` directly without a `FunctionInvokingChatClient`.
-
-If both `args.Services` and the fallback are null, `AIToolContext.Helpers.RequireServices` throws `InvalidOperationException` with a descriptive message.
+If `args.Services` is null when the tool needs it, `AIToolContext.Helpers.RequireServices` throws `InvalidOperationException` with a message pointing at `UseFunctionInvocation().Build(sp)` — or suggesting the method be made `static` if no DI is needed.
 
 ## What's still reflective (and what isn't)
 
@@ -141,8 +170,9 @@ Follow-up: emit the JSON schema as a pre-computed string constant at generator t
 | Build cost per tool | One-time reflection + marshaler build | Zero (emitted at compile time) |
 | Per-invocation overhead | Reflected marshalers + `MethodInfo.Invoke` | Direct method call |
 | Schema build | `CreateFunctionJsonSchema` on each factory call | `CreateFunctionJsonSchema` once (cached in `Lazy<>`) |
-| DI of parameters | Only via `ConfigureParameterBinding` in options | Built in: `[FromServices]`, `[FromKeyedServices]` |
+| DI of parameters | Only via `ConfigureParameterBinding` in options | Built-in: `[FromServices]`, `[FromKeyedServices]` |
+| Static methods | Throws | Supported (no DI required) |
 | Scoping | Caller decides | Caller decides (same) |
 | AOT | Not clean | Hot path is clean; schema build is pending |
 
-The input API (`[ExportAIFunction]`, `[AIToolSource]`, `AIToolContext`, `AddAITools<T>()`) is a small, attribute-driven surface designed for apps that want many tools registered declaratively without writing plumbing.
+The input API is a small, attribute-driven surface — `[ExportAIFunction]`, `[AIToolSource]`, `AIToolContext.GetTools()` — designed for apps that want many tools available declaratively without writing plumbing.

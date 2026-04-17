@@ -11,15 +11,14 @@ public class AIFunctionCancellationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<CancellableToolService>();
-        services.AddAITools<CancellableToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "cancellable_tool") as AIFunction;
+        var tool = CancellableToolContext.Default.GetTools().First(t => t.Name == "cancellable_tool") as AIFunction;
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" });
+        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" }) { Services = provider };
 
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => tool!.InvokeAsync(args, cts.Token).AsTask());
     }
@@ -29,11 +28,10 @@ public class AIFunctionCancellationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<CancellableToolService>();
-        services.AddAITools<CancellableToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "cancellable_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" });
+        var tool = CancellableToolContext.Default.GetTools().First(t => t.Name == "cancellable_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" }) { Services = provider };
 
         var result = await tool!.InvokeAsync(args);
 

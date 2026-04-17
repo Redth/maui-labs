@@ -1,10 +1,10 @@
 # Microsoft.Maui.AI.Attributes
 
-Source-generated AI tool discovery for .NET 10. Decorate service methods with `[ExportAIFunction]`, group them into tool contexts with `[AIToolSource]`, and register everything in DI — no runtime reflection needed.
+Source-generated AI tool discovery for .NET 10. Decorate methods with `[ExportAIFunction]`, group them into a tool context with `[AIToolSource]`, and ask the context for its tools — no DI registration ceremony, no runtime reflection on the hot path.
 
-## How It Works
+## How it works
 
-### 1. Annotate your service methods
+### 1. Annotate your methods
 
 ```csharp
 using System.ComponentModel;
@@ -22,10 +22,12 @@ public class PlantCatalogService
 }
 ```
 
-- `[ExportAIFunction]` marks a method as an AI-callable tool
-- `[ExportAIFunction("custom_name")]` overrides the tool name (defaults to method name)
-- `[Description]` on the method and parameters provides AI-visible documentation
-- `ApprovalRequired = true` wraps the tool so it requires user approval before execution
+- `[ExportAIFunction]` marks a method as an AI-callable tool.
+- `[ExportAIFunction("custom_name")]` overrides the tool name (defaults to method name).
+- `[Description]` on the method and parameters provides AI-visible documentation.
+- `[ExportAIFunction(ApprovalRequired = true)]` wraps the tool so it requires user approval before executing.
+
+Methods may be **instance** (resolved from DI) or **static** (no DI required — see below).
 
 ### 2. Define a tool context
 
@@ -34,50 +36,26 @@ using Microsoft.Maui.AI.Attributes;
 
 [AIToolSource(typeof(PlantCatalogService))]
 [AIToolSource(typeof(GardenService))]
-public partial class AllGardenTools : AIToolContext { }
+public partial class GardenTools : AIToolContext { }
 ```
 
-The **source generator** scans each `[AIToolSource]` type for `[ExportAIFunction]` methods at compile time and emits the registration code. No reflection, AOT-safe.
+The **source generator** scans each `[AIToolSource]` type for `[ExportAIFunction]` methods at compile time and emits a sealed `AIFunction` subclass per method, plus a `Default` singleton instance and a `GetTools()` method on the context. No reflection on the invocation path. AOT-friendly.
 
-Multiple contexts can overlap — the same service can appear in several contexts:
+### 3. Get the tools
 
 ```csharp
-[AIToolSource(typeof(PlantCatalogService))]
-public partial class CatalogTools : AIToolContext { }
-
-[AIToolSource(typeof(GardenService))]
-public partial class GardenManagementTools : AIToolContext { }
+// Headline pattern — no DI registration needed.
+IReadOnlyList<AITool> tools = GardenTools.Default.GetTools();
 ```
 
-### 3. Register tools in DI
+That's the whole API. `Default` is a static singleton; `GetTools()` returns the same `AITool[]` every time. Pass it straight into any chat client.
+
+### 4. Wire tools into an `IChatClient`
 
 ```csharp
-// Default (non-keyed) — tools go into IEnumerable<AITool>
-builder.Services.AddAITools<AllGardenTools>();
+var tools = GardenTools.Default.GetTools();
 
-// Keyed — tools registered under a service key
-builder.Services.AddAITools<GardenManagementTools>("management");
-
-// Hand-crafted tools coexist with generated tools
-builder.Services.AddSingleton<AITool>(
-    AIFunctionFactory.Create(() => DateTime.Now.ToString("f"),
-        "get_current_datetime", "Gets the current date and time."));
-```
-
-### 4. Use tools on demand (no DI registration)
-
-```csharp
-var tools = CatalogTools.Default.GetTools(serviceProvider);
-// Use with any IChatClient directly
-```
-
-### 5. Inject tools into an IChatClient pipeline
-
-Use `ConfigureOptions` to inject tools into every request automatically:
-
-```csharp
-var tools = AllGardenTools.Default.GetTools(serviceProvider);
-var client = chatClient.AsBuilder()
+var client = innerChatClient.AsBuilder()
     .UseFunctionInvocation()
     .ConfigureOptions(opts =>
     {
@@ -85,56 +63,80 @@ var client = chatClient.AsBuilder()
         foreach (var tool in tools)
             opts.Tools.Add(tool);
     })
-    .Build(serviceProvider);
+    .Build(serviceProvider);   // ← provider flows to AIFunctionArguments.Services
 
-// No need to pass ChatOptions.Tools on each request — just call:
 await foreach (var update in client.GetStreamingResponseAsync(messages))
-{
     Console.Write(update.Text);
-}
 ```
 
-## Dependency Injection & Parameter Binding
+`UseFunctionInvocation().Build(sp)` populates `AIFunctionArguments.Services` on every tool call. Each generated tool reads that provider to resolve its host service and any `[FromServices]` parameters.
 
-At compile time the source generator classifies each parameter and emits the right binding code. You don't need to configure anything at runtime.
+## Static tools — no DI needed
+
+If your method is `static` and doesn't use `[FromServices]` / `[FromKeyedServices]`, the generator emits a tool that **never touches `IServiceProvider`**. You can call it without DI at all:
+
+```csharp
+public static class GreetingService
+{
+    [Description("Returns a greeting for the given name.")]
+    [ExportAIFunction("say_hello")]
+    public static string SayHello(string name) => $"Hello, {name}!";
+}
+
+[AIToolSource(typeof(GreetingService))]
+public partial class GreetingTools : AIToolContext { }
+
+var tool = (AIFunction)GreetingTools.Default.GetTools().First(t => t.Name == "say_hello");
+var result = await tool.InvokeAsync(
+    new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "Ada" }));
+// result == "Hello, Ada!"
+```
+
+A static method is free to resolve its own dependencies internally if it wants — but the *tool* surface stays DI-free.
+
+## Dependency injection & parameter binding
+
+At compile time the generator classifies each parameter and emits the right binding code:
 
 | Parameter shape | Binding |
 |---|---|
 | `CancellationToken` | Flows from the function-invocation pipeline. **Not** in the tool schema. |
-| `IServiceProvider` | The service provider active for the call. Not in schema. |
+| `IServiceProvider` | The provider on `AIFunctionArguments.Services`. Not in schema. |
 | `AIFunctionArguments` | The raw argument bag. Not in schema. |
 | `[FromServices] IMyThing x` | `provider.GetRequiredService<IMyThing>()`. Not in schema. |
 | `[FromKeyedServices("k")] IMyThing x` | `provider.GetRequiredKeyedService<IMyThing>("k")`. Not in schema. |
-| Everything else (`string`, records, enums, interfaces without `[FromServices]`, …) | Bound from the JSON argument dictionary. |
+| Everything else (`string`, records, enums, …) | Bound from the JSON argument dictionary. |
 
-The tool class never calls `AIFunctionFactory.Create` and never uses `MethodInfo.Invoke`. The generated code resolves the host service and each dependency from the service provider, reads arguments from the dictionary, and calls your method directly.
+For instance methods the host service is resolved via `provider.GetRequiredService<TService>()`. For static methods the call is emitted directly — no service lookup, no provider needed unless a `[FromServices]` parameter forces it.
 
-## Service Lifetimes & Scopes
+If a tool needs a provider and `arguments.Services` is null, `AIToolContext.Helpers.RequireServices` throws `InvalidOperationException` with a message pointing you at `UseFunctionInvocation().Build(sp)` or making the method `static`.
 
-The library **never creates a DI scope**. It uses whatever service provider the caller threads in via `AIFunctionArguments.Services`, falling back to the provider captured at registration time when that's null.
+## Service lifetimes & scopes
 
-You control the scope purely by how you register `IChatClient`:
+The library **never creates a DI scope**. It uses whatever `IServiceProvider` was threaded in via `AIFunctionArguments.Services`.
 
-| Registration | Resulting scope behavior |
+You control the scope purely by how you build your `IChatClient`:
+
+| Build pattern | Resulting scope behavior |
 |---|---|
-| Build `IChatClient` once at app start with `app.Services` | Root-scope: `AddSingleton` and `AddTransient` work. `AddScoped` services are resolved from the root and behave like singletons, which is rarely what you want. |
-| Build `IChatClient` per chat session with a session-specific `IServiceScope` | Scoped services live for the chat session. Reset the chat by disposing the scope and creating a new one. |
-| Register `IChatClient` as transient | New client per resolution — rarely useful. |
+| `Build(app.Services)` once at startup | Root scope. `AddSingleton` and `AddTransient` work. `AddScoped` services are root-resolved. |
+| `Build(scope.ServiceProvider)` per chat session | Scoped services live for the chat session. Reset by disposing the scope and creating a new one. |
 
-Example (scope-per-session, matches `samples/AIAttributes.Sample.Garden`):
+Example (scope-per-session, see `samples/AIAttributes.Sample.Garden`):
 
 ```csharp
 _sessionScope?.Dispose();
 _sessionScope = _rootProvider.CreateScope();
 
 _sessionClient = new ChatClientBuilder(_innerChatClient)
-    .UseFunctionInvocation(configure: fic => fic.AdditionalTools = [.. tools])
-    .Build(_sessionScope.ServiceProvider); // ← scope flows through to tools
+    .UseFunctionInvocation(configure: fic =>
+        fic.AdditionalTools = [.. GardenTools.Default.GetTools()])
+    .Build(_sessionScope.ServiceProvider);
 ```
 
-Inside each tool invocation, `AIFunctionArguments.Services` is the session scope's provider, so `AddScoped<GardenService>()` gets a fresh instance per session but stays consistent across tool calls within the session.
+Each tool invocation receives the session scope's provider through `AIFunctionArguments.Services`, so `AddScoped<GardenService>()` gets a fresh instance per session but stays consistent across tool calls within the session.
 
-## Project References
+## Project references
 
 This library ships as two projects:
 
@@ -148,61 +150,46 @@ This library ships as two projects:
                   ReferenceOutputAssembly="false" />
 ```
 
-## Key Types
+## Key types
 
 | Type | Description |
 |---|---|
-| `ExportAIFunctionAttribute` | Marks a method as an AI tool |
-| `AIToolSourceAttribute` | Declares which service contributes tools to a context |
-| `AIToolContext` | Base class for source-generated tool contexts |
-| `FromServicesAttribute` | Resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`) |
-| `AddAITools<T>()` | Extension method to register tools from a context |
+| `ExportAIFunctionAttribute` | Marks a method as an AI tool. Set `ApprovalRequired = true` to require approval. |
+| `AIToolSourceAttribute` | Declares which type contributes tools to a context. |
+| `AIToolContext` | Base class for source-generated tool contexts. Exposes the abstract `GetTools()` method that the generator overrides. The static `Default` property is also generated. |
+| `FromServicesAttribute` | Resolves a parameter from `IServiceProvider` (lives in `Microsoft.Extensions.DependencyInjection` for discoverability alongside `[FromKeyedServices]`). |
+
+## Mixing in hand-crafted tools
+
+Generated tools are plain `AITool` instances, so they compose with anything:
+
+```csharp
+var tools = new List<AITool>(GardenTools.Default.GetTools())
+{
+    AIFunctionFactory.Create(
+        () => DateTime.UtcNow.ToString("o"),
+        name: "get_current_datetime",
+        description: "Gets the current UTC time."),
+};
+```
+
+Pass the merged list into `ConfigureOptions` (or `FunctionInvokingChatClient.AdditionalTools`) the same way.
 
 ## Samples
 
-The repository ships four focused samples under `samples/`. Each one tells
-exactly one story, so pick whichever matches what you want to learn:
+The repository ships three focused samples under `samples/`. Each tells exactly one story:
 
 | Sample | Type | Demonstrates |
 |---|---|---|
-| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest possible end-to-end: one service, one attribute, one REPL. |
-| [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
-| [`AIAttributes.Sample.KeyedAgents`](../../../samples/AIAttributes.Sample.KeyedAgents) | MAUI | Multiple keyed tool sets in a single app (e.g. read-only vs mutation agent). |
+| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.GetTools()`. |
 | [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
-
-## Hand-crafted tools alongside generated ones
-
-Generated tools are plain `AITool` DI registrations, so they compose with
-anything. To mix hand-crafted `AIFunction`s into the same pipeline, register
-them alongside:
-
-```csharp
-services.AddAITools<MyTools>();
-services.AddSingleton<AITool>(AIFunctionFactory.Create(
-    ([Description("ISO-8601 timestamp")] string _ = "") => DateTime.UtcNow.ToString("o"),
-    name: "get_current_datetime"));
-```
-
-`sp.GetServices<AITool>()` returns both.
-
-## Resolving a specific context's tools
-
-`AddAITools<T>()` also registers the strongly-typed `T` itself. If you need
-only one context's tools (for example, for a panel that exposes different
-capabilities), resolve the context directly:
-
-```csharp
-var gardenTools = sp.GetRequiredService<GardenTools>().GetTools(sp);
-```
-
-Or use the keyed overload: `services.AddAITools<T>("key")` then
-`sp.GetKeyedServices<AITool>("key")`. See the KeyedAgents sample.
+| [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
 
 ## AOT compatibility
 
-The hot invocation path contains **no reflection and no dynamic code emission**: each tool is a compile-time-generated `AIFunction` subclass that looks up its service from `IServiceProvider`, reads named arguments, and calls your method directly.
+The hot invocation path contains **no reflection and no dynamic code emission**. Each tool is a compile-time-emitted `AIFunction` subclass that resolves services from `IServiceProvider`, reads named arguments, and calls your method directly.
 
-Schema generation still goes through `AIJsonUtilities.CreateFunctionJsonSchema` (reflective, but invoked once per tool at warmup and cached). Full AOT schema emission is a planned follow-up.
+Schema generation still flows through `AIJsonUtilities.CreateFunctionJsonSchema` (reflective, but invoked once per tool at warmup and cached behind `Lazy<>`). String-literal schema emission is a planned follow-up.
 
 ## Diagnostics
 
@@ -231,31 +218,29 @@ This library aims to match the runtime behavior of `AIFunctionFactory.Create(Met
 
 ### Intentional behavioral differences
 
-The table below lists every place our behavior differs from `AIFunctionFactory.Create`. Each row links to a corresponding test or documents why no test is applicable.
-
 | # | Area | `AIFunctionFactory.Create` | `Microsoft.Maui.AI.Attributes` | Why |
 |---|------|----------------------------|--------------------------------|-----|
-| 1 | **Source** | Delegates, lambdas, local functions, anonymous methods, and `DynamicMethod` all work. | Only `[ExportAIFunction]` methods on a reference type. Lambdas, local functions, `DynamicMethod` aren't supported. | The generator runs at compile time against Roslyn symbols; it needs a declared method to emit code for. |
-| 2 | **Instance acquisition** | Caller supplies `target`, a `createInstanceFunc`, or lets `ActivatorUtilities` construct the type. | The service is always resolved via `IServiceProvider.GetRequiredService<TService>()` from either `AIFunctionArguments.Services` or the fallback captured at registration. | Encourages clean DI wiring; avoids per-invocation `Activator` reflection. |
-| 3 | **Static methods** | Fails at `AIFunctionFactory.Create` time with `ArgumentException`. | Skipped silently by the generator. | A static method has no service to inject into; no DI resolution makes sense. If you need this, extract to an instance method or use `AIFunctionFactory.Create` directly for that one tool. |
-| 4 | **Instance disposal** | When `createInstanceFunc` is used, disposable instances are disposed after each invocation. | Not applicable — lifetimes are managed entirely by DI. | DI already manages `IDisposable`/`IAsyncDisposable` lifetimes; re-implementing it would conflict. |
-| 5 | **Automatic DI scope** | None (caller is responsible). | None (caller is responsible). | Matching behavior — neither library creates a scope automatically. **Your `IChatClient` pipeline must thread the appropriate `IServiceProvider` to `FunctionInvokingChatClient`**; see the sample app for a per-chat-session scope pattern. |
-| 6 | **`[FromServices]` / arbitrary DI parameters** | Unsupported by default (would attempt to JSON-serialize the interface). | Supported via explicit `[FromServices]` and `[FromKeyedServices]` attributes. Parameters so-marked are resolved from DI and excluded from the JSON schema. | A deliberate ergonomic improvement — this is the main reason this library exists. There is **no implicit DI inference**: interface/abstract parameters without `[FromServices]` are still treated as JSON arguments, matching reflection behavior. |
-| 7 | **`[FromKeyedServices]` with missing key and default value** | Falls back to the parameter's default value. | Throws `InvalidOperationException` from `GetRequiredKeyedService<T>`. | Simplifies the emitted code; the registration-time contract is "this key must exist". If you need optional-keyed semantics, take `[FromKeyedServices] T? p = null` is not enough — inject `IServiceProvider` and call `GetKeyedService(...)` yourself. |
-| 8 | **`IServiceProvider?` parameter, `arguments.Services == null`** | Passes `null` to the method. | Passes the fallback provider captured at registration (never null as long as the tool was registered via `AddAITools<T>()`). | A consequence of (2): we always have *some* provider to give you. |
-| 9 | **`AIFunctionFactoryOptions`** (`Name`, `Description`, `AdditionalProperties`, `ExcludeResultSchema`, `ConfigureParameterBinding`, `MarshalResult`, `SerializerOptions`) | First-class — overrides every aspect of the produced tool. | Not exposed. Name/description come from `[ExportAIFunction]` and `[Description]`; parameter binding is decided at compile time; result marshaling uses the default JSON behavior. | The design goal of this library is compile-time correctness: runtime options that rewrite binding/marshaling behavior undercut that. If you need them, call `AIFunctionFactory.Create` directly for that one tool and mix it into your context via the `AITool` DI registrations (`AddAITools<T>()` preserves any `AITool`s registered before it). |
-| 10 | **`ConfigureParameterBinding`** (custom parameter binders like `FromContext`, `IHttpContextAccessor`, etc.) | First-class runtime hook. | Not supported. Use `[FromServices]`/`[FromKeyedServices]` for DI binding; use `AIFunctionArguments` parameter for ad-hoc context. | Compile-time decision, same rationale as (9). |
+| 1 | **Source** | Delegates, lambdas, local functions, anonymous methods, and `DynamicMethod` all work. | Only `[ExportAIFunction]` methods on a declared type. | The generator runs at compile time against Roslyn symbols; it needs a declared method to emit code for. |
+| 2 | **Instance acquisition** | Caller supplies `target`, a `createInstanceFunc`, or lets `ActivatorUtilities` construct the type. | Instance methods: resolved via `IServiceProvider.GetRequiredService<TService>()` from `AIFunctionArguments.Services`. Static methods: called directly with no service lookup. | Encourages clean DI wiring without per-invocation reflection; static methods stay zero-DI. |
+| 3 | **Static methods** | Fails at `AIFunctionFactory.Create` time with `ArgumentException`. | **Fully supported.** A static target with no `[FromServices]` parameters generates a DI-free tool that works without a service provider. | Lets you author small utility tools (math, formatting, etc.) without wiring DI at all. |
+| 4 | **Instance disposal** | When `createInstanceFunc` is used, disposable instances are disposed after each invocation. | Not applicable — lifetimes are managed entirely by DI. | DI already manages `IDisposable`/`IAsyncDisposable` lifetimes. |
+| 5 | **Automatic DI scope** | None (caller is responsible). | None (caller is responsible). | Matching behavior — neither library creates a scope automatically. **Your `IChatClient` pipeline must thread the appropriate `IServiceProvider` to `FunctionInvokingChatClient`**; see the Garden sample for a per-session-scope pattern. |
+| 6 | **`[FromServices]` / arbitrary DI parameters** | Unsupported by default. | Supported via explicit `[FromServices]` and `[FromKeyedServices]` attributes. Marked parameters resolve from DI and are excluded from the JSON schema. | A deliberate ergonomic improvement — this is the main reason this library exists. There is **no implicit DI inference**: interface/abstract parameters without `[FromServices]` are still treated as JSON arguments, matching reflection behavior. |
+| 7 | **`[FromKeyedServices]` with missing key and default value** | Falls back to the parameter's default value. | Throws `InvalidOperationException` from `GetRequiredKeyedService<T>`. | Simplifies the emitted code; the contract is "this key must exist". |
+| 8 | **`IServiceProvider?` parameter, `arguments.Services == null`** | Passes `null` to the method. | If the tool needs a provider (instance method or `[FromServices]` parameter) and `arguments.Services` is null, throws `InvalidOperationException`. Static no-DI tools accept null `Services` without throwing. | Forces explicit wiring at the build-the-client layer; static tools get an escape hatch. |
+| 9 | **`AIFunctionFactoryOptions`** (`Name`, `Description`, `AdditionalProperties`, `ExcludeResultSchema`, `ConfigureParameterBinding`, `MarshalResult`, `SerializerOptions`) | First-class — overrides every aspect of the produced tool. | Not exposed. Name/description come from `[ExportAIFunction]` and `[Description]`; parameter binding is decided at compile time; result marshaling uses default JSON behavior. | The design goal of this library is compile-time correctness: runtime options that rewrite binding/marshaling behavior undercut that. If you need them, call `AIFunctionFactory.Create` directly for that one tool and merge it into your `tools` list. |
+| 10 | **`ConfigureParameterBinding`** | First-class runtime hook. | Not supported. Use `[FromServices]`/`[FromKeyedServices]` for DI binding; use `AIFunctionArguments` parameter for ad-hoc context. | Compile-time decision, same rationale as (9). |
 | 11 | **`MarshalResult`** | First-class runtime hook for post-processing method results. | Not exposed. Methods return their result directly (`AIContent`-typed returns pass through; other types are serialized to JSON by the `AIFunction` infrastructure). | Same rationale as (9). |
 | 12 | **`ExcludeResultSchema`** | Option to suppress `ReturnJsonSchema`. | Always emits `ReturnJsonSchema` for non-void returns. | No runtime option to set; file a request if needed. |
-| 13 | **`[return: Description]`** | Propagated into `ReturnJsonSchema` as `"description"`. | Not currently propagated — `ReturnJsonSchema` reflects the CLR return type only. | Generator gap; tracked for a follow-up. The method-level `[Description]` *is* propagated into `AIFunction.Description`. |
+| 13 | **`[return: Description]`** | Propagated into `ReturnJsonSchema` as `"description"`. | Not currently propagated — `ReturnJsonSchema` reflects the CLR return type only. The method-level `[Description]` *is* propagated into `AIFunction.Description`. | Generator gap; tracked for a follow-up. |
 | 14 | **`[DefaultValue]` attribute** | Read and used when no C# default is present; also overrides a C# default when both are specified. | Only C# defaults (`p = value`) are honored. | Generator gap; if you need `[DefaultValue]`, annotate with `= value` in the method signature instead. |
 | 15 | **`[DisplayName]` attribute on methods** | Used as the tool name when no explicit name is provided. | Not consulted — use `[ExportAIFunction("explicit_name")]`. | Style choice: one attribute rather than two to look up. |
-| 16 | **Name cleanup for local functions / lambdas** | Strips compiler-generated prefixes and `Async` suffixes, appends an ordinal for uniqueness. | Not applicable (see (1)). Tool names are exactly what you pass to `[ExportAIFunction(...)]` or the method name. | — |
-| 17 | **`IAsyncEnumerable<T>` return type** | Buffered and JSON-serialized to an array. | Returned as-is. The consumer (e.g. `FunctionInvokingChatClient`) will JSON-serialize whatever type it receives, which may or may not work for `IAsyncEnumerable<T>`. | Generator gap; if you need this shape, materialize to an array/list in the method body. Tracked as a follow-up. |
-| 18 | **Generic methods** | Supported if the generic arguments are bound. | Hard error `MAUIAI004` at compile time. | We'd need to pick concrete type arguments at generator time; easier to ask you to declare the specialized overload. |
+| 16 | **Name cleanup for local functions / lambdas** | Strips compiler-generated prefixes and `Async` suffixes. | Not applicable (see (1)). Tool names are exactly what you pass to `[ExportAIFunction(...)]` or the method name. | — |
+| 17 | **`IAsyncEnumerable<T>` return type** | Buffered and JSON-serialized to an array. | Returned as-is. The consumer (e.g. `FunctionInvokingChatClient`) will JSON-serialize whatever type it receives. | Generator gap; if you need this shape, materialize to an array/list in the method body. |
+| 18 | **Generic methods** | Supported if the generic arguments are bound. | Hard error `MAUIAI004` at compile time. | We'd need to pick concrete type arguments at generator time; declare the specialized overload instead. |
 | 19 | **`ref` / `out` / `in` / `ref readonly` parameters** | Skipped with a runtime error. | Hard error `MAUIAI004` at compile time. | Not meaningful for JSON-serialized arguments. |
-| 20 | **`AIFunctionFactory.CreateDeclaration(...)`** | Produces a tool that is advertised but never invocable. | Not provided. | Every generated tool is invocable. If you need a declaration-only tool, register one via `AIFunctionFactory.CreateDeclaration` before `AddAITools<T>()`. |
-| 21 | **`InvalidArguments_Throw`** tests (null `method`, null `target`, non-constructed generic method, etc.) | Validates factory arguments at `Create` time. | Not applicable — there is no factory to pass bad arguments to. | — |
-| 22 | **Invocation result shape** | Default `MarshalResult` serializes the result to `JsonElement`. | Returns the CLR object as-is (consumers typically accept both). | Tests normalize via `JsonSerializer.SerializeToElement` before comparing, so both forms are equivalent for practical consumers. |
+| 20 | **`AIFunctionFactory.CreateDeclaration(...)`** | Produces a tool that is advertised but never invocable. | Not provided. | Every generated tool is invocable. If you need a declaration-only tool, register one via `AIFunctionFactory.CreateDeclaration` and merge it into your `tools` list. |
+| 21 | **`InvalidArguments_Throw`** tests (null `method`, null `target`, etc.) | Validates factory arguments at `Create` time. | Not applicable — there is no factory to pass bad arguments to. | — |
+| 22 | **Invocation result shape** | Default `MarshalResult` serializes the result to `JsonElement`. | Returns the CLR object as-is (consumers typically accept both). | Tests normalize via `JsonSerializer.SerializeToElement` before comparing. |
 
 If you encounter a behavior not covered here, please open an issue — we consider any *silent* divergence a bug.

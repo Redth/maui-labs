@@ -22,11 +22,10 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?>());
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider };
 
         var result1 = await tool!.InvokeAsync(args);
         var result2 = await tool.InvokeAsync(args);
@@ -40,11 +39,10 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddTransient<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?>());
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider };
 
         var result1 = await tool!.InvokeAsync(args);
         var result2 = await tool.InvokeAsync(args);
@@ -58,11 +56,10 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" });
+        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "test_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "hello" }) { Services = provider };
 
         var result = await tool!.InvokeAsync(args);
 
@@ -74,11 +71,10 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "async_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "world" });
+        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "async_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "world" }) { Services = provider };
 
         var result = await tool!.InvokeAsync(args);
 
@@ -90,16 +86,16 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<MultiParamService>();
-        services.AddAITools<MultiParamToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "multi_param") as AIFunction;
+        var tool = MultiParamToolContext.Default.GetTools().First(t => t.Name == "multi_param") as AIFunction;
         var args = new AIFunctionArguments(new Dictionary<string, object?>
         {
             ["firstName"] = "Alice",
             ["lastName"] = "Smith",
             ["age"] = 30,
-        });
+        })
+        { Services = provider };
 
         var result = await tool!.InvokeAsync(args);
 
@@ -111,13 +107,12 @@ public class AIFunctionInvocationTests
     {
         var services = new ServiceCollection();
         services.AddSingleton<DisposableToolService>();
-        services.AddAITools<DisposableToolContext>();
         using var provider = services.BuildServiceProvider();
 
         var disposableService = provider.GetRequiredService<DisposableToolService>();
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "disposable_tool") as AIFunction;
+        var tool = DisposableToolContext.Default.GetTools().First(t => t.Name == "disposable_tool") as AIFunction;
 
-        var result = await tool!.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()));
+        var result = await tool!.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider });
 
         Assert.Equal("value", result?.ToString());
         Assert.False(disposableService.IsDisposed);
@@ -127,11 +122,10 @@ public class AIFunctionInvocationTests
     public async Task Missing_service_registration_throws_on_invocation()
     {
         var services = new ServiceCollection();
-        services.AddAITools<TestToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "test" });
+        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "test_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?> { ["input"] = "test" }) { Services = provider };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => tool!.InvokeAsync(args).AsTask());
     }

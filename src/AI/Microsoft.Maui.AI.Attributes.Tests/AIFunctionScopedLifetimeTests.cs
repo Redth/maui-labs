@@ -20,15 +20,14 @@ public class AIFunctionScopedLifetimeTests
     [Fact]
     public async Task Scoped_with_root_provider_and_validate_scopes_throws()
     {
-        // New design: the library never creates scopes. When the root provider is used with
-        // ValidateScopes=true and no args.Services is supplied, resolving a scoped service throws.
+        // The library never creates scopes. When the root provider is passed with
+        // ValidateScopes=true, resolving a scoped service throws InvalidOperationException.
         var services = new ServiceCollection();
         services.AddScoped<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
-        var args = new AIFunctionArguments(new Dictionary<string, object?>());
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var args = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => tool!.InvokeAsync(args).AsTask());
     }
@@ -38,10 +37,9 @@ public class AIFunctionScopedLifetimeTests
     {
         var services = new ServiceCollection();
         services.AddScoped<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
 
         using var scope = provider.CreateScope();
         var args1 = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = scope.ServiceProvider };
@@ -59,10 +57,9 @@ public class AIFunctionScopedLifetimeTests
     {
         var services = new ServiceCollection();
         services.AddScoped<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
 
         using var scope1 = provider.CreateScope();
         var args1 = new AIFunctionArguments(new Dictionary<string, object?>()) { Services = scope1.ServiceProvider };
@@ -81,11 +78,10 @@ public class AIFunctionScopedLifetimeTests
     {
         var services = new ServiceCollection();
         services.AddScoped<InvocationCounterService>();
-        services.AddAITools<InvocationCounterToolContext>();
         using var provider = services.BuildServiceProvider();
 
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "counter_tool") as AIFunction;
-        var result = await tool!.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()));
+        var tool = InvocationCounterToolContext.Default.GetTools().First(t => t.Name == "counter_tool") as AIFunction;
+        var result = await tool!.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider });
 
         Assert.Equal(1, GetIntResult(result));
     }

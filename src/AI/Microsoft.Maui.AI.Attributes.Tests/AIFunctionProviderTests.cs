@@ -9,14 +9,9 @@ public class AIToolContextTests
     [Fact]
     public void Context_creates_tools_from_source_types()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var serviceProvider = services.BuildServiceProvider();
+        var tools = TestToolContext.Default.GetTools();
 
-        var tools = serviceProvider.GetRequiredService<IEnumerable<AITool>>();
-
-        Assert.Equal(3, tools.Count());
+        Assert.Equal(3, tools.Count);
         Assert.Contains(tools, t => t.Name == "test_tool");
     }
 
@@ -32,12 +27,7 @@ public class AIToolContextTests
     [Fact]
     public void Context_with_multiple_sources_aggregates_tools()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddSingleton<MultiParamService>();
-        using var serviceProvider = services.BuildServiceProvider();
-
-        var tools = CompositeToolContext.Default.GetTools(serviceProvider);
+        var tools = CompositeToolContext.Default.GetTools();
 
         Assert.Equal(4, tools.Count); // 3 from TestToolService + 1 from MultiParamService
         Assert.Contains(tools, t => t.Name == "test_tool");

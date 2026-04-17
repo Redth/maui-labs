@@ -1,14 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Microsoft.Maui.AI.Attributes;
 
 /// <summary>
 /// Base class for source-generated AI tool contexts. Subclasses decorated with
-/// <see cref="AIToolSourceAttribute"/> have their tool registration methods implemented by the
-/// source generator at compile time.
+/// <see cref="AIToolSourceAttribute"/> have their <see cref="GetTools"/> override implemented
+/// by the source generator at compile time.
 /// </summary>
 /// <remarks>
 /// This follows the same pattern as <c>System.Text.Json.Serialization.JsonSerializerContext</c>:
@@ -18,25 +17,17 @@ namespace Microsoft.Maui.AI.Attributes;
 public abstract class AIToolContext
 {
     /// <summary>
-    /// Returns the AI tools defined by this context. Each tool resolves its backing service
-    /// from <see cref="AIFunctionArguments.Services"/> at invocation time, falling back to
-    /// <paramref name="serviceProvider"/> if the caller did not supply a provider.
+    /// Returns the AI tools defined by this context. The returned list is built once and does
+    /// not capture any <see cref="IServiceProvider"/>; tools whose backing method requires
+    /// services read them from <see cref="AIFunctionArguments.Services"/> at invocation time.
     /// </summary>
-    /// <param name="serviceProvider">
-    /// The fallback service provider. Used only when the invoker does not set
-    /// <see cref="AIFunctionArguments.Services"/>. Typically the root DI container.
-    /// </param>
-    public abstract IReadOnlyList<AITool> GetTools(IServiceProvider serviceProvider);
-
-    /// <summary>
-    /// Registers all tools from this context as singleton <see cref="AITool"/> services.
-    /// </summary>
-    public abstract void RegisterTools(IServiceCollection services);
-
-    /// <summary>
-    /// Registers all tools from this context as keyed singleton <see cref="AITool"/> services.
-    /// </summary>
-    public abstract void RegisterTools(IServiceCollection services, string key);
+    /// <remarks>
+    /// If any tool in this context binds to an instance method or a <c>[FromServices]</c>
+    /// parameter, callers must set <see cref="AIFunctionArguments.Services"/> before invoking
+    /// the tool. <see cref="Microsoft.Extensions.AI.ChatClientBuilderChatClientExtensions.UseFunctionInvocation"/>
+    /// combined with <c>ChatClientBuilder.Build(IServiceProvider)</c> does this automatically.
+    /// </remarks>
+    public abstract IReadOnlyList<AITool> GetTools();
 
     /// <summary>
     /// Helpers used by generated code. These are not intended for direct use by applications.
@@ -44,18 +35,19 @@ public abstract class AIToolContext
     protected static class Helpers
     {
         /// <summary>
-        /// Returns the service provider to use for a single invocation. Prefers the caller-
-        /// supplied <see cref="AIFunctionArguments.Services"/> and falls back to the provider
-        /// captured at tool-registration time. Throws if neither is available.
+        /// Returns the service provider supplied by the caller on
+        /// <see cref="AIFunctionArguments.Services"/>. Throws if it is not set.
         /// </summary>
-        public static IServiceProvider RequireServices(AIFunctionArguments args, IServiceProvider? fallback)
+        public static IServiceProvider RequireServices(AIFunctionArguments args)
         {
-            var provider = args.Services ?? fallback;
+            var provider = args.Services;
             if (provider is null)
             {
                 throw new InvalidOperationException(
-                    "No IServiceProvider is available. Either set AIFunctionArguments.Services before invoking the tool, " +
-                    "or construct this tool via AddAITools<T>()/GetTools(serviceProvider) so a fallback provider is captured.");
+                    "This tool requires services but no IServiceProvider was supplied. Set " +
+                    "AIFunctionArguments.Services before invoking the tool (ChatClientBuilder's " +
+                    "UseFunctionInvocation().Build(sp) does this automatically), or author the " +
+                    "backing method as static with no [FromServices] parameters.");
             }
             return provider;
         }

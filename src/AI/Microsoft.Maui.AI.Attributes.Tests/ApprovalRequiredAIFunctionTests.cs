@@ -9,12 +9,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_true_wraps_in_approval_required_ai_function()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<AllApprovalService>();
-        services.AddAITools<AllApprovalToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>().ToList();
+        var tools = AllApprovalToolContext.Default.GetTools();
 
         Assert.Single(tools);
         Assert.IsType<ApprovalRequiredAIFunction>(tools[0]);
@@ -24,12 +19,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_false_does_not_wrap()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        foreach (var tool in provider.GetRequiredService<IEnumerable<AITool>>())
+        foreach (var tool in TestToolContext.Default.GetTools())
         {
             Assert.IsNotType<ApprovalRequiredAIFunction>(tool);
         }
@@ -38,12 +28,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Mixed_service_wraps_only_flagged_methods()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<ApprovalMixedService>();
-        services.AddAITools<ApprovalMixedToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>().ToList();
+        var tools = ApprovalMixedToolContext.Default.GetTools();
 
         Assert.Equal(3, tools.Count);
         Assert.IsNotType<ApprovalRequiredAIFunction>(tools.Single(t => t.Name == "safe_read"));
@@ -54,12 +39,7 @@ public class ApprovalRequiredAIFunctionTests
     [Fact]
     public void Approval_required_preserves_tool_name_and_description()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<ApprovalMixedService>();
-        services.AddAITools<ApprovalMixedToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var wrapped = provider.GetRequiredService<IEnumerable<AITool>>().Single(t => t.Name == "dangerous_write");
+        var wrapped = ApprovalMixedToolContext.Default.GetTools().Single(t => t.Name == "dangerous_write");
 
         Assert.IsType<ApprovalRequiredAIFunction>(wrapped);
         Assert.Equal("dangerous_write", wrapped.Name);

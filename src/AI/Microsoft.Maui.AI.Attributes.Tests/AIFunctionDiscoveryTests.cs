@@ -9,25 +9,15 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Discovers_three_tools_from_test_service()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
+        var tools = TestToolContext.Default.GetTools();
 
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>();
-
-        Assert.Equal(3, tools.Count());
+        Assert.Equal(3, tools.Count);
     }
 
     [Fact]
     public void Uses_custom_name_from_attribute()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>();
+        var tools = TestToolContext.Default.GetTools();
 
         Assert.Contains(tools, t => t.Name == "test_tool");
     }
@@ -35,12 +25,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Falls_back_to_method_name_when_no_name_is_set()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>();
+        var tools = TestToolContext.Default.GetTools();
 
         Assert.Contains(tools, t => t.Name == "GetCount");
     }
@@ -48,12 +33,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Uses_description_from_attribute()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "test_tool");
+        var tool = TestToolContext.Default.GetTools().First(t => t.Name == "test_tool");
 
         Assert.Equal("A test tool", tool.Description);
     }
@@ -61,12 +41,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Uses_description_fallback_from_description_attribute()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<DescriptionFallbackService>();
-        services.AddAITools<DescriptionFallbackToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tool = provider.GetRequiredService<IEnumerable<AITool>>().First(t => t.Name == "fallback_desc");
+        var tool = DescriptionFallbackToolContext.Default.GetTools().First(t => t.Name == "fallback_desc");
 
         Assert.Equal("Method-level description from DescriptionAttribute", tool.Description);
     }
@@ -74,12 +49,7 @@ public class AIFunctionDiscoveryTests
     [Fact]
     public void Ignores_methods_without_export_attribute()
     {
-        var services = new ServiceCollection();
-        services.AddSingleton<TestToolService>();
-        services.AddAITools<TestToolContext>();
-        using var provider = services.BuildServiceProvider();
-
-        var tools = provider.GetRequiredService<IEnumerable<AITool>>();
+        var tools = TestToolContext.Default.GetTools();
 
         Assert.DoesNotContain(tools, t => t.Name == "InternalMethod");
     }

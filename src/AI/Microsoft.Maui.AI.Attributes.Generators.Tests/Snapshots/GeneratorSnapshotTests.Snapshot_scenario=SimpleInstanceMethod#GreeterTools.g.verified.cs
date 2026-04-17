@@ -21,36 +21,18 @@ namespace Sample
         public static GreeterTools Default { get; } = new GreeterTools();
 
         /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools(global::System.IServiceProvider serviceProvider)
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()
         {
             return new global::Microsoft.Extensions.AI.AITool[]
             {
-                new GreeterService_Greet_Tool(serviceProvider),
+                new GreeterService_Greet_Tool(),
             };
-        }
-
-        /// <inheritdoc />
-        public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)
-        {
-            services.AddSingleton<global::Microsoft.Extensions.AI.AITool>(static sp => new GreeterService_Greet_Tool(sp));
-        }
-
-        /// <inheritdoc />
-        public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, string key)
-        {
-            services.AddKeyedSingleton<global::Microsoft.Extensions.AI.AITool>(key, static (sp, _) => new GreeterService_Greet_Tool(sp));
         }
 
         private sealed class GreeterService_Greet_Tool : global::Microsoft.Extensions.AI.AIFunction
         {
-            private readonly global::System.IServiceProvider? _fallback;
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);
-
-            public GreeterService_Greet_Tool(global::System.IServiceProvider? fallback = null)
-            {
-                _fallback = fallback;
-            }
 
             public override string Name => "Greet";
             public override string Description => string.Empty;
@@ -88,7 +70,7 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments, _fallback);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.GreeterService>();
                 var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "name");
                 var __result = __service.Greet(__arg_name);

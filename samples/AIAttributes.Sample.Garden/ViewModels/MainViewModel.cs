@@ -169,14 +169,13 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
     }
 
     /// <summary>
-    /// Rebuilds <see cref="AvailableTools"/> from the DI container so the
-    /// empty-state view always reflects what <c>AddAITools&lt;T&gt;()</c>
-    /// registered for this session scope.
+    /// Rebuilds <see cref="AvailableTools"/> from <c>GardenTools.Default</c> so
+    /// the empty-state view reflects every tool emitted by the source generator.
     /// </summary>
     private void RefreshAvailableTools()
     {
         AvailableTools.Clear();
-        var tools = _sessionScope!.ServiceProvider.GetServices<AITool>();
+        var tools = GardenTools.Default.GetTools();
         foreach (var tool in tools.OrderBy(t => t.Name))
             AvailableTools.Add(new ToolInfoViewModel(tool.Name, tool.Description ?? ""));
     }
@@ -195,7 +194,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
 
         try
         {
-            var tools = _sessionScope!.ServiceProvider.GetServices<AITool>();
+            var tools = GardenTools.Default.GetTools();
             var options = new ChatOptions { Tools = [.. tools] };
             await SendAndProcessResponseAsync(options);
         }
@@ -287,7 +286,7 @@ public sealed class MainViewModel(IServiceProvider rootProvider, IChatClient inn
             _history.Add(new ChatMessage(ChatRole.User, [response]));
             AddMessage(ChatMessageKind.Tool, approved ? "\u2705 Approved" : "\u274c Rejected");
 
-            var tools = _sessionScope!.ServiceProvider.GetServices<AITool>();
+            var tools = GardenTools.Default.GetTools();
             var options = new ChatOptions { Tools = [.. tools] };
             await SendAndProcessResponseAsync(options);
         }

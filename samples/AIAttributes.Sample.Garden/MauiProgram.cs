@@ -45,9 +45,12 @@ public static class MauiProgram
 
         // ── AI Tools (source-generated) ─────────────────────────────
         //
-        // The source generator discovers [ExportAIFunction] methods at
-        // compile time. No runtime reflection is used.
-        builder.Services.AddAITools<GardenTools>();
+        // The source generator discovers [ExportAIFunction] methods at compile
+        // time and emits GardenTools.Default with a GetTools() method. Tools
+        // are NOT registered into DI — they're consumed at the call site via
+        // GardenTools.Default.GetTools() and read AIFunctionArguments.Services
+        // at invocation time.
+        // No runtime reflection is used.
 
         // ── AI Client ───────────────────────────────────────────────
         builder.AddOpenAIServices();

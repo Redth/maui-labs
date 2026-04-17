@@ -167,8 +167,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 continue;
             if (method.MethodKind != MethodKind.Ordinary)
                 continue;
-            if (method.IsStatic)
-                continue;
             if (method.DeclaredAccessibility != Accessibility.Public && method.DeclaredAccessibility != Accessibility.Internal)
                 continue;
 
@@ -258,6 +256,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 toolName,
                 description,
                 approvalRequired,
+                method.IsStatic,
                 parameters,
                 returnInfo,
                 baseClassName));
@@ -470,16 +469,16 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             indent = "    ";
         }
 
-        // Emit the partial class body: Default + GetTools + RegisterTools.
+        // Emit the partial class body: Default + GetTools.
         sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}");
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}    /// <summary>Gets the default singleton instance of this tool context.</summary>");
         sb.AppendLine($"{indent}    public static {model.ClassName} Default {{ get; }} = new {model.ClassName}();");
         sb.AppendLine();
 
-        // GetTools(IServiceProvider)
+        // GetTools()
         sb.AppendLine($"{indent}    /// <inheritdoc />");
-        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools(global::System.IServiceProvider serviceProvider)");
+        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> GetTools()");
         sb.AppendLine($"{indent}    {{");
         sb.AppendLine($"{indent}        return new global::Microsoft.Extensions.AI.AITool[]");
         sb.AppendLine($"{indent}        {{");
@@ -487,38 +486,10 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         {
             foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}            {WrapApproval($"new {m.GeneratedClassName}(serviceProvider)", m.ApprovalRequired)},");
+                sb.AppendLine($"{indent}            {WrapApproval($"new {m.GeneratedClassName}()", m.ApprovalRequired)},");
             }
         }
         sb.AppendLine($"{indent}        }};");
-        sb.AppendLine($"{indent}    }}");
-        sb.AppendLine();
-
-        // RegisterTools(IServiceCollection)
-        sb.AppendLine($"{indent}    /// <inheritdoc />");
-        sb.AppendLine($"{indent}    public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
-        sb.AppendLine($"{indent}    {{");
-        foreach (var st in model.SourceTypes)
-        {
-            foreach (var m in st.Methods)
-            {
-                sb.AppendLine($"{indent}        services.AddSingleton<global::Microsoft.Extensions.AI.AITool>(static sp => {WrapApproval($"new {m.GeneratedClassName}(sp)", m.ApprovalRequired)});");
-            }
-        }
-        sb.AppendLine($"{indent}    }}");
-        sb.AppendLine();
-
-        // RegisterTools(IServiceCollection, string key)
-        sb.AppendLine($"{indent}    /// <inheritdoc />");
-        sb.AppendLine($"{indent}    public override void RegisterTools(global::Microsoft.Extensions.DependencyInjection.IServiceCollection services, string key)");
-        sb.AppendLine($"{indent}    {{");
-        foreach (var st in model.SourceTypes)
-        {
-            foreach (var m in st.Methods)
-            {
-                sb.AppendLine($"{indent}        services.AddKeyedSingleton<global::Microsoft.Extensions.AI.AITool>(key, static (sp, _) => {WrapApproval($"new {m.GeneratedClassName}(sp)", m.ApprovalRequired)});");
-            }
-        }
         sb.AppendLine($"{indent}    }}");
 
         // Emit tool classes as nested private classes inside the context class — avoids
@@ -552,17 +523,21 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
     private static void EmitToolClass(StringBuilder sb, string indent, SourceTypeModel st, MethodModel m)
     {
         var cls = m.GeneratedClassName;
+
+        // A tool requires a service provider when either:
+        //   - the backing method is an instance method (we need to resolve the owning service), or
+        //   - at least one parameter binds from DI (IServiceProvider / [FromServices] / [FromKeyedServices]).
+        bool needsServiceForInstance = !m.IsStatic;
+        bool anyParamNeedsServices = m.Parameters.Any(p =>
+            p.Kind is ParameterKind.ServiceProvider
+                  or ParameterKind.FromServices
+                  or ParameterKind.FromKeyedServices);
+        bool needsProvider = needsServiceForInstance || anyParamNeedsServices;
+
         sb.AppendLine($"{indent}private sealed class {cls} : global::Microsoft.Extensions.AI.AIFunction");
         sb.AppendLine($"{indent}{{");
-        sb.AppendLine($"{indent}    private readonly global::System.IServiceProvider? _fallback;");
         sb.AppendLine($"{indent}    private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);");
         sb.AppendLine($"{indent}    private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);");
-        sb.AppendLine();
-
-        sb.AppendLine($"{indent}    public {cls}(global::System.IServiceProvider? fallback = null)");
-        sb.AppendLine($"{indent}    {{");
-        sb.AppendLine($"{indent}        _fallback = fallback;");
-        sb.AppendLine($"{indent}    }}");
         sb.AppendLine();
 
         sb.AppendLine($"{indent}    public override string Name => {Escape(m.ToolName)};");
@@ -572,6 +547,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         sb.AppendLine();
 
         // MethodInfo lookup (used for schema generation only, one-shot at warmup).
+        var bindingFlags = m.IsStatic
+            ? "global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Static"
+            : "global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance";
         sb.AppendLine($"{indent}    private static global::System.Reflection.MethodInfo GetTargetMethod()");
         sb.AppendLine($"{indent}    {{");
         sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
@@ -581,7 +559,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             sb.Append($"typeof({p.UnannotatedTypeName}), ");
         }
         sb.AppendLine("};");
-        sb.AppendLine($"{indent}        return serviceType.GetMethod({Escape(m.MethodName)}, global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance, null, paramTypes, null)");
+        sb.AppendLine($"{indent}        return serviceType.GetMethod({Escape(m.MethodName)}, {bindingFlags}, null, paramTypes, null)");
         sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target method {st.FullyQualifiedName}.{m.MethodName}.")});");
         sb.AppendLine($"{indent}    }}");
         sb.AppendLine();
@@ -626,8 +604,15 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         sb.AppendLine($"{indent}        global::Microsoft.Extensions.AI.AIFunctionArguments arguments,");
         sb.AppendLine($"{indent}        global::System.Threading.CancellationToken cancellationToken)");
         sb.AppendLine($"{indent}    {{");
-        sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments, _fallback);");
-        sb.AppendLine($"{indent}        var __service = __provider.GetRequiredService<{st.FullyQualifiedName}>();");
+
+        if (needsProvider)
+        {
+            sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);");
+        }
+        if (needsServiceForInstance)
+        {
+            sb.AppendLine($"{indent}        var __service = __provider.GetRequiredService<{st.FullyQualifiedName}>();");
+        }
 
         var argNames = new List<string>();
         foreach (var p in m.Parameters)
@@ -637,8 +622,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             EmitParameterBinding(sb, indent + "        ", local, p);
         }
 
-        // Call & await
-        var callExpr = $"__service.{m.MethodName}({string.Join(", ", argNames)})";
+        // Call & await — static methods call via the type; instance methods go through __service.
+        var receiver = m.IsStatic ? st.FullyQualifiedName : "__service";
+        var callExpr = $"{receiver}.{m.MethodName}({string.Join(", ", argNames)})";
         switch (m.ReturnInfo.Shape)
         {
             case ReturnShape.Void:
@@ -767,6 +753,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         string ToolName,
         string? Description,
         bool ApprovalRequired,
+        bool IsStatic,
         ImmutableArray<ParameterModel> Parameters,
         ReturnInfo ReturnInfo,
         string GeneratedClassName);
