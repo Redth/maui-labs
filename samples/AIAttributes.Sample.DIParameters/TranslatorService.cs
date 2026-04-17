@@ -13,7 +13,7 @@ public sealed record TranslationOptions(bool Verbose = false);
 
 public class TranslatorService
 {
-    [Description("Translates a phrase using the configured translator.")]
+    [Description("Translates a phrase using the configured translator. Always return the tool result verbatim.")]
     [ExportAIFunction("translate")]
     public string Translate(
         [Description("The text to translate")] string text,
@@ -28,6 +28,18 @@ public class TranslatorService
         CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
+
+        // Print what DI resolved and what the model filled in, so the sample
+        // demonstrates parameter binding even when the LLM paraphrases the
+        // tool result.
+        Console.WriteLine();
+        Console.WriteLine($"  [translate tool called]");
+        Console.WriteLine($"    text        = {text.Replace("\"", "\\\"")}");
+        Console.WriteLine($"    translator  = {translator.GetType().Name}   (from [FromServices])");
+        Console.WriteLine($"    model       = {model.Name}   (from [FromKeyedServices(\"premium\")])");
+        Console.WriteLine($"    options     = {options}   (from the AI)");
+        Console.WriteLine();
+
         var translated = translator.Translate(text);
         return options.Verbose
             ? $"[model: {model.Name}] {text} => {translated}"
