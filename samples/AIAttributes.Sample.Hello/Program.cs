@@ -99,7 +99,7 @@ public class WeatherService
         [Description("The city name")] string city,
         [Description("Number of days (1-7). Defaults to 3.")] int days = 3)
     {
-        return $"{days}-day forecast for {city}: mostly pleasant with a high of {city.GetHashCode() % 30}°C.";
+        return $"{days}-day forecast for {city}: mostly pleasant with a high of {Random.Shared.Next(15, 35)}°C.";
     }
 }
 
