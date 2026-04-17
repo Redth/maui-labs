@@ -129,22 +129,28 @@
                            TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
 
                     <!--
-                        FlexLayout with Wrap=Wrap lays out the tool cards in
-                        a responsive grid that fits the available width. No
-                        horizontal scroll, no clipped rows.
+                        Nested CollectionView with GridItemsLayout wraps the
+                        cards across two columns and auto-sizes every row to
+                        the tallest item, giving uniform card heights per row
+                        and no horizontal overflow.
                     -->
-                    <FlexLayout Grid.Row="3"
-                                BindableLayout.ItemsSource="{Binding AvailableTools}"
-                                AutomationId="ToolList"
-                                Wrap="Wrap"
-                                JustifyContent="Center"
-                                AlignItems="Start"
-                                AlignContent="Start">
-                        <BindableLayout.ItemTemplate>
+                    <CollectionView Grid.Row="3"
+                                    ItemsSource="{Binding AvailableTools}"
+                                    AutomationId="ToolList"
+                                    SelectionMode="None"
+                                    HorizontalOptions="Center"
+                                    MaximumWidthRequest="520">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical"
+                                             Span="2"
+                                             HorizontalItemSpacing="8"
+                                             VerticalItemSpacing="8" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="vm:ToolInfoViewModel">
-                                <Border WidthRequest="200"
-                                        Margin="4"
-                                        Padding="10,8"
+                                <Border Padding="10,8"
+                                        HorizontalOptions="Fill"
+                                        VerticalOptions="Fill"
                                         BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
                                         Stroke="{AppThemeBinding Light=#CFE0CD, Dark=#3A4A3A}"
                                         StrokeThickness="1"
@@ -161,8 +167,8 @@
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
-                        </BindableLayout.ItemTemplate>
-                    </FlexLayout>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Grid>
             </CollectionView.EmptyView>
         </CollectionView>
