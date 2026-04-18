@@ -7,6 +7,7 @@ namespace AIAttributes.Sample.Garden.Services;
 /// <summary>
 /// Manages the active shopping list (<see cref="Cart"/>) and exposes
 /// AI-callable operations for adding, removing, and checking out items.
+/// Demonstrates: exporting tools from a DI-registered instance service.
 /// </summary>
 public sealed class CurrentCart
 {
@@ -16,12 +17,14 @@ public sealed class CurrentCart
 
     public void Set(Cart cart) => _cart = cart;
 
-    // ── AI Tool Methods ──────────────────────────────────────
-
+    // Feature: instance method on a DI service — the generator resolves
+    // CurrentCart from IServiceProvider automatically at invocation time.
     [Description("Returns every item currently on the shopping list with quantity, unit price, and subtotal.")]
     [ExportAIFunction("show_list")]
     public IReadOnlyList<ListItem> ShowList() => Cart.Snapshot();
 
+    // Feature: multiple [Description] parameters — each parameter gets its
+    // own description that the AI model sees in the JSON schema.
     [Description("Adds a product to the current shopping list, or increments the quantity if it's already there.")]
     [ExportAIFunction("add_to_list")]
     public string AddToList(
@@ -60,9 +63,13 @@ public sealed class CurrentCart
             : $"{product.Name} wasn't on the list.";
     }
 
+    // Feature: ApprovalRequired = true — the AI pipeline pauses and asks
+    // the user to confirm before this tool is actually executed.
     [Description("Checks the current shopping list out as a finalized order and clears the list.")]
     [ExportAIFunction("checkout_list", ApprovalRequired = true)]
     public string CheckoutList(
+        // Feature: [FromServices] on a parameter — OrderArchive is injected
+        // from DI at invocation time, not passed by the AI model.
         [FromServices] OrderArchive archive)
     {
         var items = Cart.Snapshot();
@@ -74,6 +81,8 @@ public sealed class CurrentCart
         return $"Order {order.Id} placed with {order.Items.Count} item(s) totalling {order.Total:C}.";
     }
 
+    // Feature: ApprovalRequired on a simple no-arg method — demonstrates
+    // that destructive operations can be gated behind user approval.
     [Description("Discards every item from the current shopping list.")]
     [ExportAIFunction("cancel_list", ApprovalRequired = true)]
     public string CancelList()

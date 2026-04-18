@@ -6,9 +6,13 @@ namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
 /// Hard-coded product catalog for the garden shop.
+/// Demonstrates: exporting tools from a static class.
 /// </summary>
 public static class ProductCatalog
 {
+    // Feature: [ExportAIFunction] on a static property — exposes a read-only
+    // collection as a zero-parameter AI tool. The generator treats the getter
+    // as a parameterless method and emits a schema with no inputs.
     [ExportAIFunction("list_all_products")]
     [Description("Returns every product in the garden shop catalog.")]
     public static IReadOnlyList<Product> All { get; } =
@@ -37,6 +41,9 @@ public static class ProductCatalog
         new("tool-watering",   "Watering Can (1 gal)",    "Equipment", 14.99m, "🚿"),
     ];
 
+    // Feature: [ExportAIFunction] on a static method with an optional parameter.
+    // The generator emits a schema where 'query' is not required, letting the
+    // AI call it with or without a filter string.
     [ExportAIFunction("search_products")]
     [Description("Searches the garden shop catalog by name, category, or sku. Returns every product when no query is given.")]
     public static List<Product> SearchProducts(
@@ -53,6 +60,8 @@ public static class ProductCatalog
             p.Category.Contains(q, StringComparison.OrdinalIgnoreCase))];
     }
 
+    // Feature: [ExportAIFunction] with a custom tool name that differs from
+    // the method name. The AI sees "get_product" but the real method is FindByName.
     [ExportAIFunction("get_product")]
     [Description("Looks up a single product by sku or exact name.")]
     public static Product? FindByName(
