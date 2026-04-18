@@ -55,20 +55,14 @@ public static class ProductCatalog
 
     [ExportAIFunction("get_product")]
     [Description("Looks up a single product by sku or exact name.")]
-    public static Product? GetProduct(
+    public static Product? FindByName(
         [Description("The product sku or exact name (e.g., 'seed-tomato' or 'Heirloom Tomato Seeds').")]
-        string skuOrName)
-        => FindByName(skuOrName);
-
-    public static Product? Find(string sku) =>
-        All.FirstOrDefault(p => string.Equals(p.Sku, sku, StringComparison.OrdinalIgnoreCase));
-
-    public static Product? FindByName(string nameOrSku)
+        string nameOrSku)
     {
         if (string.IsNullOrWhiteSpace(nameOrSku))
             return null;
         var q = nameOrSku.Trim();
-        return Find(q)
+        return All.FirstOrDefault(p => string.Equals(p.Sku, q, StringComparison.OrdinalIgnoreCase))
             ?? All.FirstOrDefault(p => string.Equals(p.Name, q, StringComparison.OrdinalIgnoreCase))
             ?? All.FirstOrDefault(p => p.Name.Contains(q, StringComparison.OrdinalIgnoreCase));
     }
