@@ -6,7 +6,7 @@ namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
 /// Manages the active shopping cart. Registered as a singleton in DI;
-/// call <see cref="Reset"/> on "New Chat".
+/// call <see cref="Clear"/> to empty the cart.
 /// Demonstrates: [ExportAIFunction] on instance methods and properties of a DI service.
 /// </summary>
 public sealed class CurrentCart

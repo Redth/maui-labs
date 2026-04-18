@@ -4,6 +4,7 @@ using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.AI;
+using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 
@@ -21,6 +22,25 @@ public sealed record ToolInfoViewModel(
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
+    /// <summary>
+    /// Source-generated tool context that merges all tool sources into one.
+    /// Nested inside <see cref="MainViewModel"/> to demonstrate that the generator
+    /// fully supports private and nested context classes.
+    ///
+    /// Demonstrates three distinct attribute patterns:
+    /// <list type="bullet">
+    ///   <item><b>Static class</b> — ProductCatalog: tools on a plain static class.</item>
+    ///   <item><b>Instance class</b> — CurrentCart: tools on a DI-registered instance.</item>
+    ///   <item><b>Interface</b> — IOrderArchive: tools declared on the interface so
+    ///     any implementation (InMemoryOrderArchive, PreferencesOrderArchive, …)
+    ///     is AI-capable without changing a single attribute.</item>
+    /// </list>
+    /// </summary>
+    [AIToolSource(typeof(ProductCatalog))]
+    [AIToolSource(typeof(CurrentCart))]
+    [AIToolSource(typeof(IOrderArchive))]
+    private partial class GardenShopTools : AIToolContext { }
+
     private readonly IChatClient _chatClient;
     private readonly CurrentCart _currentCart;
     private readonly IOrderArchive _archive;
