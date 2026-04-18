@@ -249,15 +249,16 @@ public sealed partial class MainViewModel : ObservableObject
                     }
 
                     case FunctionCallContent call:
-                        AddMessage(ChatMessageKind.Tool, $"\ud83d\udd27 Calling: {call.Name}");
+                        AddMessage(ChatMessageKind.Tool, $"🔧 {call.Name}");
                         break;
 
                     case FunctionResultContent result:
                     {
                         var resultText = result.Result?.ToString() ?? "(no result)";
-                        if (resultText.Length > 200)
-                            resultText = resultText[..200] + "...";
-                        AddMessage(ChatMessageKind.Tool, $"\u2705 Result: {resultText}");
+                        // The result is often serialized JSON — keep it short for the chat UI
+                        if (resultText.Length > 120)
+                            resultText = resultText[..120] + "…";
+                        AddMessage(ChatMessageKind.Tool, $"✅ {result.CallId ?? "tool"}: {resultText}");
                         break;
                     }
 
