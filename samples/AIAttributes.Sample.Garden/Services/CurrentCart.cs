@@ -5,18 +5,16 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.Garden.Services;
 
 /// <summary>
-/// Manages the active shopping cart — item list, running total, and
-/// AI-callable operations for adding, removing, and checking out items.
+/// Manages the active shopping cart — item list, running total, and checkout.
 /// Registered as a singleton in DI; call <see cref="Reset"/> on "New Chat".
 /// Demonstrates: exporting tools from a DI-registered instance service.
 /// </summary>
-public sealed class CurrentCart
+public sealed class CurrentCart : ICurrentCart
 {
     private readonly List<ListItem> _items = [];
 
     public string Id { get; private set; } = $"cart-{Guid.NewGuid():N}";
     public CancellationTokenSource Cts { get; private set; } = new();
-
     public IReadOnlyList<ListItem> Items => _items;
 
     /// <summary>
@@ -80,8 +78,6 @@ public sealed class CurrentCart
 
     public IReadOnlyList<ListItem> Snapshot() => [.. _items];
 
-    // ── AI Tool Methods ──────────────────────────────────────
-
     // Feature: instance method on a DI service — the generator resolves
     // CurrentCart from IServiceProvider automatically at invocation time.
     [Description("Returns every item currently on the shopping list with quantity, unit price, and subtotal.")]
@@ -130,11 +126,11 @@ public sealed class CurrentCart
 
     // Feature: ApprovalRequired = true — the AI pipeline pauses and asks
     // the user to confirm before this tool is actually executed.
+    // Feature: [FromServices] on a parameter — OrderArchive is injected
+    // from DI at invocation time, not passed by the AI model.
     [Description("Checks the current shopping list out as a finalized order and clears the list.")]
     [ExportAIFunction("checkout_list", ApprovalRequired = true)]
     public string CheckoutList(
-        // Feature: [FromServices] on a parameter — OrderArchive is injected
-        // from DI at invocation time, not passed by the AI model.
         [FromServices] OrderArchive archive)
     {
         var items = Snapshot();

@@ -10,7 +10,7 @@ namespace AIAttributes.Sample.Garden.Services;
 /// Demonstrates: exporting tools from a singleton DI service, including
 /// a property and a method that uses [FromServices] to inject a sibling service.
 /// </summary>
-public sealed class OrderArchive
+public sealed class OrderArchive : IOrderArchive
 {
     private readonly List<Order> _orders = [];
 
