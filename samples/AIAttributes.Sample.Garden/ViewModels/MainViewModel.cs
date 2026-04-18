@@ -252,15 +252,10 @@ public sealed partial class MainViewModel : ObservableObject
                         AddMessage(ChatMessageKind.Tool, $"🔧 {call.Name}");
                         break;
 
-                    case FunctionResultContent result:
-                    {
-                        var resultText = result.Result?.ToString() ?? "(no result)";
-                        // The result is often serialized JSON — keep it short for the chat UI
-                        if (resultText.Length > 120)
-                            resultText = resultText[..120] + "…";
-                        AddMessage(ChatMessageKind.Tool, $"✅ {result.CallId ?? "tool"}: {resultText}");
+                    case FunctionResultContent:
+                        // Result details are noisy (serialized JSON / type names).
+                        // The assistant's text reply already summarises the outcome.
                         break;
-                    }
 
                     case TextContent tc when tc.Text is not null:
                         responseText += tc.Text;
