@@ -6,7 +6,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// <summary>
 /// View-model wrapper around a <see cref="ListItem"/> so the workspace
 /// can ghost items that are about to be removed/checked-out without
-/// mutating the immutable record on <see cref="Services.Cart"/>.
+/// mutating the immutable record on <see cref="Services.CurrentCart"/>.
 /// </summary>
 public sealed partial class ShoppingListItemViewModel(ListItem item) : ObservableObject
 {

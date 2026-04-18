@@ -3,25 +3,31 @@
 A single-page MAUI chat app that demonstrates **`Microsoft.Maui.AI.Attributes`**
 with a garden-shop shopping assistant.
 
-- **`ProductCatalog`** — browse/search a hard-coded catalog of seeds, soil,
-  fertilizer, tools, and equipment.
-- **`OrderArchive`** — committed orders. Survives "New Chat".
-- **`Cart`** — mutable shopping list owned by the current chat session.
-  Cleared when you start a new chat.
+## Services
 
-The left column is the AI chat; the right column shows the current shopping
-list on top and past orders below.
+Tool methods live directly on the service classes — no separate "tools" wrappers.
 
-## Tool groups
+- **`ProductCatalog`** (static) — browse/search a hard-coded catalog of seeds,
+  soil, fertilizer, tools, and equipment.
+- **`CurrentCart`** (singleton, DI) — the active shopping cart. Manages item
+  list, quantities, checkout, and reset on "New Chat".
+- **`OrderArchive`** (singleton, DI) — committed orders. Survives "New Chat".
 
-All tool methods are **`static`**. `GardenShopTools.Default.Tools` returns
-every tool across all three `[AIToolSource]` groups.
+`GardenShopTools` is the `[AIToolSource]`-annotated context that composes all
+three services into a single `.Tools` list.
 
-| Group | DI dependencies | Tools |
-|---|---|---|
-| `CatalogTools` | None — pure static. | `search_products`, `get_product` |
-| `ShoppingListTools` | `[FromServices] CurrentCart` — the active session. | `add_to_list`, `checkout_list` (approval required) |
-| `OrderArchiveTools` | `[FromServices] OrderArchive` — singleton. | `list_past_orders`, `reorder` |
+## Feature showcase
+
+| Feature | Where |
+|---|---|
+| `[ExportAIFunction]` on a **static property** | `ProductCatalog.All` |
+| `[ExportAIFunction]` on a **static method** with optional param | `ProductCatalog.SearchProducts` |
+| Custom tool name (method ≠ tool name) | `ProductCatalog.FindByName` → `"get_product"` |
+| `[ExportAIFunction]` on an **instance method** (DI-resolved) | `CurrentCart.AddToList`, etc. |
+| `[ExportAIFunction]` on an **instance property** | `OrderArchive.Orders` |
+| `[FromServices]` parameter injection | `CurrentCart.CheckoutList(OrderArchive)` |
+| `ApprovalRequired = true` | `CurrentCart.CheckoutList`, `CurrentCart.CancelList` |
+| `[AIToolSource]` composing multiple types | `GardenShopTools` |
 
 ## Approval flow
 

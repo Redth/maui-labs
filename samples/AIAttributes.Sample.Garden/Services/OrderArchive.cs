@@ -46,7 +46,7 @@ public sealed class OrderArchive
         var order = FindOrder(orderId)
             ?? throw new InvalidOperationException($"No past order with id '{orderId}'. Call list_past_orders to see available ids.");
         foreach (var item in order.Items)
-            current.Cart.AddOrIncrement(item.Product, item.Quantity);
+            current.AddOrIncrement(item.Product, item.Quantity);
         return $"Copied {order.Items.Count} item(s) from {order.Id} onto the current list.";
     }
 }

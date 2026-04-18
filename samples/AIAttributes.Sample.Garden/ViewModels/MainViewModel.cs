@@ -9,7 +9,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
 /// Top-level view model bound to <see cref="MainPage"/>. Owns the chat loop,
-/// the per-session <see cref="Cart"/>, and projects the singleton
+/// the <see cref="CurrentCart"/>, and projects the singleton
 /// <see cref="OrderArchive"/> into the UI.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
@@ -88,12 +88,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void StartNewSession()
     {
-        var previous = _currentCart.Cart;
-        try { previous.Cts.Cancel(); } catch { /* best effort */ }
-        previous.Cts.Dispose();
-
-        var fresh = new Cart($"cart-{Guid.NewGuid():N}");
-        _currentCart.Set(fresh);
+        _currentCart.Reset();
 
         _history =
         [
@@ -161,7 +156,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void RefreshShoppingList()
     {
         ShoppingList.Clear();
-        var items = _currentCart.Cart.Snapshot();
+        var items = _currentCart.Snapshot();
         foreach (var item in items)
             ShoppingList.Add(new ShoppingListItemViewModel(item));
         ShoppingListTotal = $"Total: {items.Sum(i => i.Subtotal):C}";
@@ -229,7 +224,7 @@ public sealed partial class MainViewModel : ObservableObject
         ChatMessageViewModel? assistantMessage = null;
         var updates = new List<ChatResponseUpdate>();
 
-        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentCart.Cart.Cts.Token))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentCart.Cts.Token))
         {
             updates.Add(update);
 
