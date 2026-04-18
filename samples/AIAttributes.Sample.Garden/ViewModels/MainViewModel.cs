@@ -68,7 +68,7 @@ public sealed partial class MainViewModel : ObservableObject
     private string _approvalText = "";
 
     [ObservableProperty]
-    private string _shoppingListTotal = "$0.00";
+    private string _shoppingListTotal = $"Total: {0:C}";
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
@@ -164,7 +164,7 @@ public sealed partial class MainViewModel : ObservableObject
         var items = _currentCart.Cart.Snapshot();
         foreach (var item in items)
             ShoppingList.Add(new ShoppingListItemViewModel(item));
-        ShoppingListTotal = items.Sum(i => i.Subtotal).ToString("C");
+        ShoppingListTotal = $"Total: {items.Sum(i => i.Subtotal):C}";
     }
 
     private void RefreshArchive()

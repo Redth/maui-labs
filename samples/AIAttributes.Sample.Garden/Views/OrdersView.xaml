@@ -12,7 +12,7 @@
                 BackgroundColor="{AppThemeBinding Light=#3A5A3A, Dark=#1F3320}"
                 StrokeThickness="0"
                 Padding="16,0">
-            <Label Text="📦 Past Orders"
+            <Label Text="Past Orders"
                    FontSize="14" FontAttributes="Bold"
                    TextColor="White" VerticalOptions="Center" />
         </Border>
