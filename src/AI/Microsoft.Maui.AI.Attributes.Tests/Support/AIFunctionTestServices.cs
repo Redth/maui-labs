@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.AI.Attributes;
 
 namespace Microsoft.Maui.AI.Attributes.Tests;
@@ -161,4 +162,102 @@ internal sealed class ComplexSchemaService
             Id = "plant-123",
             Nickname = profile.Nickname,
         };
+}
+
+// --- Static class with static methods (no DI needed) ---
+
+internal static class StaticMathService
+{
+    [ExportAIFunction("add_numbers")]
+    [Description("Adds two integers.")]
+    public static int Add([Description("first")] int a, [Description("second")] int b) => a + b;
+
+    [ExportAIFunction("negate_number")]
+    public static int Negate(int value) => -value;
+}
+
+// --- Non-static class with both static and instance methods ---
+
+internal sealed class MixedStaticInstanceService
+{
+    public int CallCount { get; private set; }
+
+    [ExportAIFunction("static_echo")]
+    public static string StaticEcho(string message) => $"static:{message}";
+
+    [ExportAIFunction("instance_echo")]
+    public string InstanceEcho(string message)
+    {
+        CallCount++;
+        return $"instance:{message}";
+    }
+}
+
+// --- Interface with [ExportAIFunction] on the interface ---
+
+internal interface IOrderArchiveService
+{
+    [ExportAIFunction("list_orders")]
+    [Description("Lists all past orders.")]
+    IReadOnlyList<string> ListOrders();
+
+    [ExportAIFunction("find_order")]
+    string FindOrder([Description("order ID")] string orderId);
+}
+
+internal sealed class InMemoryOrderArchiveService : IOrderArchiveService
+{
+    private readonly List<string> _orders = new() { "order-1", "order-2", "order-3" };
+
+    public IReadOnlyList<string> ListOrders() => _orders;
+
+    public string FindOrder(string orderId) =>
+        _orders.FirstOrDefault(o => o == orderId) ?? "not found";
+}
+
+// --- Interface with [FromServices] ---
+
+internal interface IFoo { string Name { get; } }
+internal sealed class FooImpl : IFoo { public string Name => "foo-impl"; }
+
+internal interface IBarService
+{
+    [ExportAIFunction("bar_action")]
+    string DoBar(string input, [FromServices] IFoo foo);
+}
+
+internal sealed class BarServiceImpl : IBarService
+{
+    public string DoBar(string input, IFoo foo) => $"{input}:{foo.Name}";
+}
+
+// --- Interface with property ---
+
+internal interface ICatalogService
+{
+    [ExportAIFunction("all_products")]
+    [Description("All products.")]
+    IReadOnlyList<string> Products { get; }
+}
+
+internal sealed class CatalogServiceImpl : ICatalogService
+{
+    public IReadOnlyList<string> Products { get; } = new[] { "apple", "banana", "cherry" };
+}
+
+// --- Interface with ApprovalRequired ---
+
+internal interface IDangerService
+{
+    [ExportAIFunction("safe_op")]
+    string SafeOp();
+
+    [ExportAIFunction("danger_op", ApprovalRequired = true)]
+    string DangerOp();
+}
+
+internal sealed class DangerServiceImpl : IDangerService
+{
+    public string SafeOp() => "safe";
+    public string DangerOp() => "danger";
 }

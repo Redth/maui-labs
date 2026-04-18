@@ -37,3 +37,49 @@ internal partial class CompositeToolContext : AIToolContext { }
 [AIToolSource(typeof(DisposableToolService))]
 [AIToolSource(typeof(DescriptionFallbackService))]
 internal partial class RegistrationTestToolContext : AIToolContext { }
+
+// --- Static class tool context ---
+
+[AIToolSource(typeof(StaticMathService))]
+internal partial class StaticMathToolContext : AIToolContext { }
+
+// --- Mixed static + instance tool context ---
+
+[AIToolSource(typeof(MixedStaticInstanceService))]
+internal partial class MixedStaticInstanceToolContext : AIToolContext { }
+
+// --- Interface tool contexts ---
+
+[AIToolSource(typeof(IOrderArchiveService))]
+internal partial class OrderArchiveToolContext : AIToolContext { }
+
+[AIToolSource(typeof(IBarService))]
+internal partial class BarToolContext : AIToolContext { }
+
+[AIToolSource(typeof(ICatalogService))]
+internal partial class CatalogToolContext : AIToolContext { }
+
+[AIToolSource(typeof(IDangerService))]
+internal partial class DangerToolContext : AIToolContext { }
+
+// --- Nested class tool context ---
+
+internal partial class OuterClass
+{
+    [AIToolSource(typeof(TestToolService))]
+    internal partial class NestedToolContext : AIToolContext { }
+}
+
+// --- Deeply nested class tool context ---
+
+internal partial class TopLevel
+{
+    internal partial class MidLevel
+    {
+        [AIToolSource(typeof(StaticMathService))]
+        private partial class DeepNestedToolContext : AIToolContext { }
+
+        // Expose for testing since the context itself is private
+        public static AIToolContext CreateDeep() => DeepNestedToolContext.Default;
+    }
+}

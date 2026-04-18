@@ -58,6 +58,19 @@ public class GeneratorSnapshotTests
     [InlineData(nameof(Inputs.StaticProperty))]
     [InlineData(nameof(Inputs.InstanceProperty))]
     [InlineData(nameof(Inputs.MixedMethodsAndProperties))]
+    [InlineData(nameof(Inputs.StaticClassWithStaticMethods))]
+    [InlineData(nameof(Inputs.StaticMethodOnNonStaticClass))]
+    [InlineData(nameof(Inputs.StaticMethodWithFromServices))]
+    [InlineData(nameof(Inputs.StaticMethodNoDI))]
+    [InlineData(nameof(Inputs.InterfaceAsSourceType))]
+    [InlineData(nameof(Inputs.InterfaceWithFromServices))]
+    [InlineData(nameof(Inputs.InterfaceWithProperty))]
+    [InlineData(nameof(Inputs.NestedClassContext))]
+    [InlineData(nameof(Inputs.DeeplyNestedClassContext))]
+    [InlineData(nameof(Inputs.NestedClassNoNamespace))]
+    [InlineData(nameof(Inputs.InternalContextClass))]
+    [InlineData(nameof(Inputs.StaticClassWithFromServicesAndProperty))]
+    [InlineData(nameof(Inputs.InterfaceWithApproval))]
     public Task Snapshot(string scenario)
     {
         var source = Inputs.Get(scenario);

@@ -78,7 +78,10 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(grouped, static (spc, model) =>
         {
             var source = GenerateContextSource(model);
-            spc.AddSource($"{model.ClassName}.g.cs", SourceText.From(source, Encoding.UTF8));
+            var hintName = model.ContainingTypes.Length > 0
+                ? $"{string.Join("_", model.ContainingTypes.Select(c => c.Name))}_{model.ClassName}.g.cs"
+                : $"{model.ClassName}.g.cs";
+            spc.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
 
             foreach (var diag in model.Diagnostics)
             {
@@ -142,11 +145,33 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             _ => "internal"
         };
 
+        // Walk the containing type chain (innermost first → reversed to outermost first).
+        var containingTypes = new List<ContainingTypeInfo>();
+        var outer = contextSymbol.ContainingType;
+        while (outer is not null)
+        {
+            var outerAccess = outer.DeclaredAccessibility switch
+            {
+                Accessibility.Public => "public",
+                Accessibility.Internal => "internal",
+                Accessibility.Protected => "protected",
+                Accessibility.ProtectedOrInternal => "protected internal",
+                Accessibility.ProtectedAndInternal => "private protected",
+                Accessibility.Private => "private",
+                _ => "internal"
+            };
+            var keyword = outer.IsRecord ? "record class" : "class";
+            containingTypes.Add(new ContainingTypeInfo(keyword, outer.Name, outerAccess));
+            outer = outer.ContainingType;
+        }
+        containingTypes.Reverse();
+
         return new ContextModel(
             contextSymbol.ContainingNamespace?.IsGlobalNamespace == true ? "" : contextSymbol.ContainingNamespace!.ToDisplayString(),
             contextSymbol.Name,
             contextSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
             accessibility,
+            containingTypes.ToImmutableArray(),
             sourceTypes.ToImmutableArray(),
             diagnostics.ToImmutableArray());
     }
@@ -544,6 +569,14 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             indent = "    ";
         }
 
+        // Open containing type declarations (outermost first).
+        foreach (var ct in model.ContainingTypes)
+        {
+            sb.AppendLine($"{indent}{ct.Accessibility} partial {ct.Keyword} {ct.Name}");
+            sb.AppendLine($"{indent}{{");
+            indent += "    ";
+        }
+
         // Emit the partial class body: Default + Tools.
         sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}");
         sb.AppendLine($"{indent}{{");
@@ -584,6 +617,13 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine($"{indent}}}");
+
+        // Close containing type declarations (innermost first).
+        for (var i = model.ContainingTypes.Length - 1; i >= 0; i--)
+        {
+            indent = indent.Substring(4);
+            sb.AppendLine($"{indent}}}");
+        }
 
         if (!string.IsNullOrEmpty(model.Namespace))
         {
@@ -858,11 +898,17 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         string SimpleName,
         ImmutableArray<MethodModel> Methods);
 
+    private sealed record ContainingTypeInfo(
+        string Keyword,
+        string Name,
+        string Accessibility);
+
     private sealed record ContextModel(
         string Namespace,
         string ClassName,
         string FullyQualifiedName,
         string Accessibility,
+        ImmutableArray<ContainingTypeInfo> ContainingTypes,
         ImmutableArray<SourceTypeModel> SourceTypes,
         ImmutableArray<DiagnosticInfo> Diagnostics)
     {

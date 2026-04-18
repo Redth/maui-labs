@@ -30,7 +30,7 @@ public static class MauiProgram
         builder.AddMauiDevFlowAgent();
 #endif
 
-        builder.Services.AddSingleton<OrderArchive>();
+        builder.Services.AddSingleton<IOrderArchive, PreferencesOrderArchive>();
         builder.Services.AddSingleton<CurrentCart>();
 
         builder.AddOpenAIServices();

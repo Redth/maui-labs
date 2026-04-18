@@ -7,6 +7,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// </summary>
 public sealed class OrderViewModel(Order order)
 {
+    public string OrderId => order.Id;
     public string PlacedAt => order.PlacedAt.ToString("MMM d, h:mm tt");
     public string Total => order.Total.ToString("C");
     public IReadOnlyList<OrderLineViewModel> Lines { get; } =

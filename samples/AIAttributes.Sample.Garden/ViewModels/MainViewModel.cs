@@ -8,25 +8,33 @@ using Microsoft.Extensions.AI;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
+/// View model for a single tool shown in the empty-state placeholder.
+/// </summary>
+public sealed record ToolInfoViewModel(
+    string Name,
+    string Description);
+
+/// <summary>
 /// Top-level view model bound to <see cref="MainPage"/>. Owns the chat loop,
-/// the <see cref="CurrentCart"/>, and projects the singleton
-/// <see cref="OrderArchive"/> into the UI.
+/// the <see cref="CurrentCart"/>, and projects the
+/// <see cref="IOrderArchive"/> into the UI.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly IChatClient _chatClient;
     private readonly CurrentCart _currentCart;
-    private readonly OrderArchive _archive;
+    private readonly IOrderArchive _archive;
 
     private List<ChatMessage> _history = [];
     private ToolApprovalRequestContent? _pendingApproval;
+    private CancellationTokenSource _cts = new();
     private bool _initialized;
 
     public MainViewModel(
         IServiceProvider rootProvider,
         IChatClient innerChatClient,
         CurrentCart currentCart,
-        OrderArchive archive)
+        IOrderArchive archive)
     {
         _chatClient = new ChatClientBuilder(innerChatClient)
             .UseFunctionInvocation()
@@ -88,7 +96,11 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void StartNewSession()
     {
-        _currentCart.Reset();
+        try { _cts.Cancel(); } catch { /* best effort */ }
+        _cts.Dispose();
+        _cts = new CancellationTokenSource();
+
+        _currentCart.Clear();
 
         _history =
         [
@@ -153,10 +165,33 @@ public sealed partial class MainViewModel : ObservableObject
         await SendAsync();
     }
 
+    [RelayCommand]
+    private void CheckoutCart()
+    {
+        if (_currentCart.Items.Count == 0)
+            return;
+
+        var order = _archive.Checkout(_currentCart);
+
+        RefreshShoppingList();
+        RefreshArchive();
+    }
+
+    [RelayCommand]
+    private void ReorderPastOrder(string? orderId)
+    {
+        if (string.IsNullOrWhiteSpace(orderId))
+            return;
+
+        _archive.Reorder(orderId, _currentCart);
+
+        RefreshShoppingList();
+    }
+
     private void RefreshShoppingList()
     {
         ShoppingList.Clear();
-        var items = _currentCart.Snapshot();
+        var items = _currentCart.Items;
         foreach (var item in items)
             ShoppingList.Add(new ShoppingListItemViewModel(item));
         ShoppingListTotal = $"Total: {items.Sum(i => i.Subtotal):C}";
@@ -224,7 +259,7 @@ public sealed partial class MainViewModel : ObservableObject
         ChatMessageViewModel? assistantMessage = null;
         var updates = new List<ChatResponseUpdate>();
 
-        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _currentCart.Cts.Token))
+        await foreach (var update in _chatClient.GetStreamingResponseAsync(_history, options, _cts.Token))
         {
             updates.Add(update);
 

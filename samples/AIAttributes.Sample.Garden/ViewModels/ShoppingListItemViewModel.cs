@@ -4,6 +4,17 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
+/// Which approval-pending action is queued against a shopping-list item.
+/// </summary>
+public enum PendingAction
+{
+    None,
+    Checkout,
+    Cancel,
+    Remove,
+}
+
+/// <summary>
 /// View-model wrapper around a <see cref="ListItem"/> so the workspace
 /// can ghost items that are about to be removed/checked-out without
 /// mutating the immutable record on <see cref="Services.CurrentCart"/>.
@@ -34,15 +45,4 @@ public sealed partial class ShoppingListItemViewModel(ListItem item) : Observabl
         PendingAction.Remove   => "🔒 Pending removal",
         _ => string.Empty,
     };
-}
-
-/// <summary>
-/// Which approval-pending action is queued against a shopping-list item.
-/// </summary>
-public enum PendingAction
-{
-    None,
-    Checkout,
-    Cancel,
-    Remove,
 }

@@ -477,6 +477,275 @@ internal static class Inputs
         public partial class ToolsCtx : AIToolContext { }
         """;
 
+    // --- Static class as source type (static class with static methods) ---
+
+    public const string StaticClassWithStaticMethods = """
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public static class MathHelper
+        {
+            [ExportAIFunction("add")]
+            [Description("Adds two integers.")]
+            public static int Add([Description("first")] int a, [Description("second")] int b) => a + b;
+
+            [ExportAIFunction("negate")]
+            public static int Negate(int value) => -value;
+        }
+
+        [AIToolSource(typeof(MathHelper))]
+        public partial class MathTools : AIToolContext { }
+        """;
+
+    // --- Static method on a non-static class ---
+
+    public const string StaticMethodOnNonStaticClass = """
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class Utility
+        {
+            [ExportAIFunction("echo_static")]
+            public static string Echo(string message) => message;
+
+            [ExportAIFunction("echo_instance")]
+            public string EchoInstance(string message) => message;
+        }
+
+        [AIToolSource(typeof(Utility))]
+        public partial class UtilityTools : AIToolContext { }
+        """;
+
+    // --- Static method with [FromServices] ---
+
+    public const string StaticMethodWithFromServices = """
+        using Microsoft.Extensions.DependencyInjection;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface ILogger { }
+
+        public class Worker
+        {
+            [ExportAIFunction("do_work")]
+            public static string DoWork(string input, [FromServices] ILogger logger) => input;
+        }
+
+        [AIToolSource(typeof(Worker))]
+        public partial class WorkerTools : AIToolContext { }
+        """;
+
+    // --- Static method with no DI (no RequireServices needed) ---
+
+    public const string StaticMethodNoDI = """
+        using System.Linq;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public static class PureFunctions
+        {
+            [ExportAIFunction("reverse")]
+            public static string Reverse(string input) => new string(input.Reverse().ToArray());
+        }
+
+        [AIToolSource(typeof(PureFunctions))]
+        public partial class PureTools : AIToolContext { }
+        """;
+
+    // --- Interface as source type (attributes on interface, resolved via DI) ---
+
+    public const string InterfaceAsSourceType = """
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface IOrderService
+        {
+            [ExportAIFunction("place_order")]
+            [Description("Places an order.")]
+            string PlaceOrder([Description("item name")] string item, [Description("quantity")] int qty);
+        }
+
+        [AIToolSource(typeof(IOrderService))]
+        public partial class OrderTools : AIToolContext { }
+        """;
+
+    // --- Interface as source type with [FromServices] ---
+
+    public const string InterfaceWithFromServices = """
+        using System.ComponentModel;
+        using Microsoft.Extensions.DependencyInjection;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface ICart { }
+
+        public interface IArchive
+        {
+            [ExportAIFunction("checkout")]
+            [Description("Checks out the cart.")]
+            string Checkout([FromServices] ICart cart);
+        }
+
+        [AIToolSource(typeof(IArchive))]
+        public partial class ArchiveTools : AIToolContext { }
+        """;
+
+    // --- Interface with property ---
+
+    public const string InterfaceWithProperty = """
+        using System.Collections.Generic;
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface ICatalog
+        {
+            [ExportAIFunction("all_items")]
+            [Description("Gets all items.")]
+            IReadOnlyList<string> Items { get; }
+        }
+
+        [AIToolSource(typeof(ICatalog))]
+        public partial class CatalogTools : AIToolContext { }
+        """;
+
+    // --- Nested class context (context nested inside another class) ---
+
+    public const string NestedClassContext = """
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string x) => x;
+        }
+
+        public partial class OuterViewModel
+        {
+            [AIToolSource(typeof(Svc))]
+            private partial class InnerTools : AIToolContext { }
+        }
+        """;
+
+    // --- Deeply nested class context (multi-level nesting) ---
+
+    public const string DeeplyNestedClassContext = """
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string x) => x;
+        }
+
+        public partial class LevelOne
+        {
+            public partial class LevelTwo
+            {
+                [AIToolSource(typeof(Svc))]
+                private partial class DeepTools : AIToolContext { }
+            }
+        }
+        """;
+
+    // --- Nested class context with no namespace ---
+
+    public const string NestedClassNoNamespace = """
+        using Microsoft.Maui.AI.Attributes;
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string x) => x;
+        }
+
+        public partial class Outer
+        {
+            [AIToolSource(typeof(Svc))]
+            internal partial class NestedTools : AIToolContext { }
+        }
+        """;
+
+    // --- Internal context class ---
+
+    public const string InternalContextClass = """
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class Svc
+        {
+            [ExportAIFunction]
+            public string Do(string x) => x;
+        }
+
+        [AIToolSource(typeof(Svc))]
+        internal partial class InternalTools : AIToolContext { }
+        """;
+
+    // --- Static class with mixed static members (property + method) and FromServices ---
+
+    public const string StaticClassWithFromServicesAndProperty = """
+        using System.Collections.Generic;
+        using System.ComponentModel;
+        using Microsoft.Extensions.DependencyInjection;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface IDb { }
+
+        public static class DataAccess
+        {
+            [ExportAIFunction("all_records")]
+            [Description("All records.")]
+            public static IReadOnlyList<string> Records { get; } = new[] { "a", "b" };
+
+            [ExportAIFunction("query_records")]
+            [Description("Queries records.")]
+            public static string Query(string filter, [FromServices] IDb db) => filter;
+        }
+
+        [AIToolSource(typeof(DataAccess))]
+        public partial class DataTools : AIToolContext { }
+        """;
+
+    // --- Interface with ApprovalRequired ---
+
+    public const string InterfaceWithApproval = """
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public interface IDangerousService
+        {
+            [ExportAIFunction("safe_read")]
+            [Description("Safe operation.")]
+            string Read();
+
+            [ExportAIFunction("dangerous_write", ApprovalRequired = true)]
+            [Description("Dangerous write operation.")]
+            void Write([Description("data")] string data);
+        }
+
+        [AIToolSource(typeof(IDangerousService))]
+        public partial class DangerousTools : AIToolContext { }
+        """;
+
     public static string Get(string name) => name switch
     {
         nameof(SimpleInstanceMethod) => SimpleInstanceMethod,
@@ -509,6 +778,19 @@ internal static class Inputs
         nameof(StaticProperty) => StaticProperty,
         nameof(InstanceProperty) => InstanceProperty,
         nameof(MixedMethodsAndProperties) => MixedMethodsAndProperties,
+        nameof(StaticClassWithStaticMethods) => StaticClassWithStaticMethods,
+        nameof(StaticMethodOnNonStaticClass) => StaticMethodOnNonStaticClass,
+        nameof(StaticMethodWithFromServices) => StaticMethodWithFromServices,
+        nameof(StaticMethodNoDI) => StaticMethodNoDI,
+        nameof(InterfaceAsSourceType) => InterfaceAsSourceType,
+        nameof(InterfaceWithFromServices) => InterfaceWithFromServices,
+        nameof(InterfaceWithProperty) => InterfaceWithProperty,
+        nameof(NestedClassContext) => NestedClassContext,
+        nameof(DeeplyNestedClassContext) => DeeplyNestedClassContext,
+        nameof(NestedClassNoNamespace) => NestedClassNoNamespace,
+        nameof(InternalContextClass) => InternalContextClass,
+        nameof(StaticClassWithFromServicesAndProperty) => StaticClassWithFromServicesAndProperty,
+        nameof(InterfaceWithApproval) => InterfaceWithApproval,
         _ => throw new KeyNotFoundException(name),
     };
 }

@@ -50,6 +50,16 @@
                                     </DataTemplate>
                                 </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
+                            <Button Text="Reorder"
+                                    FontSize="10"
+                                    Padding="8,2"
+                                    HeightRequest="28"
+                                    BackgroundColor="{AppThemeBinding Light=#3A5A3A, Dark=#1F3320}"
+                                    TextColor="White"
+                                    CornerRadius="4"
+                                    HorizontalOptions="End"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=ReorderPastOrderCommand}"
+                                    CommandParameter="{Binding OrderId}" />
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>
