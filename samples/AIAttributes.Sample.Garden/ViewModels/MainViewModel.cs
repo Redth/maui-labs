@@ -272,8 +272,8 @@ public sealed partial class MainViewModel : ObservableObject
 
         if (_pendingApproval is not null)
         {
-            var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name : "tool";
-            ApprovalText = $"\ud83d\udd12 {name} \u2014 approve?";
+            var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name?.TrimEnd('(', ')') : "tool";
+            ApprovalText = $"🔒 {name} — approve?";
             IsApprovalPending = true;
             MarkPendingFromApproval(_pendingApproval);
             return;
