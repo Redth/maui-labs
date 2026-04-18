@@ -38,6 +38,7 @@
                         x:Name="MessagesView"
                         AutomationId="MessagesView"
                         ItemsSource="{Binding Messages}"
+                        Margin="0,8,0,0"
                         VerticalOptions="Fill">
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="6" />

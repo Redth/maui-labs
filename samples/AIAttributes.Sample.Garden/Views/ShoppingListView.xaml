@@ -11,39 +11,15 @@
                 BackgroundColor="#5B8C5A"
                 StrokeThickness="0"
                 Padding="16,0">
-            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                <Label Text="🛒 Current List"
-                       FontSize="16" FontAttributes="Bold"
-                       TextColor="White" VerticalOptions="Center" />
-                <Button Grid.Column="1"
-                        Text="New Chat"
-                        AutomationId="NewChatButton"
-                        Command="{Binding StartNewSessionCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="White"
-                        BorderColor="White"
-                        BorderWidth="1"
-                        FontSize="12"
-                        CornerRadius="6"
-                        Padding="10,4"
-                        VerticalOptions="Center" />
-            </Grid>
+            <Label Text="🛒 Cart"
+                   FontSize="16" FontAttributes="Bold"
+                   TextColor="White" VerticalOptions="Center" />
         </Border>
 
         <CollectionView Grid.Row="1"
                         ItemsSource="{Binding ShoppingList}"
-                        IsGrouped="True"
                         SelectionMode="None"
                         Margin="0,8,0,0">
-            <CollectionView.GroupHeaderTemplate>
-                <DataTemplate x:DataType="vm:CategoryGroup">
-                    <Label Text="{Binding Header}"
-                           FontSize="12"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light=#5B8C5A, Dark=#A8C8A6}"
-                           Padding="14,10,14,4" />
-                </DataTemplate>
-            </CollectionView.GroupHeaderTemplate>
 
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
@@ -86,7 +62,7 @@
                     <Label Text="🌱"
                            FontSize="36"
                            HorizontalOptions="Center" />
-                    <Label Text="Your list is empty."
+                    <Label Text="Your cart is empty."
                            FontSize="13"
                            HorizontalTextAlignment="Center"
                            TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />

@@ -37,7 +37,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
-    public ObservableCollection<CategoryGroup> ShoppingList { get; } = [];
+    public ObservableCollection<ShoppingListItemViewModel> ShoppingList { get; } = [];
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
 
     public IReadOnlyList<string> SuggestionPrompts { get; } =
@@ -162,11 +162,8 @@ public sealed partial class MainViewModel : ObservableObject
     {
         ShoppingList.Clear();
         var items = _currentCart.Cart.Snapshot();
-        var groups = items
-            .GroupBy(i => i.Product.Category, StringComparer.OrdinalIgnoreCase)
-            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
-        foreach (var g in groups)
-            ShoppingList.Add(new CategoryGroup(g.Key, g.Select(i => new ShoppingListItemViewModel(i))));
+        foreach (var item in items)
+            ShoppingList.Add(new ShoppingListItemViewModel(item));
         ShoppingListTotal = items.Sum(i => i.Subtotal).ToString("C");
     }
 
@@ -177,8 +174,7 @@ public sealed partial class MainViewModel : ObservableObject
             PastOrders.Add(new OrderViewModel(o));
     }
 
-    private IEnumerable<ShoppingListItemViewModel> AllListItems =>
-        ShoppingList.SelectMany(g => g);
+    private IEnumerable<ShoppingListItemViewModel> AllListItems => ShoppingList;
 
     /// <summary>
     /// Marks list items affected by an in-flight approval so the panel can ghost them.
