@@ -50,4 +50,11 @@ public interface IOrderArchive
     void Reorder(
         [Description("The id of the past order to copy (from list_past_orders).")] string orderId,
         [FromServices] CurrentCart cart);
+
+    /// <summary>
+    /// Removes all past orders from the archive.
+    /// </summary>
+    [ExportAIFunction("clear_past_orders", ApprovalRequired = true)]
+    [Description("Removes all past orders from the archive. This action cannot be undone.")]
+    void Clear();
 }

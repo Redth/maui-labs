@@ -12,9 +12,21 @@
                 BackgroundColor="{AppThemeBinding Light=#3A5A3A, Dark=#1F3320}"
                 StrokeThickness="0"
                 Padding="16,0">
-            <Label Text="Past Orders"
-                   FontSize="14" FontAttributes="Bold"
-                   TextColor="White" VerticalOptions="Center" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Past Orders"
+                       FontSize="14" FontAttributes="Bold"
+                       TextColor="White" VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="Clear"
+                        FontSize="10"
+                        Padding="8,2"
+                        HeightRequest="26"
+                        BackgroundColor="{AppThemeBinding Light=#5A3A3A, Dark=#3A2020}"
+                        TextColor="White"
+                        CornerRadius="4"
+                        VerticalOptions="Center"
+                        Command="{Binding ClearPastOrdersCommand}" />
+            </Grid>
         </Border>
 
         <CollectionView Grid.Row="1"

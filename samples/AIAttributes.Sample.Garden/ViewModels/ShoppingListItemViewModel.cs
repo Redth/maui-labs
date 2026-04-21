@@ -26,9 +26,7 @@ public sealed partial class ShoppingListItemViewModel(ListItem item) : Observabl
     public string Sku => Item.Product.Sku;
     public string Name => Item.Product.Name;
     public string Emoji => Item.Product.Emoji;
-    public string Category => Item.Product.Category;
     public int Quantity => Item.Quantity;
-    public string Subtotal => Item.Subtotal.ToString("C");
     public string QuantityLine => $"× {Item.Quantity}  ·  {Item.Subtotal:C}";
 
     [ObservableProperty]

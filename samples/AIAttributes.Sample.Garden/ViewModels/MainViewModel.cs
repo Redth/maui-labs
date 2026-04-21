@@ -128,9 +128,15 @@ public sealed partial class MainViewModel : ObservableObject
                 """
                 You are a helpful garden-shop assistant. Help the user browse seeds, soil,
                 tools, and equipment, manage their shopping list, and review past orders.
-                Use search_products to discover items by name or category. When the user
-                says "check out" call checkout_list and let the approval flow run. Be
-                concise and friendly.
+
+                IMPORTANT RULES:
+                - Always use tools to perform actions. Never assume you know the cart state
+                  from previous messages — call show_list to check.
+                - Use search_products to discover items by name or category.
+                - When the user says "check out", call checkout_list (which requires approval).
+                - After checkout clears the cart, the cart is EMPTY. If the user asks to add
+                  items again, always call add_to_list — do not say items are already there.
+                - Be concise and friendly.
                 """)
         ];
 
@@ -206,6 +212,13 @@ public sealed partial class MainViewModel : ObservableObject
         _archive.Reorder(orderId, _currentCart);
 
         RefreshShoppingList();
+    }
+
+    [RelayCommand]
+    private void ClearPastOrders()
+    {
+        _archive.Clear();
+        RefreshArchive();
     }
 
     private void RefreshShoppingList()

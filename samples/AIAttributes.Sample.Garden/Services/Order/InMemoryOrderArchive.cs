@@ -38,4 +38,6 @@ public sealed class InMemoryOrderArchive : IOrderArchive
         foreach (var item in order.Items)
             cart.AddItem(item.Product.Sku, item.Quantity);
     }
+
+    public void Clear() => _orders.Clear();
 }

@@ -15,24 +15,8 @@
     <Color x:Key="Black">#000000</Color>
 
     <!-- App-specific colors -->
-    <Color x:Key="PageBg">#F7F3ED</Color>
-    <Color x:Key="PageBgDark">#1C1B18</Color>
-    <Color x:Key="CardBg">#FFFFFF</Color>
-    <Color x:Key="CardBgDark">#2A2721</Color>
-    <Color x:Key="CardBorder">#E8E0D4</Color>
-    <Color x:Key="CardBorderDark">#3D3930</Color>
-    <Color x:Key="TextPrimary">#2C2416</Color>
-    <Color x:Key="TextPrimaryDark">#EDE8DF</Color>
-    <Color x:Key="TextSecondary">#7A7062</Color>
-    <Color x:Key="TextSecondaryDark">#A69E90</Color>
-    <Color x:Key="AccentGreen">#5B8C5A</Color>
-    <Color x:Key="AccentOchre">#C9A96E</Color>
-    <Color x:Key="AccentSage">#8CAD7E</Color>
-    <Color x:Key="BadgeIndoor">#E8D5A3</Color>
-    <Color x:Key="BadgeOutdoor">#B5D8B2</Color>
     <Color x:Key="ChatUser">#5B8C5A</Color>
     <Color x:Key="ChatAI">#C9A96E</Color>
-    <Color x:Key="Danger">#C75050</Color>
 
     <!-- Gray scale -->
     <Color x:Key="Gray100">#E8E0D4</Color>

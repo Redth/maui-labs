@@ -51,6 +51,12 @@ public sealed class PreferencesOrderArchive : IOrderArchive
             cart.AddItem(item.Product.Sku, item.Quantity);
     }
 
+    public void Clear()
+    {
+        _cache = [];
+        Preferences.Default.Remove(StorageKey);
+    }
+
     private List<Order> LoadOrders()
     {
         if (_cache is not null)
