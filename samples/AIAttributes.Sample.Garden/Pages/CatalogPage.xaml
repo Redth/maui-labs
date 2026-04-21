@@ -8,9 +8,10 @@
              Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False"
              SafeAreaEdges="None"
-             BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
+             BackgroundColor="{StaticResource Primary}">
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*"
+          BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
         <!-- Modal header -->
         <Border Grid.Row="0"
                 BackgroundColor="{StaticResource Primary}"

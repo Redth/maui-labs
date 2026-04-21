@@ -9,24 +9,30 @@
              Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False"
              SafeAreaEdges="None"
-             BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
+             BackgroundColor="{StaticResource Primary}">
 
-    <Grid SafeAreaEdges="None">
-        <views:ShoppingListView />
+    <Grid RowDefinitions="Auto,*">
+        <!-- Safe area spacer — colored green to match cart header -->
+        <BoxView Grid.Row="0"
+                 BackgroundColor="{StaticResource Primary}"
+                 SafeAreaEdges="Container"
+                 HeightRequest="0" />
 
-        <!-- Dismiss button overlay — positioned in the cart's green header area -->
-        <Border HorizontalOptions="End" VerticalOptions="Start"
-                BackgroundColor="Transparent" StrokeThickness="0"
-                SafeAreaEdges="Container"
-                Padding="8,4" Margin="4">
+        <!-- Cart content with close button overlay -->
+        <Grid Grid.Row="1">
+            <views:ShoppingListView />
+
+            <!-- Close button overlay — top-left over the cart's green header -->
             <Button Text="&#xF36A;"
                     FontFamily="FluentFilled"
                     FontSize="{StaticResource FontSizeSubtitle}"
                     TextColor="{StaticResource White}"
                     BackgroundColor="Transparent"
                     Padding="8,4"
+                    HorizontalOptions="Start" VerticalOptions="Start"
+                    Margin="8,10"
                     Clicked="OnCloseClicked" />
-        </Border>
+        </Grid>
     </Grid>
 
 </ContentPage>

@@ -18,10 +18,10 @@
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0" />
 
-        <!-- Header content — two-column system: chat area (2*) and cart/button area (1*) -->
+        <!-- Header content — title stretches, buttons auto-size -->
         <Grid Grid.Row="0" Grid.ColumnSpan="2"
-              ColumnDefinitions="2*,1*"
-              Padding="16,8" ColumnSpacing="12"
+              ColumnDefinitions="*,Auto"
+              Padding="16,8" ColumnSpacing="8"
               SafeAreaEdges="Container">
             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                 <Label Text="Sage"
