@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.Models;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.Services;
@@ -13,8 +15,8 @@ public sealed class CurrentCart
 {
     private readonly List<ListItem> _items = [];
 
-    /// <summary>Raised after any mutation (add, remove, clear, qty change).</summary>
-    public event Action? Changed;
+    private void NotifyChanged() =>
+        WeakReferenceMessenger.Default.Send(new CartChangedMessage());
 
     // Feature: [ExportAIFunction] on an instance property — the generator
     // resolves CurrentCart from DI then reads the getter.
@@ -56,7 +58,7 @@ public sealed class CurrentCart
             updated = new ListItem(product, quantity);
             _items.Add(updated);
         }
-        Changed?.Invoke();
+        NotifyChanged();
         return updated;
     }
 
@@ -83,7 +85,7 @@ public sealed class CurrentCart
 
         var updated = _items[idx] with { Quantity = quantity };
         _items[idx] = updated;
-        Changed?.Invoke();
+        NotifyChanged();
         return updated;
     }
 
@@ -100,7 +102,7 @@ public sealed class CurrentCart
         if (idx < 0)
             return false;
         _items.RemoveAt(idx);
-        Changed?.Invoke();
+        NotifyChanged();
         return true;
     }
 
@@ -109,6 +111,6 @@ public sealed class CurrentCart
     public void Clear()
     {
         _items.Clear();
-        Changed?.Invoke();
+        NotifyChanged();
     }
 }

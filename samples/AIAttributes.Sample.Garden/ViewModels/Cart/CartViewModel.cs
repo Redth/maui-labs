@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
@@ -12,7 +14,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// that manipulate the cart display. Designed to be reusable — any page
 /// can host a cart view bound to this VM.
 /// </summary>
-public sealed partial class CartViewModel : ObservableObject
+public sealed partial class CartViewModel : ObservableObject, IRecipient<CartChangedMessage>
 {
     private readonly CurrentCart _currentCart;
     private readonly IOrderArchive _archive;
@@ -22,9 +24,10 @@ public sealed partial class CartViewModel : ObservableObject
         _currentCart = currentCart;
         _archive = archive;
 
-        // Auto-refresh when the cart service changes (AI tools, catalog add, etc.)
-        _currentCart.Changed += Refresh;
+        WeakReferenceMessenger.Default.Register(this);
     }
+
+    void IRecipient<CartChangedMessage>.Receive(CartChangedMessage message) => Refresh();
 
     public ObservableCollection<CartItemViewModel> Items { get; } = [];
 

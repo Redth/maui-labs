@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
@@ -12,7 +14,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// Owns page navigation, catalog browsing, and order history.
 /// Chat and cart views resolve their own VMs via <see cref="ViewModelBinder"/>.
 /// </summary>
-public sealed partial class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTurnCompletedMessage>
 {
     private readonly CurrentCart _currentCart;
     private readonly IOrderArchive _archive;
@@ -28,8 +30,7 @@ public sealed partial class MainViewModel : ObservableObject
         _currentCart = currentCart;
         _archive = archive;
 
-        // After every AI turn, refresh orders (cart self-refreshes via CurrentCart.Changed)
-        _chat.TurnCompleted += RefreshArchive;
+        WeakReferenceMessenger.Default.Register(this);
 
         // Build catalog grouped by category
         var groups = ProductCatalog.All
@@ -143,6 +144,9 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     // ─────────────────────────────────────────────────────────────────
+
+    void IRecipient<ChatTurnCompletedMessage>.Receive(ChatTurnCompletedMessage message)
+        => RefreshArchive();
 
     private void RefreshArchive()
     {

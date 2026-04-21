@@ -1,33 +1,22 @@
+using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.ViewModels;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace AIAttributes.Sample.Garden.Views;
 
-public partial class ChatView : ContentView
+public partial class ChatView : ContentView, IRecipient<ChatMessageAddedMessage>
 {
-    private ChatViewModel? _previousVm;
-
     public ChatView()
     {
         InitializeComponent();
-        BindingContextChanged += OnBindingContextChanged;
+        WeakReferenceMessenger.Default.Register(this);
     }
 
-    private void OnBindingContextChanged(object? sender, EventArgs e)
-    {
-        if (_previousVm is not null)
-            _previousVm.MessageAdded -= OnMessageAdded;
-
-        _previousVm = BindingContext as ChatViewModel;
-
-        if (_previousVm is not null)
-            _previousVm.MessageAdded += OnMessageAdded;
-    }
-
-    private void OnMessageAdded(ChatMessageViewModel message)
+    void IRecipient<ChatMessageAddedMessage>.Receive(ChatMessageAddedMessage message)
     {
         Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
         {
-            try { MessagesView.ScrollTo(message, position: ScrollToPosition.End, animate: true); }
+            try { MessagesView.ScrollTo(message.Message, position: ScrollToPosition.End, animate: true); }
             catch { /* item may have been removed */ }
         });
     }

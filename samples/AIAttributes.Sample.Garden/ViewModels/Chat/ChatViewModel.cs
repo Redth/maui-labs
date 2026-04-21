@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.AI;
 using Microsoft.Maui.AI.Attributes;
 
@@ -76,12 +78,6 @@ public sealed partial class ChatViewModel : ObservableObject
     [ObservableProperty]
     private string _approvalText = "";
 
-    /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
-    public event Action<ChatMessageViewModel>? MessageAdded;
-
-    /// <summary>Raised after every AI turn so the host can refresh cart/order state.</summary>
-    public event Action? TurnCompleted;
-
     public void Initialize()
     {
         RefreshAvailableTools();
@@ -152,7 +148,7 @@ public sealed partial class ChatViewModel : ObservableObject
         finally
         {
             IsBusy = false;
-            TurnCompleted?.Invoke();
+            WeakReferenceMessenger.Default.Send(new ChatTurnCompletedMessage());
         }
     }
 
@@ -254,7 +250,7 @@ public sealed partial class ChatViewModel : ObservableObject
         finally
         {
             IsBusy = false;
-            TurnCompleted?.Invoke();
+            WeakReferenceMessenger.Default.Send(new ChatTurnCompletedMessage());
         }
     }
 
@@ -262,7 +258,7 @@ public sealed partial class ChatViewModel : ObservableObject
     {
         var vm = new ChatMessageViewModel(kind, text, icon);
         Messages.Add(vm);
-        MessageAdded?.Invoke(vm);
+        WeakReferenceMessenger.Default.Send(new ChatMessageAddedMessage(vm));
         return vm;
     }
 
