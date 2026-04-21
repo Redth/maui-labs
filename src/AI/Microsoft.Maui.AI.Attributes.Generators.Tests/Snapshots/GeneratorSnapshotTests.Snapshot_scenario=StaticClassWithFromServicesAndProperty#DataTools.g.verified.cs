@@ -80,7 +80,7 @@ namespace Sample
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __arg_filter = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "filter");
                 var __arg_db = __provider.GetService<global::Sample.IDb>() ?? throw new global::System.InvalidOperationException(
-                    "Could not resolve service 'global::Sample.IDb' from IServiceProvider. " +
+                    "Tool parameter 'db' of type 'global::Sample.IDb' could not be resolved from IServiceProvider. " +
                     "Register the service in your DI container.");
                 var __result = global::Sample.DataAccess.Query(__arg_filter, __arg_db);
                 return __result;

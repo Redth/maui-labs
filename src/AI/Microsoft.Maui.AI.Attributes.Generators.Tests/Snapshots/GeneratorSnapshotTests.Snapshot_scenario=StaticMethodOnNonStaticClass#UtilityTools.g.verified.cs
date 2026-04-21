@@ -125,8 +125,8 @@ namespace Sample
                     "Tool 'echo_instance' requires services (source type: global::Sample.Utility) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetService<global::Sample.Utility>() ?? throw new global::System.InvalidOperationException(
-                    "Tool 'echo_instance' could not resolve service 'global::Sample.Utility' from IServiceProvider. " +
-                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
+                    "Tool 'echo_instance' could not resolve its source type 'global::Sample.Utility' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "message");
                 var __result = __service.EchoInstance(__arg_message);
                 return __result;

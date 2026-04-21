@@ -77,8 +77,8 @@ namespace Sample
                     "Tool 'place_order' requires services (source type: global::Sample.IOrderService) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetService<global::Sample.IOrderService>() ?? throw new global::System.InvalidOperationException(
-                    "Tool 'place_order' could not resolve service 'global::Sample.IOrderService' from IServiceProvider. " +
-                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
+                    "Tool 'place_order' could not resolve its source type 'global::Sample.IOrderService' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_item = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "item");
                 var __arg_qty = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<int>(arguments, "qty");
                 var __result = __service.PlaceOrder(__arg_item, __arg_qty);

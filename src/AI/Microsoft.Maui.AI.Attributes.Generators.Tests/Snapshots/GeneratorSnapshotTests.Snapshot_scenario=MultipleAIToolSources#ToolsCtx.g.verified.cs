@@ -78,8 +78,8 @@ namespace Sample
                     "Tool 'DoA' requires services (source type: global::Sample.SvcA) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetService<global::Sample.SvcA>() ?? throw new global::System.InvalidOperationException(
-                    "Tool 'DoA' could not resolve service 'global::Sample.SvcA' from IServiceProvider. " +
-                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
+                    "Tool 'DoA' could not resolve its source type 'global::Sample.SvcA' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "x");
                 var __result = __service.DoA(__arg_x);
                 return __result;
@@ -131,8 +131,8 @@ namespace Sample
                     "Tool 'DoB' requires services (source type: global::Sample.SvcB) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetService<global::Sample.SvcB>() ?? throw new global::System.InvalidOperationException(
-                    "Tool 'DoB' could not resolve service 'global::Sample.SvcB' from IServiceProvider. " +
-                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
+                    "Tool 'DoB' could not resolve its source type 'global::Sample.SvcB' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "x");
                 var __result = __service.DoB(__arg_x);
                 return __result;

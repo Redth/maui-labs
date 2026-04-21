@@ -78,10 +78,10 @@ namespace Sample
                     "Tool 'checkout' requires services (source type: global::Sample.IArchive) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetService<global::Sample.IArchive>() ?? throw new global::System.InvalidOperationException(
-                    "Tool 'checkout' could not resolve service 'global::Sample.IArchive' from IServiceProvider. " +
-                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
+                    "Tool 'checkout' could not resolve its source type 'global::Sample.IArchive' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_cart = __provider.GetService<global::Sample.ICart>() ?? throw new global::System.InvalidOperationException(
-                    "Could not resolve service 'global::Sample.ICart' from IServiceProvider. " +
+                    "Tool parameter 'cart' of type 'global::Sample.ICart' could not be resolved from IServiceProvider. " +
                     "Register the service in your DI container.");
                 var __result = __service.Checkout(__arg_cart);
                 return __result;
