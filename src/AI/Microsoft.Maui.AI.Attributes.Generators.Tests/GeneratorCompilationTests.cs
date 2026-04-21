@@ -76,7 +76,7 @@ public class GeneratorCompilationTests
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodWithFromServices);
         var generated = output.SyntaxTrees.Last().ToString();
         Assert.Contains("arguments.Services ?? throw new", generated);
-        Assert.Contains("GetRequiredService<global::Sample.ILogger>()", generated);
+        Assert.Contains("GetService<global::Sample.ILogger>()", generated);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public class GeneratorCompilationTests
     {
         var (_, _, output) = RunAndCompile(Inputs.InterfaceAsSourceType);
         var generated = output.SyntaxTrees.Last().ToString();
-        Assert.Contains("GetRequiredService<global::Sample.IOrderService>()", generated);
+        Assert.Contains("GetService<global::Sample.IOrderService>()", generated);
     }
 
     [Fact]

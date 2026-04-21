@@ -76,7 +76,9 @@ namespace Sample
                 var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
                     "Tool 'say_hello' requires services (source type: global::Sample.Svc) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
-                var __service = __provider.GetRequiredService<global::Sample.Svc>();
+                var __service = __provider.GetService<global::Sample.Svc>() ?? throw new global::System.InvalidOperationException(
+                    "Tool 'say_hello' could not resolve service 'global::Sample.Svc' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
                 var __result = __service.Hello();
                 return __result;
             }

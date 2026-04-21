@@ -745,7 +745,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
         if (needsServiceForInstance)
         {
-            sb.AppendLine($"{indent}        var __service = __provider.GetRequiredService<{st.FullyQualifiedName}>();");
+            sb.AppendLine($"{indent}        var __service = __provider.GetService<{st.FullyQualifiedName}>() ?? throw new global::System.InvalidOperationException(");
+            sb.AppendLine($"{indent}            \"Tool '{m.ToolName}' could not resolve service '{st.FullyQualifiedName}' from IServiceProvider. \" +");
+            sb.AppendLine($"{indent}            \"Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.\");");
         }
 
         var argNames = new List<string>();
@@ -804,7 +806,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 sb.AppendLine($"{indent}var {local} = arguments;");
                 break;
             case ParameterKind.FromServices:
-                sb.AppendLine($"{indent}var {local} = __provider.GetRequiredService<{p.TypeName}>();");
+                sb.AppendLine($"{indent}var {local} = __provider.GetService<{p.TypeName}>() ?? throw new global::System.InvalidOperationException(");
+                sb.AppendLine($"{indent}    \"Could not resolve service '{p.TypeName}' from IServiceProvider. \" +");
+                sb.AppendLine($"{indent}    \"Register the service in your DI container.\");");
                 break;
             case ParameterKind.FromKeyedServices:
                 sb.AppendLine($"{indent}var {local} = __provider.GetRequiredKeyedService<{p.TypeName}>({p.KeyedServiceKey ?? "null"});");

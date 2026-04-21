@@ -78,7 +78,9 @@ namespace Sample
                     "Tool 'do_work' requires services (source type: global::Sample.Worker) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __arg_input = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "input");
-                var __arg_logger = __provider.GetRequiredService<global::Sample.ILogger>();
+                var __arg_logger = __provider.GetService<global::Sample.ILogger>() ?? throw new global::System.InvalidOperationException(
+                    "Could not resolve service 'global::Sample.ILogger' from IServiceProvider. " +
+                    "Register the service in your DI container.");
                 var __result = global::Sample.Worker.DoWork(__arg_input, __arg_logger);
                 return __result;
             }

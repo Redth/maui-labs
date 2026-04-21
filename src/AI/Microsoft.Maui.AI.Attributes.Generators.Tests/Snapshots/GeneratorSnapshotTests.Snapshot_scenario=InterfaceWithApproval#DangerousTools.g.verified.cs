@@ -77,7 +77,9 @@ namespace Sample
                 var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
                     "Tool 'safe_read' requires services (source type: global::Sample.IDangerousService) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
-                var __service = __provider.GetRequiredService<global::Sample.IDangerousService>();
+                var __service = __provider.GetService<global::Sample.IDangerousService>() ?? throw new global::System.InvalidOperationException(
+                    "Tool 'safe_read' could not resolve service 'global::Sample.IDangerousService' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
                 var __result = __service.Read();
                 return __result;
             }
@@ -127,7 +129,9 @@ namespace Sample
                 var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
                     "Tool 'dangerous_write' requires services (source type: global::Sample.IDangerousService) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
-                var __service = __provider.GetRequiredService<global::Sample.IDangerousService>();
+                var __service = __provider.GetService<global::Sample.IDangerousService>() ?? throw new global::System.InvalidOperationException(
+                    "Tool 'dangerous_write' could not resolve service 'global::Sample.IDangerousService' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
                 var __arg_data = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "data");
                 __service.Write(__arg_data);
                 return null;

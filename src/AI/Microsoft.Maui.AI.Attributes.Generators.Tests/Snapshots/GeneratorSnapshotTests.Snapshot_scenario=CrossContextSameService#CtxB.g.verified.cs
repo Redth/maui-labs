@@ -76,7 +76,9 @@ namespace Sample
                 var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
                     "Tool 'Do' requires services (source type: global::Sample.Shared) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
-                var __service = __provider.GetRequiredService<global::Sample.Shared>();
+                var __service = __provider.GetService<global::Sample.Shared>() ?? throw new global::System.InvalidOperationException(
+                    "Tool 'Do' could not resolve service 'global::Sample.Shared' from IServiceProvider. " +
+                    "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a real IServiceProvider.");
                 var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "x");
                 var __result = __service.Do(__arg_x);
                 return __result;

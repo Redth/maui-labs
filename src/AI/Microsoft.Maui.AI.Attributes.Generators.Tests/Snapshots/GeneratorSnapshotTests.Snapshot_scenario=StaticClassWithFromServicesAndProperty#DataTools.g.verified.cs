@@ -79,7 +79,9 @@ namespace Sample
                     "Tool 'query_records' requires services (source type: global::Sample.DataAccess) but no IServiceProvider was supplied. " +
                     "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __arg_filter = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "filter");
-                var __arg_db = __provider.GetRequiredService<global::Sample.IDb>();
+                var __arg_db = __provider.GetService<global::Sample.IDb>() ?? throw new global::System.InvalidOperationException(
+                    "Could not resolve service 'global::Sample.IDb' from IServiceProvider. " +
+                    "Register the service in your DI container.");
                 var __result = global::Sample.DataAccess.Query(__arg_filter, __arg_db);
                 return __result;
             }
