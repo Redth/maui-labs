@@ -18,18 +18,18 @@
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0" />
 
-        <!-- Header content — title stretches, buttons auto-size -->
+        <!-- Header content — standard: [icon] [title] ... [actions] -->
         <Grid Grid.Row="0" Grid.ColumnSpan="2"
               ColumnDefinitions="*,Auto"
               Padding="16,8" ColumnSpacing="8"
               SafeAreaEdges="Container">
-            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                <Label Text="Sage"
-                       FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
-                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                 <Label Text="&#xE76C;"
                        FontFamily="FluentFilled"
-                       FontSize="{StaticResource FontSizeDisplay}"
+                       FontSize="{StaticResource FontSizeTitle}"
+                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+                <Label Text="Sage"
+                       FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
                        TextColor="{StaticResource White}" VerticalOptions="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Grid.Column="1" Spacing="8"

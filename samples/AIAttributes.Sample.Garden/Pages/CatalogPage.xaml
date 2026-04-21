@@ -12,13 +12,13 @@
 
     <Grid RowDefinitions="Auto,*"
           BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
-        <!-- Modal header -->
+        <!-- Standard header: [back] [icon] [title] -->
         <Border Grid.Row="0"
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0"
                 Padding="16,8"
                 SafeAreaEdges="Container">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                 <Button Text="&#xF36A;"
                         FontFamily="FluentFilled"
                         FontSize="{StaticResource FontSizeSubtitle}"
@@ -27,13 +27,15 @@
                         TextColor="{StaticResource White}"
                         VerticalOptions="Center"
                         Clicked="OnCloseClicked" />
-                <Label Grid.Column="1"
-                       Text="Product Catalog"
+                <Label Text="&#xF788;"
+                       FontFamily="FluentFilled"
+                       FontSize="{StaticResource FontSizeSubtitle}"
+                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+                <Label Text="Catalog"
                        FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
                        TextColor="{StaticResource White}"
-                       VerticalOptions="Center"
-                       HorizontalTextAlignment="Center" />
-            </Grid>
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
         </Border>
 
         <!-- Grouped vertical product list -->

@@ -12,28 +12,32 @@
 
     <Grid RowDefinitions="Auto,*"
           BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
-        <!-- Modal header with close + clear -->
+        <!-- Standard header: [back] [icon] [title] ... [clear all] -->
         <Border Grid.Row="0"
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0"
                 Padding="16,8"
                 SafeAreaEdges="Container">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                <Button Text="&#xF36A;"
-                        FontFamily="FluentFilled"
-                        FontSize="{StaticResource FontSizeSubtitle}"
-                        Padding="8,4"
-                        BackgroundColor="Transparent"
-                        TextColor="{StaticResource White}"
-                        VerticalOptions="Center"
-                        Clicked="OnCloseClicked" />
-                <Label Grid.Column="1"
-                       Text="Past Orders"
-                       FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
-                       TextColor="{StaticResource White}"
-                       VerticalOptions="Center"
-                       HorizontalTextAlignment="Center" />
-                <Button Grid.Column="2"
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                    <Button Text="&#xF36A;"
+                            FontFamily="FluentFilled"
+                            FontSize="{StaticResource FontSizeSubtitle}"
+                            Padding="8,4"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource White}"
+                            VerticalOptions="Center"
+                            Clicked="OnCloseClicked" />
+                    <Label Text="&#xEA07;"
+                           FontFamily="FluentFilled"
+                           FontSize="{StaticResource FontSizeSubtitle}"
+                           TextColor="{StaticResource White}" VerticalOptions="Center" />
+                    <Label Text="Orders"
+                           FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
+                           TextColor="{StaticResource White}"
+                           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <Button Grid.Column="1"
                         Text="Clear All"
                         FontSize="{StaticResource FontSizeBody}"
                         FontAttributes="Bold"

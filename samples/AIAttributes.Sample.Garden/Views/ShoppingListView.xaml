@@ -17,19 +17,19 @@
 
         <Grid RowDefinitions="Auto,*,Auto" RowSpacing="0">
 
-            <!-- Cart header -->
-            <Grid Padding="16,14"
+            <!-- Sidebar-only mini header — icon + title + mode pill -->
+            <Grid Padding="14,10"
                   ColumnDefinitions="*,Auto"
-                  ColumnSpacing="8"
-                  BackgroundColor="{StaticResource Primary}">
+                  ColumnSpacing="8">
                 <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
                     <Label Text="&#xF26B;"
                            FontFamily="FluentFilled"
-                           FontSize="{StaticResource FontSizeSubtitle}"
-                           TextColor="{StaticResource White}" VerticalOptions="Center" />
+                           FontSize="{StaticResource FontSizeBody}"
+                           TextColor="{StaticResource Primary}"
+                           VerticalOptions="Center" />
                     <Label Text="Cart"
-                           FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
-                           TextColor="{StaticResource White}" VerticalOptions="Center" />
+                           FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
+                           VerticalOptions="Center" />
                 </HorizontalStackLayout>
                 <Border Grid.Column="1"
                         BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
@@ -52,7 +52,6 @@
             <CollectionView Grid.Row="1"
                             ItemsSource="{Binding ShoppingList}"
                             SelectionMode="None"
-                            Margin="0,8,0,0"
                             BackgroundColor="Transparent"
                             IsVisible="{Binding IsNormalMode}">
                 <CollectionView.ItemTemplate>
@@ -102,7 +101,6 @@
             <CollectionView Grid.Row="1"
                             ItemsSource="{Binding ShoppingList}"
                             SelectionMode="None"
-                            Margin="0,4,0,0"
                             BackgroundColor="Transparent"
                             IsVisible="{Binding IsCompactMode}">
                 <CollectionView.ItemTemplate>
