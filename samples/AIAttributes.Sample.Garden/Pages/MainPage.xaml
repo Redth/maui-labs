@@ -150,7 +150,7 @@
                     </Border>
                 </Grid>
                 <!-- Headerless cart content -->
-                <views:ShoppingListView Grid.Row="1" />
+                <views:CartView Grid.Row="1" />
             </Grid>
         </Border>
 

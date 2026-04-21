@@ -95,7 +95,7 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
             new(ChatRole.System,
                 """
                 You are a helpful garden-shop assistant. Help the user browse seeds, soil,
-                tools, and equipment, manage their shopping list, and review past orders.
+                tools, and equipment, manage their cart, and review past orders.
 
                 IMPORTANT RULES:
                 - Always use tools to perform actions. Never assume you know the cart state

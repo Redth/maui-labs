@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:AIAttributes.Sample.Garden"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
-             x:Class="AIAttributes.Sample.Garden.Views.ShoppingListView"
+             x:Class="AIAttributes.Sample.Garden.Views.CartView"
              x:DataType="vm:CartViewModel"
              local:ViewModelBinder.Type="{x:Type vm:CartViewModel}"
              BackgroundColor="Transparent">
