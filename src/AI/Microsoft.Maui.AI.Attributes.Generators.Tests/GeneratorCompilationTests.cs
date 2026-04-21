@@ -36,7 +36,17 @@ public class GeneratorCompilationTests
         return driver.GetRunResult().GeneratedTrees.Length;
     }
 
-    // ── Static class scenarios ──────────────────────────────────────────
+    private static string GetGeneratedSource(Compilation output, string contextClassName)
+    {
+        // Find the generated syntax tree that contains the user-declared context class (not the assembly-wide one).
+        foreach (var tree in output.SyntaxTrees)
+        {
+            var text = tree.ToString();
+            if (text.Contains($"partial class {contextClassName}"))
+                return text;
+        }
+        return output.SyntaxTrees.Last().ToString();
+    }
 
     [Fact]
     public void StaticClass_WithStaticMethods_CompilesCleanly()
@@ -46,7 +56,7 @@ public class GeneratorCompilationTests
     public void StaticClass_WithStaticMethods_EmitsTwoTools()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticClassWithStaticMethods);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("new MathHelper_Add_Tool()", generated);
         Assert.Contains("new MathHelper_Negate_Tool()", generated);
     }
@@ -59,7 +69,7 @@ public class GeneratorCompilationTests
     public void StaticMethodOnNonStaticClass_EmitsBothStaticAndInstance()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodOnNonStaticClass);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         // Static method: class name derived from method name "Echo"
         Assert.Contains("Utility_Echo_Tool", generated);
         // Instance method: class name derived from method name "EchoInstance"
@@ -74,7 +84,7 @@ public class GeneratorCompilationTests
     public void StaticMethodWithFromServices_InlinesServiceProviderCheck()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodWithFromServices);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("arguments.Services ?? throw new", generated);
         Assert.Contains("GetService<global::Sample.ILogger>()", generated);
     }
@@ -87,7 +97,7 @@ public class GeneratorCompilationTests
     public void StaticMethodNoDI_DoesNotInlineServiceProviderCheck()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodNoDI);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.DoesNotContain("arguments.Services", generated);
         Assert.DoesNotContain("__provider", generated);
     }
@@ -106,7 +116,7 @@ public class GeneratorCompilationTests
     public void InterfaceAsSourceType_ResolvesViaInterface()
     {
         var (_, _, output) = RunAndCompile(Inputs.InterfaceAsSourceType);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("GetService<global::Sample.IOrderService>()", generated);
     }
 
@@ -118,7 +128,7 @@ public class GeneratorCompilationTests
     public void InterfaceWithFromServices_ExcludesFromServicesFromSchema()
     {
         var (_, _, output) = RunAndCompile(Inputs.InterfaceWithFromServices);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("\"cart\"", generated); // excluded from schema
     }
 
@@ -130,7 +140,7 @@ public class GeneratorCompilationTests
     public void InterfaceWithProperty_UsesGetProperty()
     {
         var (_, _, output) = RunAndCompile(Inputs.InterfaceWithProperty);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("GetProperty(\"Items\"", generated);
     }
 
@@ -142,7 +152,7 @@ public class GeneratorCompilationTests
     public void InterfaceWithApproval_WrapsApprovalRequired()
     {
         var (_, _, output) = RunAndCompile(Inputs.InterfaceWithApproval);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "ToolsCtx");
         Assert.Contains("ApprovalRequiredAIFunction(new IDangerousService_Write_Tool())", generated);
         // safe_read should NOT be wrapped
         Assert.Contains("new IDangerousService_Read_Tool(),", generated);
@@ -156,13 +166,13 @@ public class GeneratorCompilationTests
 
     [Fact]
     public void NestedClassContext_GeneratesOneSource()
-        => Assert.Equal(1, CountGeneratedSources(Inputs.NestedClassContext));
+        => Assert.Equal(2, CountGeneratedSources(Inputs.NestedClassContext));
 
     [Fact]
     public void NestedClassContext_EmitsContainingTypeWrapper()
     {
         var (_, _, output) = RunAndCompile(Inputs.NestedClassContext);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "InnerTools");
         Assert.Contains("public partial class OuterViewModel", generated);
         Assert.Contains("private partial class InnerTools", generated);
     }
@@ -175,7 +185,7 @@ public class GeneratorCompilationTests
     public void DeeplyNestedClassContext_EmitsMultipleLevels()
     {
         var (_, _, output) = RunAndCompile(Inputs.DeeplyNestedClassContext);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "DeepTools");
         Assert.Contains("public partial class LevelOne", generated);
         Assert.Contains("public partial class LevelTwo", generated);
         Assert.Contains("private partial class DeepTools", generated);
@@ -189,7 +199,7 @@ public class GeneratorCompilationTests
     public void NestedClassNoNamespace_EmitsNoNamespaceWrapper()
     {
         var (_, _, output) = RunAndCompile(Inputs.NestedClassNoNamespace);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "NestedTools");
         Assert.DoesNotContain("namespace", generated);
         Assert.Contains("public partial class Outer", generated);
         Assert.Contains("internal partial class NestedTools", generated);
@@ -205,7 +215,7 @@ public class GeneratorCompilationTests
     public void InternalContextClass_EmitsInternalAccessibility()
     {
         var (_, _, output) = RunAndCompile(Inputs.InternalContextClass);
-        var generated = output.SyntaxTrees.Last().ToString();
+        var generated = GetGeneratedSource(output, "InternalTools");
         Assert.Contains("internal partial class InternalTools", generated);
     }
 
@@ -221,7 +231,7 @@ public class GeneratorCompilationTests
 
     [Fact]
     public void CrossContextSameService_GeneratesTwoSources()
-        => Assert.Equal(2, CountGeneratedSources(Inputs.CrossContextSameService));
+        => Assert.Equal(3, CountGeneratedSources(Inputs.CrossContextSameService));
 
     // ── Diagnostic scenarios ────────────────────────────────────────────
 

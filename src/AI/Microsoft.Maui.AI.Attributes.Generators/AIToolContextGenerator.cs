@@ -87,7 +87,149 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 spc.ReportDiagnostic(diag.ToDiagnostic());
             }
         });
+
+        // ─── Assembly-wide ToolContext ───────────────────────────────
+        // Discovers ALL [ExportAIFunction] methods/properties in the assembly
+        // and emits a single <RootNamespace>.<AssemblyName>ToolContext class.
+        var allExportedMethods = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                ExportAIFunctionAttributeFullName,
+                predicate: static (node, _) => node is MethodDeclarationSyntax or PropertyDeclarationSyntax,
+                transform: static (ctx, ct) => GetExportedMemberInfo(ctx, ct))
+            .Where(static m => m is not null)
+            .Select(static (m, _) => m!);
+
+        var assemblyWide = allExportedMethods
+            .Collect()
+            .Combine(context.CompilationProvider);
+
+        context.RegisterSourceOutput(assemblyWide, static (spc, pair) =>
+        {
+            var (members, compilation) = pair;
+            if (members.IsEmpty)
+                return;
+
+            var assemblyName = compilation.AssemblyName ?? "Assembly";
+            var rootNamespace = compilation.Options is CSharpCompilationOptions opts
+                ? GetRootNamespace(compilation)
+                : assemblyName;
+
+            // Sanitize assembly name for use as an identifier.
+            var safeAssemblyName = SanitizeIdentifier(assemblyName.Replace(".", ""));
+            var className = $"{safeAssemblyName}ToolContext";
+
+            // Group by containing type.
+            var sourceTypes = new Dictionary<string, (string fqn, string simpleName, List<MethodModel> methods)>();
+            foreach (var m in members)
+            {
+                if (!sourceTypes.TryGetValue(m.ContainingTypeFQN, out var entry))
+                {
+                    entry = (m.ContainingTypeFQN, m.ContainingTypeSimpleName, new List<MethodModel>());
+                    sourceTypes[m.ContainingTypeFQN] = entry;
+                }
+                entry.methods.Add(m.Method);
+            }
+
+            var model = new ContextModel(
+                rootNamespace,
+                className,
+                $"global::{rootNamespace}.{className}",
+                "internal",
+                ImmutableArray<ContainingTypeInfo>.Empty,
+                sourceTypes.Values
+                    .Select(st => new SourceTypeModel(st.fqn, st.simpleName, st.methods.ToImmutableArray()))
+                    .ToImmutableArray(),
+                ImmutableArray<DiagnosticInfo>.Empty,
+                EmitBaseClass: true);
+
+            var source = GenerateContextSource(model);
+            spc.AddSource($"{className}.g.cs", SourceText.From(source, Encoding.UTF8));
+        });
     }
+
+    /// <summary>
+    /// Gets the root namespace from the compilation (MSBuild property or fallback to assembly name).
+    /// </summary>
+    private static string GetRootNamespace(Compilation compilation)
+    {
+        // The root namespace is embedded by MSBuild as an assembly-level attribute or
+        // can be inferred from the assembly name. Check for the most common namespace
+        // by scanning the syntax trees.
+        var namespaces = new Dictionary<string, int>();
+        foreach (var tree in compilation.SyntaxTrees)
+        {
+            var root = tree.GetRoot();
+            foreach (var ns in root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
+            {
+                var name = ns.Name.ToString();
+                // Take the top-level segment.
+                var topLevel = name.Contains('.') ? name.Substring(0, name.IndexOf('.')) : name;
+                namespaces.TryGetValue(topLevel, out var count);
+                namespaces[topLevel] = count + 1;
+            }
+        }
+
+        if (namespaces.Count > 0)
+        {
+            // Pick the most common top-level namespace.
+            return namespaces.OrderByDescending(kv => kv.Value).First().Key;
+        }
+
+        return compilation.AssemblyName ?? "Global";
+    }
+
+    /// <summary>
+    /// Extracts method/property info for a single [ExportAIFunction] member for the assembly-wide pipeline.
+    /// </summary>
+    private static AssemblyExportedMember? GetExportedMemberInfo(
+        GeneratorAttributeSyntaxContext ctx,
+        CancellationToken ct)
+    {
+        var diagnostics = new List<DiagnosticInfo>();
+
+        if (ctx.TargetSymbol is IMethodSymbol method)
+        {
+            if (method.MethodKind != MethodKind.Ordinary)
+                return null;
+            if (method.DeclaredAccessibility != Accessibility.Public && method.DeclaredAccessibility != Accessibility.Internal)
+                return null;
+            if (method.ContainingType is null)
+                return null;
+
+            var methods = GetExportedMethods(method.ContainingType, diagnostics, ct);
+            var match = methods.FirstOrDefault(m => m.MethodName == method.Name && !m.IsProperty);
+            if (match is null)
+                return null;
+
+            return new AssemblyExportedMember(
+                method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                SanitizeIdentifier(method.ContainingType.Name),
+                match);
+        }
+
+        if (ctx.TargetSymbol is IPropertySymbol prop)
+        {
+            if (prop.ContainingType is null)
+                return null;
+
+            var methods = GetExportedMethods(prop.ContainingType, diagnostics, ct);
+            var match = methods.FirstOrDefault(m => m.MethodName == prop.Name && m.IsProperty);
+            if (match is null)
+                return null;
+
+            return new AssemblyExportedMember(
+                prop.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                SanitizeIdentifier(prop.ContainingType.Name),
+                match);
+        }
+
+        return null;
+    }
+
+    private sealed record AssemblyExportedMember(
+        string ContainingTypeFQN,
+        string ContainingTypeSimpleName,
+        MethodModel Method);
 
     private static ContextModel? GetContextModel(
         GeneratorAttributeSyntaxContext ctx,
@@ -579,7 +721,8 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
 
         // Emit the partial class body: Default + Tools.
-        sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}");
+        var baseClause = model.EmitBaseClass ? " : global::Microsoft.Maui.AI.Attributes.AIToolContext" : "";
+        sb.AppendLine($"{indent}{model.Accessibility} partial class {model.ClassName}{baseClause}");
         sb.AppendLine($"{indent}{{");
         sb.AppendLine($"{indent}    /// <summary>Gets the default singleton instance of this tool context.</summary>");
         sb.AppendLine($"{indent}    public static {model.ClassName} Default {{ get; }} = new {model.ClassName}();");
@@ -922,7 +1065,8 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         string Accessibility,
         ImmutableArray<ContainingTypeInfo> ContainingTypes,
         ImmutableArray<SourceTypeModel> SourceTypes,
-        ImmutableArray<DiagnosticInfo> Diagnostics)
+        ImmutableArray<DiagnosticInfo> Diagnostics,
+        bool EmitBaseClass = false)
     {
         public ContextModel WithAdditionalSourceTypes(ImmutableArray<SourceTypeModel> newTypes)
         {
