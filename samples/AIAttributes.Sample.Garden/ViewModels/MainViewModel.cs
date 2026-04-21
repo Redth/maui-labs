@@ -1,6 +1,4 @@
-using System.Collections.ObjectModel;
 using AIAttributes.Sample.Garden.Messages;
-using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,26 +9,18 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
 /// Top-level view model for <see cref="Pages.MainPage"/>.
-/// Owns page navigation, catalog browsing, and order history.
-/// Chat and cart views resolve their own VMs via <see cref="ViewModelBinder"/>.
+/// Owns page navigation and the new-session action.
+/// All domain views resolve their own VMs via <see cref="ViewModelBinder"/>.
 /// </summary>
-public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTurnCompletedMessage>
+public sealed partial class MainViewModel : ObservableObject
 {
     private readonly CurrentCart _currentCart;
-    private readonly IOrderArchive _archive;
     private bool _initialized;
 
-    public MainViewModel(
-        CurrentCart currentCart,
-        IOrderArchive archive)
+    public MainViewModel(CurrentCart currentCart)
     {
         _currentCart = currentCart;
-        _archive = archive;
-
-        WeakReferenceMessenger.Default.Register(this);
     }
-
-    public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
 
     /// <summary>
     /// Called once from <see cref="Pages.MainPage.OnAppearing"/>.
@@ -42,7 +32,6 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
         _initialized = true;
 
         StartNewSession();
-        RefreshArchive();
     }
 
     [RelayCommand]
@@ -53,24 +42,9 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
     }
 
     [RelayCommand]
-    private void ReorderPastOrder(string? orderId)
-    {
-        if (string.IsNullOrWhiteSpace(orderId))
-            return;
-        _archive.Reorder(orderId, _currentCart);
-    }
-
-    [RelayCommand]
     private async Task ShowCartAsync()
     {
         await Shell.Current.GoToAsync("cart");
-    }
-
-    [RelayCommand]
-    private void ClearPastOrders()
-    {
-        _archive.Clear();
-        RefreshArchive();
     }
 
     // ─── Navigation AI tools ────────────────────────────────────────
@@ -124,37 +98,5 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
         });
         await tcs.Task;
         return "Returned to the main shop view.";
-    }
-
-    // ─────────────────────────────────────────────────────────────────
-
-    void IRecipient<ChatTurnCompletedMessage>.Receive(ChatTurnCompletedMessage message)
-        => RefreshArchive();
-
-    private void RefreshArchive()
-    {
-        var source = _archive.Orders;
-        SyncCollection(PastOrders, source, v => v.OrderId, o => o.Id, o => new OrderViewModel(o));
-    }
-
-    private static void SyncCollection<TVM, TModel>(
-        ObservableCollection<TVM> target,
-        IReadOnlyList<TModel> source,
-        Func<TVM, string> vmKey,
-        Func<TModel, string> modelKey,
-        Func<TModel, TVM> create)
-    {
-        var sourceKeys = new HashSet<string>(source.Select(modelKey));
-        for (int i = target.Count - 1; i >= 0; i--)
-        {
-            if (!sourceKeys.Contains(vmKey(target[i])))
-                target.RemoveAt(i);
-        }
-        var existing = new HashSet<string>(target.Select(vmKey));
-        foreach (var item in source)
-        {
-            if (!existing.Contains(modelKey(item)))
-                target.Add(create(item));
-        }
     }
 }

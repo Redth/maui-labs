@@ -48,6 +48,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ChatViewModel>();
         builder.Services.AddSingleton<CartViewModel>();
         builder.Services.AddSingleton<CatalogViewModel>();
+        builder.Services.AddSingleton<OrdersViewModel>();
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<OrdersPage>();

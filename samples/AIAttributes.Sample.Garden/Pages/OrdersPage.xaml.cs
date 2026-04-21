@@ -1,13 +1,10 @@
-using AIAttributes.Sample.Garden.ViewModels;
-
 namespace AIAttributes.Sample.Garden.Pages;
 
 public partial class OrdersPage : ContentPage
 {
-    public OrdersPage(MainViewModel viewModel)
+    public OrdersPage()
     {
         InitializeComponent();
-        BindingContext = viewModel;
     }
 
     private async void OnCloseClicked(object? sender, EventArgs e)

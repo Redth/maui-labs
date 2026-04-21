@@ -1,5 +1,4 @@
 using AIAttributes.Sample.Garden.Models;
-using AIAttributes.Sample.Garden.Services;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 

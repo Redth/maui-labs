@@ -31,6 +31,7 @@ public sealed partial class CatalogViewModel : ObservableObject
     }
 
     public ObservableCollection<CatalogItemViewModel> Products { get; }
+
     public IReadOnlyList<CatalogGroupViewModel> Groups { get; }
 
     [RelayCommand]
@@ -38,6 +39,7 @@ public sealed partial class CatalogViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(sku))
             return;
+
         _currentCart.AddItem(sku);
     }
 }

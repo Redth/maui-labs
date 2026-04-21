@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AIAttributes.Sample.Garden"
+             xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Pages.OrdersPage"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:OrdersViewModel"
              Title="Past Orders"
              Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False"
@@ -11,6 +13,7 @@
              BackgroundColor="{StaticResource Primary}">
 
     <Grid RowDefinitions="Auto,*"
+          local:ViewModelBinder.Type="{x:Type vm:OrdersViewModel}"
           BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
         <!-- Standard header: [back] [icon] [title] ... [clear all] -->
         <Border Grid.Row="0"
@@ -46,88 +49,11 @@
                         TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource TextAccentDark}}"
                         CornerRadius="14"
                         VerticalOptions="Center"
-                        Command="{Binding ClearPastOrdersCommand}" />
+                        Command="{Binding ClearCommand}" />
             </Grid>
         </Border>
 
-        <CollectionView Grid.Row="1"
-                        ItemsSource="{Binding PastOrders}"
-                        SelectionMode="None"
-                        BackgroundColor="Transparent">
-            <CollectionView.EmptyView>
-                <VerticalStackLayout Padding="24" Spacing="6"
-                                     HorizontalOptions="Center"
-                                     VerticalOptions="Center">
-                    <Label Text="&#xE1D0;" FontFamily="FluentFilled"
-                           FontSize="{StaticResource FontSizeDisplay}" HorizontalOptions="Center"
-                           TextColor="{StaticResource Primary}" />
-                    <Label Text="No past orders yet."
-                           FontSize="{StaticResource FontSizeBody}" HorizontalTextAlignment="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                    <Label Text="Check out a list to see it here."
-                           FontSize="{StaticResource FontSizeCaption}" HorizontalTextAlignment="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}" />
-                </VerticalStackLayout>
-            </CollectionView.EmptyView>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="vm:OrderViewModel">
-                    <Border Margin="12,6"
-                            MaximumWidthRequest="600"
-                            HorizontalOptions="Center"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
-                            Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
-                            StrokeThickness="1"
-                            StrokeShape="RoundRectangle 12"
-                            Padding="16,14">
-                        <VerticalStackLayout Spacing="8">
-                            <!-- Date header -->
-                            <Label Text="{Binding PlacedAt}"
-                                   FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold" />
-
-                            <!-- Line items as data grid rows -->
-                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Lines}" Spacing="4">
-                                <BindableLayout.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:OrderLineViewModel">
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                            <Label Text="{Binding ItemDescription}"
-                                                   FontSize="{StaticResource FontSizeBody}"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                                            <Label Grid.Column="1"
-                                                   Text="{Binding SubtotalLabel}"
-                                                   FontSize="{StaticResource FontSizeBody}"
-                                                   HorizontalTextAlignment="End"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </BindableLayout.ItemTemplate>
-                            </VerticalStackLayout>
-
-                            <!-- Divider -->
-                            <BoxView HeightRequest="1"
-                                     Color="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}" />
-
-                            <!-- Total + Reorder -->
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <Label Text="{Binding Total, StringFormat='Total: {0}'}"
-                                       FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
-                                       VerticalOptions="Center"
-                                       TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}" />
-                                <Button Grid.Column="1"
-                                        Text="Reorder"
-                                        FontSize="{StaticResource FontSizeBody}"
-                                        Padding="16,6"
-                                        BackgroundColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource SurfaceDark}}"
-                                        TextColor="{StaticResource White}"
-                                        CornerRadius="8"
-                                        VerticalOptions="Center"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=ReorderPastOrderCommand}"
-                                        CommandParameter="{Binding OrderId}" />
-                            </Grid>
-                        </VerticalStackLayout>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <views:OrdersView Grid.Row="1" />
     </Grid>
 
 </ContentPage>
