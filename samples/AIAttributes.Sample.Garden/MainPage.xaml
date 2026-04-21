@@ -18,9 +18,9 @@
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0" />
 
-        <!-- Header content — in col 0 only so New Chat aligns with chat/cart boundary -->
-        <Grid Grid.Row="0" Grid.Column="0"
-              ColumnDefinitions="*,Auto"
+        <!-- Header content — two-column system: chat area (2*) and cart/button area (1*) -->
+        <Grid Grid.Row="0" Grid.ColumnSpan="2"
+              ColumnDefinitions="2*,1*"
               Padding="16,8" ColumnSpacing="12"
               SafeAreaEdges="Container">
             <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
@@ -32,17 +32,50 @@
                        FontSize="{StaticResource FontSizeDisplay}"
                        TextColor="{StaticResource White}" VerticalOptions="Center" />
             </HorizontalStackLayout>
-            <Button Grid.Column="1"
-                    Text="New Chat"
-                    AutomationId="NewChatButton"
-                    Command="{Binding StartNewSessionCommand}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
-                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource TextAccentDark}}"
-                    FontSize="{StaticResource FontSizeBody}"
-                    FontAttributes="Bold"
-                    CornerRadius="14"
-                    Padding="12,4"
-                    VerticalOptions="Center" />
+            <HorizontalStackLayout Grid.Column="1" Spacing="8"
+                                   HorizontalOptions="End" VerticalOptions="Center">
+                <!-- Cart button — visible only on narrow when sidebar is hidden -->
+                <Button x:Name="CartHeaderBtn"
+                        Text="&#xF26B;"
+                        FontFamily="FluentFilled"
+                        FontSize="{StaticResource FontSizeSubtitle}"
+                        TextColor="{StaticResource White}"
+                        BackgroundColor="Transparent"
+                        Padding="8,4"
+                        VerticalOptions="Center"
+                        Command="{Binding ShowCartCommand}">
+                    <VisualStateManager.VisualStateGroups>
+                        <VisualStateGroup>
+                            <VisualState x:Name="CartBtnWide">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="800" />
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Property="IsVisible" Value="False" />
+                                </VisualState.Setters>
+                            </VisualState>
+                            <VisualState x:Name="CartBtnNarrow">
+                                <VisualState.StateTriggers>
+                                    <AdaptiveTrigger MinWindowWidth="0" />
+                                </VisualState.StateTriggers>
+                                <VisualState.Setters>
+                                    <Setter Property="IsVisible" Value="True" />
+                                </VisualState.Setters>
+                            </VisualState>
+                        </VisualStateGroup>
+                    </VisualStateManager.VisualStateGroups>
+                </Button>
+                <Button Text="New Chat"
+                        AutomationId="NewChatButton"
+                        Command="{Binding StartNewSessionCommand}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource TextAccentDark}}"
+                        FontSize="{StaticResource FontSizeBody}"
+                        FontAttributes="Bold"
+                        CornerRadius="14"
+                        Padding="12,4"
+                        VerticalOptions="Center" />
+            </HorizontalStackLayout>
         </Grid>
 
         <!-- ═══ Chat — fills col 0, scrollbar at edge, content centered ═══ -->
@@ -75,44 +108,6 @@
                 </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
         </views:ShoppingListView>
-
-        <!-- ═══ Cart FAB — overlaid on col 0, visible on narrow only ═══ -->
-        <Button Grid.Row="1" Grid.Column="0"
-                x:Name="CartFab"
-                Text="&#xF26B;"
-                FontFamily="FluentFilled"
-                FontSize="{StaticResource FontSizeDisplay}"
-                TextColor="{StaticResource White}"
-                HorizontalOptions="End"
-                VerticalOptions="End"
-                Margin="0,0,16,80"
-                WidthRequest="56" HeightRequest="56"
-                BackgroundColor="{StaticResource Primary}"
-                CornerRadius="28"
-                Padding="0"
-                Command="{Binding CycleCartModeCommand}"
-                Shadow="{Shadow Brush=Black, Offset='2,4', Radius=8, Opacity=0.3}">
-            <VisualStateManager.VisualStateGroups>
-                <VisualStateGroup>
-                    <VisualState x:Name="FabWide">
-                        <VisualState.StateTriggers>
-                            <AdaptiveTrigger MinWindowWidth="800" />
-                        </VisualState.StateTriggers>
-                        <VisualState.Setters>
-                            <Setter Property="IsVisible" Value="False" />
-                        </VisualState.Setters>
-                    </VisualState>
-                    <VisualState x:Name="FabNarrow">
-                        <VisualState.StateTriggers>
-                            <AdaptiveTrigger MinWindowWidth="0" />
-                        </VisualState.StateTriggers>
-                        <VisualState.Setters>
-                            <Setter Property="IsVisible" Value="True" />
-                        </VisualState.Setters>
-                    </VisualState>
-                </VisualStateGroup>
-            </VisualStateManager.VisualStateGroups>
-        </Button>
 
     </Grid>
 

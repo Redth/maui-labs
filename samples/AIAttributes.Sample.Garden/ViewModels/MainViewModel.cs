@@ -297,10 +297,9 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ShowCartModalAsync()
+    private async Task ShowCartAsync()
     {
-        // For narrow layout, navigate to a cart page (or just switch mode)
-        CartMode = CartMode.Normal;
+        await Shell.Current.GoToAsync("cart");
     }
 
     // ─── ViewModel-level AI tools ───────────────────────────────────
@@ -308,15 +307,16 @@ public sealed partial class MainViewModel : ObservableObject
     // directly drive UI navigation and view state, not just service calls.
 
     [ExportAIFunction("navigate_to_page",
-        Description = "Navigate to a page in the app. Use 'catalog' to browse products, 'orders' to see past orders. Pages open as modal overlays.")]
+        Description = "Navigate to a page in the app. Use 'catalog' to browse products, 'orders' to see past orders, 'cart' to view the shopping cart. Pages open as modal overlays.")]
     public async Task<string> NavigateToPageAsync(
-        [System.ComponentModel.Description("The page to navigate to: 'catalog' or 'orders'")] string page)
+        [System.ComponentModel.Description("The page to navigate to: 'catalog', 'orders', or 'cart'")] string page)
     {
         var route = page?.ToLowerInvariant() switch
         {
             "catalog" => "catalog",
             "orders" => "orders",
-            _ => throw new ArgumentException($"Unknown page '{page}'. Valid pages: 'catalog', 'orders'.")
+            "cart" => "cart",
+            _ => throw new ArgumentException($"Unknown page '{page}'. Valid pages: 'catalog', 'orders', 'cart'.")
         };
 
         var tcs = new TaskCompletionSource();

@@ -65,7 +65,9 @@
                                     Padding="10,8">
                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                     <Label Text="{Binding Emoji}"
+                                           FontFamily="FluentFilled"
                                            FontSize="{StaticResource FontSizeTitle}"
+                                           TextColor="{StaticResource Primary}"
                                            VerticalOptions="Center" />
                                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                         <Label Text="{Binding Name}"
@@ -105,19 +107,21 @@
                             IsVisible="{Binding IsCompactMode}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
-                        <Grid Padding="14,2">
-                            <Label FontSize="{StaticResource FontSizeBody}" VerticalOptions="Center">
-                                <Label.FormattedText>
-                                    <FormattedString>
-                                        <Span Text="{Binding Emoji}" />
-                                        <Span Text=" " />
-                                        <Span Text="{Binding Name}" FontAttributes="Bold" />
-                                        <Span Text="{Binding QuantityLine, StringFormat=' — {0}'}"
-                                              FontSize="{StaticResource FontSizeCaption}"
-                                              TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                                    </FormattedString>
-                                </Label.FormattedText>
-                            </Label>
+                        <Grid Padding="14,3" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
+                            <Label Text="{Binding Emoji}"
+                                   FontFamily="FluentFilled"
+                                   FontSize="{StaticResource FontSizeBody}"
+                                   TextColor="{StaticResource Primary}"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Name}"
+                                   FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="3"
+                                   Text="{Binding QuantityLine}"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                         </Grid>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

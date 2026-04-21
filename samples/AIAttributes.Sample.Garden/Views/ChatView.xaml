@@ -97,10 +97,11 @@
                 </local:ChatMessageTemplateSelector>
             </CollectionView.ItemTemplate>
 
-            <!-- Empty view — welcome screen -->
+            <!-- Empty view — welcome screen (ScrollView needed for long tool list) -->
             <CollectionView.EmptyView>
-                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12"
-                      MaximumWidthRequest="840" HorizontalOptions="Center">
+                <ScrollView>
+                    <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12"
+                          MaximumWidthRequest="840" HorizontalOptions="Center">
                     <Label Grid.Row="0"
                            Text="&#xF788;"
                            FontFamily="FluentFilled"
@@ -151,6 +152,7 @@
                         </BindableLayout.ItemTemplate>
                     </FlexLayout>
                 </Grid>
+                </ScrollView>
             </CollectionView.EmptyView>
         </CollectionView>
 

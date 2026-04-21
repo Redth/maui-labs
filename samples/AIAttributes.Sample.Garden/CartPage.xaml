@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
+             xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
+             x:Class="AIAttributes.Sample.Garden.CartPage"
+             x:DataType="vm:MainViewModel"
+             Title="Cart"
+             Shell.PresentationMode="ModalAnimated"
+             Shell.NavBarIsVisible="False"
+             SafeAreaEdges="None"
+             BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
+
+    <Grid SafeAreaEdges="None">
+        <views:ShoppingListView />
+
+        <!-- Dismiss button overlay — positioned in the cart's green header area -->
+        <Button Text="&#xF36A;"
+                FontFamily="FluentFilled"
+                FontSize="{StaticResource FontSizeSubtitle}"
+                TextColor="{StaticResource White}"
+                BackgroundColor="Transparent"
+                HorizontalOptions="End"
+                VerticalOptions="Start"
+                Padding="8,4"
+                SafeAreaEdges="Container"
+                Clicked="OnCloseClicked" />
+    </Grid>
+
+</ContentPage>

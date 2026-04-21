@@ -9,5 +9,6 @@ public partial class AppShell : Shell
         // Register modal routes — these pages slide up as modals when navigated to
         Routing.RegisterRoute("orders", typeof(OrdersPage));
         Routing.RegisterRoute("catalog", typeof(CatalogPage));
+        Routing.RegisterRoute("cart", typeof(CartPage));
     }
 }

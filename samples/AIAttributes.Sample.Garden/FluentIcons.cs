@@ -25,4 +25,15 @@ static class FluentIcons
     public const string Star = "\uF719";
     public const string ChatSparkle = "\uF7ED";
     public const string Add = "\uF10A";
+
+    // Product category / item icons
+    public const string WeatherSunny = "\uF8BA";
+    public const string BowlSalad = "\uEEE9";
+    public const string Earth = "\uF3DA";
+    public const string Beaker = "\uF1D8";
+    public const string Wrench = "\uF8D9";
+    public const string Cut = "\uF33B";
+    public const string HandRight = "\uE6ED";
+    public const string Temperature = "\uF7A8";
+    public const string PaintBrush = "\uF59D";
 }

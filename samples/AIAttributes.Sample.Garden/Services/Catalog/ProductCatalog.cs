@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using AIAttributes.Sample.Garden;
 using AIAttributes.Sample.Garden.Models;
 using Microsoft.Maui.AI.Attributes;
 
@@ -17,28 +18,28 @@ public static class ProductCatalog
     [Description("Returns every product in the garden shop catalog.")]
     public static IReadOnlyList<Product> All { get; } =
     [
-        // Seeds
-        new("seed-tomato",     "Heirloom Tomato Seeds",   "Seeds",      3.49m, "🍅"),
-        new("seed-basil",      "Sweet Basil Seeds",       "Seeds",      2.49m, "🌿"),
-        new("seed-pepper",     "Bell Pepper Seeds",       "Seeds",      2.99m, "🌶️"),
-        new("seed-sunflower",  "Giant Sunflower Seeds",   "Seeds",      3.99m, "🌻"),
-        new("seed-lettuce",    "Mixed Lettuce Seeds",     "Seeds",      2.29m, "🥬"),
+        // Seeds — icon font glyphs (FluentFilled)
+        new("seed-tomato",     "Heirloom Tomato Seeds",   "Seeds",      3.49m, FluentIcons.Food),
+        new("seed-basil",      "Sweet Basil Seeds",       "Seeds",      2.49m, FluentIcons.LeafOne),
+        new("seed-pepper",     "Bell Pepper Seeds",       "Seeds",      2.99m, FluentIcons.Temperature),
+        new("seed-sunflower",  "Giant Sunflower Seeds",   "Seeds",      3.99m, FluentIcons.WeatherSunny),
+        new("seed-lettuce",    "Mixed Lettuce Seeds",     "Seeds",      2.29m, FluentIcons.BowlSalad),
 
         // Soil & amendments
-        new("soil-pottingmix", "All-Purpose Potting Mix", "Soil",      11.99m, "🪴"),
-        new("soil-compost",    "Organic Compost (10 lb)", "Soil",       8.49m, "🌱"),
-        new("soil-mulch",      "Cedar Mulch (2 cu ft)",   "Soil",      14.99m, "🪵"),
+        new("soil-pottingmix", "All-Purpose Potting Mix", "Soil",      11.99m, FluentIcons.Earth),
+        new("soil-compost",    "Organic Compost (10 lb)", "Soil",       8.49m, FluentIcons.LeafThree),
+        new("soil-mulch",      "Cedar Mulch (2 cu ft)",   "Soil",      14.99m, FluentIcons.Box),
 
         // Fertilizer
-        new("fert-tomato",     "Tomato Plant Food",       "Fertilizer", 9.99m,  "💧"),
-        new("fert-allpurpose", "All-Purpose Fertilizer",  "Fertilizer", 7.99m,  "💧"),
+        new("fert-tomato",     "Tomato Plant Food",       "Fertilizer", 9.99m, FluentIcons.Drop),
+        new("fert-allpurpose", "All-Purpose Fertilizer",  "Fertilizer", 7.99m, FluentIcons.Beaker),
 
         // Tools & equipment
-        new("tool-trowel",     "Hand Trowel",             "Tools",     12.49m, "🔨"),
-        new("tool-pruner",     "Bypass Pruners",          "Tools",     18.99m, "✂️"),
-        new("tool-glove",      "Garden Gloves (pair)",    "Tools",      6.99m, "🧤"),
-        new("tool-hose",       "50 ft Garden Hose",       "Equipment", 29.99m, "💦"),
-        new("tool-watering",   "Watering Can (1 gal)",    "Equipment", 14.99m, "🚿"),
+        new("tool-trowel",     "Hand Trowel",             "Tools",     12.49m, FluentIcons.Wrench),
+        new("tool-pruner",     "Bypass Pruners",          "Tools",     18.99m, FluentIcons.Cut),
+        new("tool-glove",      "Garden Gloves (pair)",    "Tools",      6.99m, FluentIcons.HandRight),
+        new("tool-hose",       "50 ft Garden Hose",       "Equipment", 29.99m, FluentIcons.PaintBrush),
+        new("tool-watering",   "Watering Can (1 gal)",    "Equipment", 14.99m, FluentIcons.Drop),
     ];
 
     // Feature: [ExportAIFunction] on a static method with an optional parameter.
