@@ -25,8 +25,8 @@
             </CollectionView.ItemsLayout>
 
             <CollectionView.ItemTemplate>
-                <local:ChatMessageTemplateSelector>
-                    <local:ChatMessageTemplateSelector.UserTemplate>
+                <views:ChatMessageTemplateSelector>
+                    <views:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Grid HorizontalOptions="Fill" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
@@ -41,9 +41,9 @@
                                 </Border>
                             </Grid>
                         </DataTemplate>
-                    </local:ChatMessageTemplateSelector.UserTemplate>
+                    </views:ChatMessageTemplateSelector.UserTemplate>
 
-                    <local:ChatMessageTemplateSelector.AssistantTemplate>
+                    <views:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Grid HorizontalOptions="Fill" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
@@ -59,9 +59,9 @@
                                 </Border>
                             </Grid>
                         </DataTemplate>
-                    </local:ChatMessageTemplateSelector.AssistantTemplate>
+                    </views:ChatMessageTemplateSelector.AssistantTemplate>
 
-                    <local:ChatMessageTemplateSelector.ToolTemplate>
+                    <views:ChatMessageTemplateSelector.ToolTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <HorizontalStackLayout Spacing="4"
                                                    Padding="20,2"
@@ -80,9 +80,9 @@
                                        VerticalOptions="Center" />
                             </HorizontalStackLayout>
                         </DataTemplate>
-                    </local:ChatMessageTemplateSelector.ToolTemplate>
+                    </views:ChatMessageTemplateSelector.ToolTemplate>
 
-                    <local:ChatMessageTemplateSelector.SystemTemplate>
+                    <views:ChatMessageTemplateSelector.SystemTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Label Text="{Binding Text}"
                                    FontSize="{StaticResource FontSizeCaption}"
@@ -91,9 +91,9 @@
                                    HorizontalOptions="Center"
                                    Padding="8,4" />
                         </DataTemplate>
-                    </local:ChatMessageTemplateSelector.SystemTemplate>
+                    </views:ChatMessageTemplateSelector.SystemTemplate>
 
-                    <local:ChatMessageTemplateSelector.ErrorTemplate>
+                    <views:ChatMessageTemplateSelector.ErrorTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Label Text="{Binding Text}"
                                    FontSize="{StaticResource FontSizeCaption}"
@@ -102,8 +102,8 @@
                                    MaximumWidthRequest="840"
                                    HorizontalOptions="Center" />
                         </DataTemplate>
-                    </local:ChatMessageTemplateSelector.ErrorTemplate>
-                </local:ChatMessageTemplateSelector>
+                    </views:ChatMessageTemplateSelector.ErrorTemplate>
+                </views:ChatMessageTemplateSelector>
             </CollectionView.ItemTemplate>
 
             <!-- Empty view — welcome screen (ScrollView needed for long tool list) -->
