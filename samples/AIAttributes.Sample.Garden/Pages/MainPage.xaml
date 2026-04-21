@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:AIAttributes.Sample.Garden"
              xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Pages.MainPage"
@@ -43,7 +44,7 @@
                         BackgroundColor="Transparent"
                         Padding="8,4"
                         VerticalOptions="Center"
-                        Command="{Binding Cart.ShowCommand}">
+                        Command="{Binding ShowCartCommand}">
                     <VisualStateManager.VisualStateGroups>
                         <VisualStateGroup>
                             <VisualState x:Name="CartBtnWide">
@@ -80,7 +81,7 @@
 
         <!-- ═══ Chat — fills col 0, scrollbar at edge, content centered ═══ -->
         <views:ChatView Grid.Row="1" Grid.Column="0"
-                        BindingContext="{Binding Chat}"
+                        local:ViewModelBinder.Type="{x:Type vm:ChatViewModel}"
                         HorizontalOptions="Fill" />
 
         <!-- ═══ Cart sidebar — col 1, visible on wide only ═══ -->
@@ -116,7 +117,9 @@
                 </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
 
-            <Grid RowDefinitions="Auto,*" RowSpacing="0">
+            <Grid RowDefinitions="Auto,*" RowSpacing="0"
+                  x:DataType="vm:CartViewModel"
+                  local:ViewModelBinder.Type="{x:Type vm:CartViewModel}">
                 <!-- Green sidebar header -->
                 <Grid Padding="14,10"
                       ColumnDefinitions="*,Auto"
@@ -137,18 +140,18 @@
                             StrokeShape="RoundRectangle 13"
                             Padding="0"
                             HeightRequest="26">
-                        <Button Text="{Binding Cart.CartModeLabel}"
+                        <Button Text="{Binding CartModeLabel}"
                                 FontSize="{StaticResource FontSizeCaption}" Padding="14,0"
                                 BackgroundColor="Transparent"
                                 TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
                                 FontAttributes="Bold"
                                 BorderWidth="0"
                                 VerticalOptions="Center"
-                                Command="{Binding Cart.CycleCartModeCommand}" />
+                                Command="{Binding CycleCartModeCommand}" />
                     </Border>
                 </Grid>
                 <!-- Headerless cart content -->
-                <views:ShoppingListView Grid.Row="1" BindingContext="{Binding Cart}" />
+                <views:ShoppingListView Grid.Row="1" />
             </Grid>
         </Border>
 

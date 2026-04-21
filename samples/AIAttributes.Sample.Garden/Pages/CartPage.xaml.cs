@@ -4,7 +4,7 @@ namespace AIAttributes.Sample.Garden.Pages;
 
 public partial class CartPage : ContentPage
 {
-    public CartPage(MainViewModel vm)
+    public CartPage(CartViewModel vm)
     {
         InitializeComponent();
         BindingContext = vm;

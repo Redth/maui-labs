@@ -8,33 +8,28 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
-/// Top-level container view model for <see cref="Pages.MainPage"/>.
-/// Owns page navigation and hosts sub-VMs: <see cref="Chat"/> and <see cref="Cart"/>.
-/// Catalog and orders are also surfaced here since MainPage is the root.
+/// Top-level view model for <see cref="Pages.MainPage"/>.
+/// Owns page navigation, catalog browsing, and order history.
+/// Chat and cart views resolve their own VMs via <see cref="ViewModelBinder"/>.
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
+    private readonly CurrentCart _currentCart;
     private readonly IOrderArchive _archive;
+    private readonly ChatViewModel _chat;
     private bool _initialized;
 
     public MainViewModel(
         ChatViewModel chat,
-        CartViewModel cart,
+        CurrentCart currentCart,
         IOrderArchive archive)
     {
-        Chat = chat;
-        Cart = cart;
+        _chat = chat;
+        _currentCart = currentCart;
         _archive = archive;
 
-        // After every AI turn, refresh cart + orders
-        Chat.TurnCompleted += () =>
-        {
-            Cart.Refresh();
-            RefreshArchive();
-        };
-
-        // After checkout, refresh orders
-        Cart.CheckedOut += RefreshArchive;
+        // After every AI turn, refresh orders (cart self-refreshes via CurrentCart.Changed)
+        _chat.TurnCompleted += RefreshArchive;
 
         // Build catalog grouped by category
         var groups = ProductCatalog.All
@@ -50,12 +45,6 @@ public sealed partial class MainViewModel : ObservableObject
         CatalogGroups = groups;
     }
 
-    /// <summary>The chat sub-system.</summary>
-    public ChatViewModel Chat { get; }
-
-    /// <summary>The cart sub-system.</summary>
-    public CartViewModel Cart { get; }
-
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
     public ObservableCollection<CatalogItemViewModel> CatalogProducts { get; }
     public IReadOnlyList<CatalogGroupViewModel> CatalogGroups { get; }
@@ -67,7 +56,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         _initialized = true;
 
-        Chat.Initialize();
+        _chat.Initialize();
         StartNewSession();
         RefreshArchive();
     }
@@ -75,8 +64,8 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void StartNewSession()
     {
-        Cart.Clear();
-        Chat.StartNewSession();
+        _currentCart.Clear();
+        _chat.StartNewSession();
     }
 
     [RelayCommand]
@@ -84,7 +73,13 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(orderId))
             return;
-        Cart.Reorder(orderId);
+        _archive.Reorder(orderId, _currentCart);
+    }
+
+    [RelayCommand]
+    private async Task ShowCartAsync()
+    {
+        await Shell.Current.GoToAsync("cart");
     }
 
     [RelayCommand]

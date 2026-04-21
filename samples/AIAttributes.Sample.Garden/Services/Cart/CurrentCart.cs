@@ -13,6 +13,9 @@ public sealed class CurrentCart
 {
     private readonly List<ListItem> _items = [];
 
+    /// <summary>Raised after any mutation (add, remove, clear, qty change).</summary>
+    public event Action? Changed;
+
     // Feature: [ExportAIFunction] on an instance property — the generator
     // resolves CurrentCart from DI then reads the getter.
     [ExportAIFunction("show_list")]
@@ -53,6 +56,7 @@ public sealed class CurrentCart
             updated = new ListItem(product, quantity);
             _items.Add(updated);
         }
+        Changed?.Invoke();
         return updated;
     }
 
@@ -79,6 +83,7 @@ public sealed class CurrentCart
 
         var updated = _items[idx] with { Quantity = quantity };
         _items[idx] = updated;
+        Changed?.Invoke();
         return updated;
     }
 
@@ -95,12 +100,15 @@ public sealed class CurrentCart
         if (idx < 0)
             return false;
         _items.RemoveAt(idx);
+        Changed?.Invoke();
         return true;
     }
 
-    // Feature: ApprovalRequired — destructive operations are gated behind
-    // user confirmation before the AI pipeline executes them.
     [ExportAIFunction("cancel_list", ApprovalRequired = true)]
     [Description("Discards every item from the cart.")]
-    public void Clear() => _items.Clear();
+    public void Clear()
+    {
+        _items.Clear();
+        Changed?.Invoke();
+    }
 }

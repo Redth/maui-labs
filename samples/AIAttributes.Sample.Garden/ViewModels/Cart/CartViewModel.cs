@@ -21,6 +21,9 @@ public sealed partial class CartViewModel : ObservableObject
     {
         _currentCart = currentCart;
         _archive = archive;
+
+        // Auto-refresh when the cart service changes (AI tools, catalog add, etc.)
+        _currentCart.Changed += Refresh;
     }
 
     public ObservableCollection<CartItemViewModel> Items { get; } = [];
@@ -65,8 +68,7 @@ public sealed partial class CartViewModel : ObservableObject
             return;
 
         _archive.Checkout(_currentCart);
-        Refresh();
-        CheckedOut?.Invoke();
+        // CurrentCart.Changed fires → Refresh() called automatically
     }
 
     [RelayCommand]
@@ -75,17 +77,8 @@ public sealed partial class CartViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(sku))
             return;
         _currentCart.AddItem(sku);
-        Refresh();
+        // CurrentCart.Changed fires → Refresh() called automatically
     }
-
-    [RelayCommand]
-    private async Task ShowAsync()
-    {
-        await Shell.Current.GoToAsync("cart");
-    }
-
-    /// <summary>Raised after checkout so the host can refresh orders.</summary>
-    public event Action? CheckedOut;
 
     /// <summary>Refresh the observable collections from the underlying cart model.</summary>
     public void Refresh()
@@ -96,18 +89,12 @@ public sealed partial class CartViewModel : ObservableObject
         HasItems = source.Count > 0;
     }
 
-    public void Reorder(string orderId)
-    {
-        _archive.Reorder(orderId, _currentCart);
-        Refresh();
-    }
-
     /// <summary>Clear cart and reset mode.</summary>
     public void Clear()
     {
         _currentCart.Clear();
         CartMode = CartMode.Normal;
-        Refresh();
+        // CurrentCart.Changed fires → Refresh() called automatically
     }
 
     // ─── AI tools for cart display ──────────────────────────────────
