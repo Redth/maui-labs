@@ -152,9 +152,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
     /// </summary>
     private static string GetRootNamespace(Compilation compilation)
     {
-        // The root namespace is embedded by MSBuild as an assembly-level attribute or
-        // can be inferred from the assembly name. Check for the most common namespace
-        // by scanning the syntax trees.
         var namespaces = new Dictionary<string, int>();
         foreach (var tree in compilation.SyntaxTrees)
         {
@@ -162,7 +159,6 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             foreach (var ns in root.DescendantNodes().OfType<BaseNamespaceDeclarationSyntax>())
             {
                 var name = ns.Name.ToString();
-                // Take the top-level segment.
                 var topLevel = name.Contains('.') ? name.Substring(0, name.IndexOf('.')) : name;
                 namespaces.TryGetValue(topLevel, out var count);
                 namespaces[topLevel] = count + 1;
@@ -170,12 +166,10 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
 
         if (namespaces.Count > 0)
-        {
-            // Pick the most common top-level namespace.
             return namespaces.OrderByDescending(kv => kv.Value).First().Key;
-        }
 
-        return compilation.AssemblyName ?? "Global";
+        // No namespaces found — emit in the global namespace.
+        return "";
     }
 
     /// <summary>

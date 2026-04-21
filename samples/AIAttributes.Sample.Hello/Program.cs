@@ -9,7 +9,8 @@ using Microsoft.Maui.AI.Attributes;
 // Smallest possible end-to-end example of Microsoft.Maui.AI.Attributes:
 //   - WeatherService  -> instance method, resolved from DI
 //   - GreetingService  -> pure static method, no DI needed
-// Both are surfaced through a single HelloTools.Default.Tools.
+// The source generator auto-discovers all [ExportAIFunction] methods in the
+// assembly and creates AIAttributesSampleHelloToolContext with every tool.
 
 var configuration = new ConfigurationBuilder()
     .AddUserSecrets<Program>()
@@ -46,7 +47,7 @@ var chat = new ChatClientBuilder(root.GetRequiredService<IChatClient>())
     .UseFunctionInvocation()
     .Build(root);
 
-var tools = HelloTools.Default.Tools;
+var tools = AIAttributesSampleHelloToolContext.Default.Tools;
 var options = new ChatOptions { Tools = [.. tools] };
 
 Console.WriteLine($"{tools.Count} tool(s) registered:");
@@ -77,15 +78,6 @@ while (true)
     Console.WriteLine(response.Text);
     Console.WriteLine();
 }
-
-/// <summary>
-/// Single tool context that merges both DI-bound and pure-static tools.
-/// The generator discovers <c>[ExportAIFunction]</c> methods on each
-/// <c>[AIToolSource]</c> type and exposes them all through <c>Default.Tools</c>.
-/// </summary>
-[AIToolSource(typeof(WeatherService))]
-[AIToolSource(typeof(GreetingService))]
-public partial class HelloTools : AIToolContext { }
 
 /// <summary>
 /// Instance service resolved from DI. The generated tool calls
