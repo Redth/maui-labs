@@ -22,9 +22,18 @@
                   ColumnDefinitions="Auto,*,Auto"
                   ColumnSpacing="8"
                   BackgroundColor="{StaticResource Primary}">
-                <Label Text="🛒 Cart"
+                <Label VerticalOptions="Center"
                        FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
-                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+                       TextColor="{StaticResource White}">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="&#xF26B; "
+                                  FontFamily="FluentFilled"
+                                  FontSize="{StaticResource FontSizeSubtitle}" />
+                            <Span Text="Cart" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
                 <Border Grid.Column="2"
                         BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
                         StrokeThickness="0"
@@ -77,7 +86,9 @@
                     <VerticalStackLayout Padding="24" Spacing="6"
                                          HorizontalOptions="Center"
                                          VerticalOptions="Center">
-                        <Label Text="🌱" FontSize="{StaticResource FontSizeDisplay}" HorizontalOptions="Center" />
+                        <Label Text="&#xE769;" FontFamily="FluentFilled"
+                               FontSize="{StaticResource FontSizeDisplay}" HorizontalOptions="Center"
+                               TextColor="{StaticResource Primary}" />
                         <Label Text="Your cart is empty."
                                FontSize="{StaticResource FontSizeBody}" HorizontalTextAlignment="Center"
                                TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />

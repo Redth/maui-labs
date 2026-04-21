@@ -79,6 +79,7 @@ public sealed partial class MainViewModel : ObservableObject
             })
             .ToList();
         CatalogProducts = new(groups.SelectMany(g => g));
+        CatalogGroups = groups;
     }
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
@@ -86,6 +87,7 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<ShoppingListItemViewModel> ShoppingList { get; } = [];
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
     public ObservableCollection<CatalogItemViewModel> CatalogProducts { get; }
+    public IReadOnlyList<CatalogGroupViewModel> CatalogGroups { get; }
 
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [

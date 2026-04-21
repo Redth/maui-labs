@@ -101,11 +101,13 @@
                 <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12"
                       MaximumWidthRequest="840" HorizontalOptions="Center">
                     <Label Grid.Row="0"
-                           Text="🛒"
+                           Text="&#xF788;"
+                           FontFamily="FluentFilled"
                            FontSize="{StaticResource FontSizeHero}"
+                           TextColor="{StaticResource Primary}"
                            HorizontalOptions="Center" />
                     <Label Grid.Row="1"
-                           Text="Welcome to the garden shop"
+                           Text="Welcome to Sage, your personal garden shopper"
                            FontSize="{StaticResource FontSizeTitle}"
                            FontAttributes="Bold"
                            HorizontalTextAlignment="Center" />
@@ -172,11 +174,11 @@
                                         StrokeShape="RoundRectangle 16"
                                         Padding="0">
                                     <Button Text="{Binding}"
-                                            FontSize="{StaticResource FontSizeCaption}"
+                                            FontSize="{StaticResource FontSizeBody}"
                                             TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
                                             BackgroundColor="Transparent"
                                             BorderWidth="0"
-                                            Padding="12,6"
+                                            Padding="14,8"
                                             Command="{Binding Source={x:Reference ThisView}, Path=BindingContext.RunSuggestionCommand}"
                                             CommandParameter="{Binding}" />
                                 </Border>
@@ -260,7 +262,7 @@
                        VerticalOptions="Center"
                        LineBreakMode="TailTruncation" />
                 <Button Grid.Column="1"
-                        Text="✅ Approve"
+                        Text="Approve"
                         AutomationId="ApproveButton"
                         Command="{Binding ApproveCommand}"
                         BackgroundColor="{StaticResource Primary}"
@@ -270,7 +272,7 @@
                         Padding="16,8"
                         VerticalOptions="Center" />
                 <Button Grid.Column="2"
-                        Text="❌ Reject"
+                        Text="Reject"
                         AutomationId="RejectButton"
                         Command="{Binding RejectCommand}"
                         BackgroundColor="{StaticResource Danger}"

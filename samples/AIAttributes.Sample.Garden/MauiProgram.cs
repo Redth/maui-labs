@@ -22,6 +22,7 @@ public static class MauiProgram
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                fonts.AddFont("FluentSystemIcons-Filled.ttf", "FluentFilled");
             });
 
         // Remove native Entry border so our custom Border wrapper is the only visible frame.
