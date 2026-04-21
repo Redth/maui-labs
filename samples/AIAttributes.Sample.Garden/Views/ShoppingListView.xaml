@@ -22,18 +22,15 @@
                   ColumnDefinitions="Auto,*,Auto"
                   ColumnSpacing="8"
                   BackgroundColor="{StaticResource Primary}">
-                <Label VerticalOptions="Center"
-                       FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
-                       TextColor="{StaticResource White}">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="&#xF26B; "
-                                  FontFamily="FluentFilled"
-                                  FontSize="{StaticResource FontSizeSubtitle}" />
-                            <Span Text="Cart" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
+                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                    <Label Text="&#xF26B;"
+                           FontFamily="FluentFilled"
+                           FontSize="{StaticResource FontSizeSubtitle}"
+                           TextColor="{StaticResource White}" VerticalOptions="Center" />
+                    <Label Text="Cart"
+                           FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
+                           TextColor="{StaticResource White}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
                 <Border Grid.Column="2"
                         BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
                         StrokeThickness="0"

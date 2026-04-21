@@ -7,9 +7,11 @@
              x:DataType="vm:MainViewModel"
              Title="Garden AI Chat"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="None"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
 
-    <Grid RowDefinitions="56,*" ColumnDefinitions="*,Auto" ColumnSpacing="0" RowSpacing="0">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*,Auto" ColumnSpacing="0" RowSpacing="0"
+          SafeAreaEdges="None">
 
         <!-- ═══ Green header background — spans both columns ═══ -->
         <Border Grid.Row="0" Grid.ColumnSpan="2"
@@ -19,20 +21,17 @@
         <!-- Header content — in col 0 only so New Chat aligns with chat/cart boundary -->
         <Grid Grid.Row="0" Grid.Column="0"
               ColumnDefinitions="*,Auto"
-              Padding="16,0" ColumnSpacing="12">
-            <Label VerticalOptions="Center">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="Sage "
-                              FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
-                              TextColor="{StaticResource White}" />
-                        <Span Text="&#xE769;"
-                              FontFamily="FluentFilled"
-                              FontSize="{StaticResource FontSizeTitle}"
-                              TextColor="{StaticResource White}" />
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
+              Padding="16,8" ColumnSpacing="12"
+              SafeAreaEdges="Container">
+            <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                <Label Text="Sage"
+                       FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
+                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+                <Label Text="&#xE76C;"
+                       FontFamily="FluentFilled"
+                       FontSize="{StaticResource FontSizeDisplay}"
+                       TextColor="{StaticResource White}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
             <Button Grid.Column="1"
                     Text="New Chat"
                     AutomationId="NewChatButton"

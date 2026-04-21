@@ -7,14 +7,16 @@
              Title="Past Orders"
              Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="None"
              BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
 
-    <Grid RowDefinitions="56,*">
+    <Grid RowDefinitions="Auto,*">
         <!-- Modal header with close + clear -->
         <Border Grid.Row="0"
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0"
-                Padding="16,0">
+                Padding="16,8"
+                SafeAreaEdges="Container">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                 <Button Text="&#xF36A;"
                         FontFamily="FluentFilled"

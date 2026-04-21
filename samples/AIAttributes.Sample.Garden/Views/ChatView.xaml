@@ -7,7 +7,8 @@
              x:Name="ThisView"
              x:DataType="vm:MainViewModel">
 
-    <Grid RowDefinitions="*,Auto" RowSpacing="0">
+    <Grid RowDefinitions="*,Auto" RowSpacing="0"
+          SafeAreaEdges="SoftInput">
 
         <!-- Chat messages — full width so scrollbar is at edge, content centered -->
         <CollectionView Grid.Row="0"
@@ -98,7 +99,7 @@
 
             <!-- Empty view — welcome screen -->
             <CollectionView.EmptyView>
-                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12"
+                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12"
                       MaximumWidthRequest="840" HorizontalOptions="Center">
                     <Label Grid.Row="0"
                            Text="&#xF788;"
@@ -117,36 +118,38 @@
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap"
                            TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                    <ScrollView Grid.Row="3" VerticalScrollBarVisibility="Default">
-                        <FlexLayout BindableLayout.ItemsSource="{Binding AvailableTools}"
-                                    Wrap="Wrap"
-                                    JustifyContent="Center"
-                                    AlignItems="Start"
-                                    AlignContent="Start">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ToolInfoViewModel">
-                                    <Border Margin="4"
-                                            Padding="10,8"
-                                            WidthRequest="220"
-                                            BackgroundColor="{AppThemeBinding Light={StaticResource ToolCardBackgroundLight}, Dark={StaticResource ToolCardBackgroundDark}}"
-                                            Stroke="{AppThemeBinding Light={StaticResource ToolCardStrokeLight}, Dark={StaticResource ToolCardStrokeDark}}"
-                                            StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 8">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding Name}"
-                                                   FontAttributes="Bold"
-                                                   FontSize="{StaticResource FontSizeBody}"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}" />
-                                            <Label Text="{Binding Description}"
-                                                   FontSize="{StaticResource FontSizeCaption}"
-                                                   LineBreakMode="WordWrap"
-                                                   TextColor="{AppThemeBinding Light={StaticResource TextMetaLight}, Dark={StaticResource TextMetaDark}}" />
-                                        </VerticalStackLayout>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </FlexLayout>
-                    </ScrollView>
+                    <FlexLayout Grid.Row="3"
+                                BindableLayout.ItemsSource="{Binding AvailableTools}"
+                                Wrap="Wrap"
+                                JustifyContent="Center"
+                                AlignItems="Start"
+                                AlignContent="Start">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ToolInfoViewModel">
+                                <Border Margin="4"
+                                        Padding="10,8"
+                                        FlexLayout.Basis="150"
+                                        FlexLayout.Grow="1"
+                                        MinimumWidthRequest="140"
+                                        MaximumWidthRequest="240"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource ToolCardBackgroundLight}, Dark={StaticResource ToolCardBackgroundDark}}"
+                                        Stroke="{AppThemeBinding Light={StaticResource ToolCardStrokeLight}, Dark={StaticResource ToolCardStrokeDark}}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="{Binding Name}"
+                                               FontAttributes="Bold"
+                                               FontSize="{StaticResource FontSizeBody}"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}" />
+                                        <Label Text="{Binding Description}"
+                                               FontSize="{StaticResource FontSizeCaption}"
+                                               LineBreakMode="WordWrap"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextMetaLight}, Dark={StaticResource TextMetaDark}}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
                 </Grid>
             </CollectionView.EmptyView>
         </CollectionView>

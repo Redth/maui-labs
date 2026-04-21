@@ -7,14 +7,16 @@
              Title="Catalog"
              Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False"
+             SafeAreaEdges="None"
              BackgroundColor="{AppThemeBinding Light={StaticResource ModalBackgroundLight}, Dark={StaticResource ModalBackgroundDark}}">
 
-    <Grid RowDefinitions="56,*">
+    <Grid RowDefinitions="Auto,*">
         <!-- Modal header with close button -->
         <Border Grid.Row="0"
                 BackgroundColor="{StaticResource Primary}"
                 StrokeThickness="0"
-                Padding="16,0">
+                Padding="16,8"
+                SafeAreaEdges="Container">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Text="&#xF36A;"
                         FontFamily="FluentFilled"
@@ -36,7 +38,7 @@
         <!-- Grouped catalog with section headers -->
         <ScrollView Grid.Row="1" Padding="8,8">
             <VerticalStackLayout Spacing="16"
-                                 MaximumWidthRequest="700"
+                                 MaximumWidthRequest="900"
                                  HorizontalOptions="Center">
                 <BindableLayout.ItemsSource>
                     <Binding Path="CatalogGroups" />
@@ -60,35 +62,38 @@
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="vm:CatalogItemViewModel">
                                         <Border Margin="4"
-                                                WidthRequest="280"
+                                                FlexLayout.Basis="150"
+                                                FlexLayout.Grow="1"
+                                                MinimumWidthRequest="140"
+                                                MaximumWidthRequest="220"
                                                 BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                                                 Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
                                                 StrokeThickness="1"
                                                 StrokeShape="RoundRectangle 12"
-                                                Padding="16,14">
-                                            <Grid RowDefinitions="Auto,Auto" RowSpacing="10">
-                                                <!-- Top row: large emoji + name side by side -->
-                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                                Padding="14,12">
+                                            <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                                                <!-- Top row: emoji + name side by side -->
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                                     <Label Text="{Binding Emoji}"
-                                                           FontSize="40"
+                                                           FontSize="32"
                                                            VerticalOptions="Center" />
                                                     <Label Grid.Column="1"
                                                            Text="{Binding Name}"
-                                                           FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
+                                                           FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
                                                            VerticalOptions="Center"
                                                            LineBreakMode="WordWrap" />
                                                 </Grid>
                                                 <!-- Bottom row: price + button -->
-                                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="6">
                                                     <Label Text="{Binding PriceLabel}"
                                                            FontSize="{StaticResource FontSizeBody}"
                                                            FontAttributes="Bold"
                                                            VerticalOptions="Center"
                                                            TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                                                     <Button Grid.Column="1"
-                                                            Text="Add to Cart"
-                                                            FontSize="{StaticResource FontSizeBody}"
-                                                            Padding="14,6"
+                                                            Text="Add"
+                                                            FontSize="{StaticResource FontSizeCaption}"
+                                                            Padding="10,4"
                                                             BackgroundColor="{StaticResource Primary}"
                                                             TextColor="{StaticResource White}"
                                                             CornerRadius="8"
