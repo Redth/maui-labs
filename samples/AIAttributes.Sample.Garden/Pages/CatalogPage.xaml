@@ -98,7 +98,7 @@
                                             TextColor="{StaticResource White}"
                                             CornerRadius="8"
                                             VerticalOptions="Center"
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=AddFromCatalogCommand}"
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type vm:MainViewModel}}, Path=Cart.AddFromCatalogCommand}"
                                             CommandParameter="{Binding Sku}" />
                                 </Grid>
                             </Grid>

@@ -9,13 +9,6 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
-/// View model for a single tool shown in the empty-state placeholder.
-/// </summary>
-public sealed record ToolInfoViewModel(
-    string Name,
-    string Description);
-
-/// <summary>
 /// Owns the AI chat loop, message history, tool invocation, and approval flow.
 /// Designed to be reusable — any page can host a ChatView bound to this VM.
 /// </summary>
@@ -34,6 +27,7 @@ public sealed partial class ChatViewModel : ObservableObject
     [AIToolSource(typeof(CurrentCart))]
     [AIToolSource(typeof(IOrderArchive))]
     [AIToolSource(typeof(MainViewModel))]
+    [AIToolSource(typeof(CartViewModel))]
     private partial class GardenShopTools : AIToolContext { }
 
     private readonly IChatClient _chatClient;
@@ -153,7 +147,7 @@ public sealed partial class ChatViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
+            AddMessage(ChatMessageKind.Error, $"Error: {ex.Message}");
         }
         finally
         {
@@ -197,13 +191,13 @@ public sealed partial class ChatViewModel : ObservableObject
                         var args = approval.ToolCall is FunctionCallContent fc && fc.Arguments is not null
                             ? string.Join(", ", fc.Arguments.Select(kv => $"{kv.Key}: {kv.Value}"))
                             : "";
-                        AddMessage(ChatMessageKind.Tool, $"\u26a0\ufe0f Approval required: {toolName}({args})");
+                        AddMessage(ChatMessageKind.Tool, $"Approval required: {toolName}({args})", FluentIcons.LockClosed);
                         _pendingApproval = approval;
                         break;
                     }
 
                     case FunctionCallContent call:
-                        AddMessage(ChatMessageKind.Tool, $"{FluentIcons.Wrench} {call.Name}");
+                        AddMessage(ChatMessageKind.Tool, call.Name, FluentIcons.Wrench);
                         break;
 
                     case FunctionResultContent:
@@ -225,7 +219,7 @@ public sealed partial class ChatViewModel : ObservableObject
         if (_pendingApproval is not null)
         {
             var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name?.TrimEnd('(', ')') : "tool";
-            ApprovalText = $"{FluentIcons.LockClosed} {name} — approve?";
+            ApprovalText = $"{name} — approve?";
             IsApprovalPending = true;
             return;
         }
@@ -248,14 +242,14 @@ public sealed partial class ChatViewModel : ObservableObject
         {
             var response = approval.CreateResponse(approved, reason);
             _history.Add(new ChatMessage(ChatRole.User, [response]));
-            AddMessage(ChatMessageKind.Tool, approved ? "\u2705 Approved" : "\u274c Rejected");
+            AddMessage(ChatMessageKind.Tool, approved ? "Approved" : "Rejected", approved ? FluentIcons.Checkmark : FluentIcons.Dismiss);
 
             var options = new ChatOptions { Tools = [.. GardenShopTools.Default.Tools] };
             await SendAndProcessResponseAsync(options);
         }
         catch (Exception ex)
         {
-            AddMessage(ChatMessageKind.Error, $"\u274c Error: {ex.Message}");
+            AddMessage(ChatMessageKind.Error, $"Error: {ex.Message}");
         }
         finally
         {
@@ -264,9 +258,9 @@ public sealed partial class ChatViewModel : ObservableObject
         }
     }
 
-    private ChatMessageViewModel AddMessage(ChatMessageKind kind, string text)
+    private ChatMessageViewModel AddMessage(ChatMessageKind kind, string text, string? icon = null)
     {
-        var vm = new ChatMessageViewModel(kind, text);
+        var vm = new ChatMessageViewModel(kind, text, icon);
         Messages.Add(vm);
         MessageAdded?.Invoke(vm);
         return vm;

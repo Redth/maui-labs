@@ -26,7 +26,7 @@
                 <local:ChatMessageTemplateSelector>
                     <local:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid HorizontalOptions="Center" MaximumWidthRequest="720" Padding="16,0">
+                            <Grid HorizontalOptions="Fill" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
                                         Padding="12,8"
                                         HorizontalOptions="End"
@@ -43,7 +43,7 @@
 
                     <local:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid HorizontalOptions="Center" MaximumWidthRequest="720" Padding="16,0">
+                            <Grid HorizontalOptions="Fill" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
                                         Padding="12,8"
                                         HorizontalOptions="Start"
@@ -61,13 +61,22 @@
 
                     <local:ChatMessageTemplateSelector.ToolTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Label Text="{Binding Text}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
-                                   FontAttributes="Italic"
-                                   Padding="20,2"
-                                   MaximumWidthRequest="840"
-                                   HorizontalOptions="Center" />
+                            <HorizontalStackLayout Spacing="4"
+                                                   Padding="20,2"
+                                                   MaximumWidthRequest="840"
+                                                   HorizontalOptions="Center">
+                                <Label Text="{Binding Icon}"
+                                       FontFamily="FluentFilled"
+                                       FontSize="{StaticResource FontSizeCaption}"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                                       IsVisible="{Binding HasIcon}"
+                                       VerticalOptions="Center" />
+                                <Label Text="{Binding Text}"
+                                       FontSize="{StaticResource FontSizeCaption}"
+                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                                       FontAttributes="Italic"
+                                       VerticalOptions="Center" />
+                            </HorizontalStackLayout>
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.ToolTemplate>
 

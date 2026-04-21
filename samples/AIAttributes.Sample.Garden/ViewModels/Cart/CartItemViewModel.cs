@@ -3,9 +3,9 @@ using AIAttributes.Sample.Garden.Models;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
-/// View-model wrapper around a <see cref="ListItem"/> for display in the cart panel.
+/// View-model wrapper around a <see cref="ListItem"/> for display in the cart.
 /// </summary>
-public sealed class ShoppingListItemViewModel(ListItem item)
+public sealed class CartItemViewModel(ListItem item)
 {
     public ListItem Item { get; } = item;
 

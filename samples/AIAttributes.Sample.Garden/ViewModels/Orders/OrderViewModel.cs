@@ -13,14 +13,3 @@ public sealed class OrderViewModel(Order order)
     public IReadOnlyList<OrderLineViewModel> Lines { get; } =
         [.. order.Items.Select(i => new OrderLineViewModel(i))];
 }
-
-/// <summary>
-/// One line item inside an expanded order card.
-/// </summary>
-public sealed class OrderLineViewModel(ListItem item)
-{
-    public string Emoji => item.Product.Emoji;
-    public string ItemDescription => $"{item.Quantity}× {item.Product.Name}";
-    public string SubtotalLabel => item.Subtotal.ToString("C");
-    public string Line => $"{item.Quantity}× {item.Product.Name}  ·  {item.Subtotal:C}";
-}

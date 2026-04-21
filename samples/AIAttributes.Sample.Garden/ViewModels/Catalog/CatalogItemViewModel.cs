@@ -14,11 +14,3 @@ public sealed class CatalogItemViewModel(Product product)
     public string PriceLabel { get; } = $"{product.Price:C}";
     public string Category { get; } = product.Category;
 }
-
-/// <summary>
-/// Group header for catalog categories.
-/// </summary>
-public sealed class CatalogGroupViewModel(string categoryName) : List<CatalogItemViewModel>
-{
-    public string CategoryName { get; } = categoryName;
-}

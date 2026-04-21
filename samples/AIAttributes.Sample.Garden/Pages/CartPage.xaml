@@ -44,20 +44,20 @@
                         StrokeShape="RoundRectangle 13"
                         Padding="0"
                         HeightRequest="26">
-                    <Button Text="{Binding CartModeLabel}"
+                    <Button Text="{Binding Cart.CartModeLabel}"
                             FontSize="{StaticResource FontSizeCaption}" Padding="14,0"
                             BackgroundColor="Transparent"
                             TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
                             FontAttributes="Bold"
                             BorderWidth="0"
                             VerticalOptions="Center"
-                            Command="{Binding CycleCartModeCommand}" />
+                            Command="{Binding Cart.CycleCartModeCommand}" />
                 </Border>
             </Grid>
         </Border>
 
         <!-- Cart content — headerless ShoppingListView -->
-        <views:ShoppingListView Grid.Row="1" />
+        <views:ShoppingListView Grid.Row="1" BindingContext="{Binding Cart}" />
     </Grid>
 
 </ContentPage>

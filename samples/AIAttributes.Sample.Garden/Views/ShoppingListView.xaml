@@ -3,19 +3,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Views.ShoppingListView"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:CartViewModel"
              BackgroundColor="Transparent">
 
     <Grid RowDefinitions="*,Auto" RowSpacing="0">
 
         <!-- Normal mode: card layout -->
         <CollectionView Grid.Row="0"
-                        ItemsSource="{Binding ShoppingList}"
+                        ItemsSource="{Binding Items}"
                         SelectionMode="None"
                         BackgroundColor="Transparent"
                         IsVisible="{Binding IsNormalMode}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                <DataTemplate x:DataType="vm:CartItemViewModel">
                     <Grid Padding="12,4">
                         <Border BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
                                 Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
@@ -59,12 +59,12 @@
 
         <!-- Compact mode: dense rows -->
         <CollectionView Grid.Row="0"
-                        ItemsSource="{Binding ShoppingList}"
+                        ItemsSource="{Binding Items}"
                         SelectionMode="None"
                         BackgroundColor="Transparent"
                         IsVisible="{Binding IsCompactMode}">
             <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                <DataTemplate x:DataType="vm:CartItemViewModel">
                     <Grid Padding="14,3" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
                         <Label Text="{Binding Emoji}"
                                FontFamily="FluentFilled"
@@ -96,15 +96,15 @@
                 BackgroundColor="Transparent"
                 StrokeThickness="0"
                 Padding="12,10"
-                IsVisible="{Binding HasCartItems}">
+                IsVisible="{Binding HasItems}">
             <Button HorizontalOptions="Fill"
-                    Text="{Binding ShoppingListTotal, StringFormat='Checkout — {0}'}"
+                    Text="{Binding CartTotal, StringFormat='Checkout — {0}'}"
                     FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
                     Padding="16,8"
                     BackgroundColor="{StaticResource Primary}"
                     TextColor="{StaticResource White}"
                     CornerRadius="10"
-                    Command="{Binding CheckoutCartCommand}" />
+                    Command="{Binding CheckoutCommand}" />
         </Border>
     </Grid>
 
