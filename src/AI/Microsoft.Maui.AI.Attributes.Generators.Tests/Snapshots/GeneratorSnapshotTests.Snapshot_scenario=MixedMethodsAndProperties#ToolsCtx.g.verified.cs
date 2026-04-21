@@ -74,7 +74,7 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "name");
+                var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "name");
                 var __result = global::Sample.Store.Find(__arg_name);
                 return __result;
             }

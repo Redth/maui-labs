@@ -739,7 +739,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
 
         if (needsProvider)
         {
-            sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);");
+            sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);");
         }
         if (needsServiceForInstance)
         {
@@ -810,16 +810,16 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             case ParameterKind.JsonArgument:
                 if (p.HasDefault)
                 {
-                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetOptionalArg<{p.TypeName}>(arguments, {Escape(p.Name)}, {p.DefaultLiteral});");
+                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetOptionalArg<{p.TypeName}>(arguments, {Escape(p.Name)}, {p.DefaultLiteral});");
                 }
                 else
                 {
-                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
+                    sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
                 }
                 break;
             default:
                 sb.AppendLine($"{indent}// Unclassified parameter {p.Name}: falling back to JSON binding.");
-                sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
+                sb.AppendLine($"{indent}var {local} = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<{p.TypeName}>(arguments, {Escape(p.Name)});");
                 break;
         }
     }

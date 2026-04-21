@@ -74,7 +74,7 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "message");
+                var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "message");
                 var __result = global::Sample.Utility.Echo(__arg_message);
                 return __result;
             }
@@ -121,9 +121,9 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.Utility>();
-                var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "message");
+                var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "message");
                 var __result = __service.EchoInstance(__arg_message);
                 return __result;
             }

@@ -73,12 +73,12 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.Svc>();
-                var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "name");
-                var __arg_count = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetOptionalArg<int>(arguments, "count", 3);
-                var __arg_verbose = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetOptionalArg<bool>(arguments, "verbose", false);
-                var __arg_prefix = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetOptionalArg<string>(arguments, "prefix", "hi");
+                var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "name");
+                var __arg_count = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetOptionalArg<int>(arguments, "count", 3);
+                var __arg_verbose = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetOptionalArg<bool>(arguments, "verbose", false);
+                var __arg_prefix = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetOptionalArg<string>(arguments, "prefix", "hi");
                 var __result = __service.Do(__arg_name, __arg_count, __arg_verbose, __arg_prefix);
                 return __result;
             }

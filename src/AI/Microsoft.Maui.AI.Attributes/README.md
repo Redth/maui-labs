@@ -24,8 +24,8 @@ public class PlantCatalogService
 
 - `[ExportAIFunction]` marks a method as an AI-callable tool.
 - `[ExportAIFunction("custom_name")]` overrides the tool name (defaults to method name).
-- `[Description]` on the method and parameters provides AI-visible documentation.
 - `[ExportAIFunction(ApprovalRequired = true)]` wraps the tool so it requires user approval before executing.
+- `[Description]` on the method and parameters provides AI-visible documentation.
 
 Methods may be **instance** (resolved from DI) or **static** (no DI required — see below).
 
@@ -100,7 +100,7 @@ At compile time the generator classifies each parameter and emits the right bind
 
 | Parameter shape | Binding |
 |---|---|
-| `CancellationToken` | Flows from the function-invocation pipeline. **Not** in the tool schema. |
+| `CancellationToken` | Flows from the function-invocation pipeline. Not in the tool schema. |
 | `IServiceProvider` | The provider on `AIFunctionArguments.Services`. Not in schema. |
 | `AIFunctionArguments` | The raw argument bag. Not in schema. |
 | `[FromServices] IMyThing x` | `provider.GetRequiredService<IMyThing>()`. Not in schema. |
@@ -109,7 +109,7 @@ At compile time the generator classifies each parameter and emits the right bind
 
 For instance methods the host service is resolved via `provider.GetRequiredService<TService>()`. For static methods the call is emitted directly — no service lookup, no provider needed unless a `[FromServices]` parameter forces it.
 
-If a tool needs a provider and `arguments.Services` is null, `AIToolContext.Helpers.RequireServices` throws `InvalidOperationException` with a message pointing you at `UseFunctionInvocation().Build(sp)` or making the method `static`.
+If a tool needs a provider and `arguments.Services` is null, `AIToolMetadataServices.RequireServices` throws `InvalidOperationException` with a message pointing you at `UseFunctionInvocation().Build(sp)` or making the method `static`.
 
 ## Service lifetimes & scopes
 

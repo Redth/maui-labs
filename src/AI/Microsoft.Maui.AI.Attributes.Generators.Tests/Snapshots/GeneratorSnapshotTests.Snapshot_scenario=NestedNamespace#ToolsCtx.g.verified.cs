@@ -73,9 +73,9 @@ namespace Sample.Inner.Deeper
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.Inner.Deeper.Svc>();
-                var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "x");
+                var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "x");
                 var __result = __service.Do(__arg_x);
                 return __result;
             }

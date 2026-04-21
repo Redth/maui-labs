@@ -73,7 +73,7 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.Svc>();
                 var __result = __service.Hello();
                 return __result;

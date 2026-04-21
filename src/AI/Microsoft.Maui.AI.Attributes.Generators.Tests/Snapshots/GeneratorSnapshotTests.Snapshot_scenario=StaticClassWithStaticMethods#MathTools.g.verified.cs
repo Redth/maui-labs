@@ -74,8 +74,8 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __arg_a = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<int>(arguments, "a");
-                var __arg_b = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<int>(arguments, "b");
+                var __arg_a = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<int>(arguments, "a");
+                var __arg_b = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<int>(arguments, "b");
                 var __result = global::Sample.MathHelper.Add(__arg_a, __arg_b);
                 return __result;
             }
@@ -122,7 +122,7 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __arg_value = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<int>(arguments, "value");
+                var __arg_value = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<int>(arguments, "value");
                 var __result = global::Sample.MathHelper.Negate(__arg_value);
                 return __result;
             }

@@ -73,10 +73,10 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.RequireServices(arguments);
+                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
                 var __service = __provider.GetRequiredService<global::Sample.IOrderService>();
-                var __arg_item = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<string>(arguments, "item");
-                var __arg_qty = global::Microsoft.Maui.AI.Attributes.AIToolContext.Helpers.GetRequiredArg<int>(arguments, "qty");
+                var __arg_item = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "item");
+                var __arg_qty = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<int>(arguments, "qty");
                 var __result = __service.PlaceOrder(__arg_item, __arg_qty);
                 return __result;
             }
