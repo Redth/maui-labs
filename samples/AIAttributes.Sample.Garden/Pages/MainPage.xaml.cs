@@ -1,6 +1,6 @@
 using AIAttributes.Sample.Garden.ViewModels;
 
-namespace AIAttributes.Sample.Garden;
+namespace AIAttributes.Sample.Garden.Pages;
 
 public partial class MainPage : ContentPage
 {

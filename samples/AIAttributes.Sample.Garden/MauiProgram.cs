@@ -1,5 +1,6 @@
 using System.ClientModel;
 using System.Reflection;
+using AIAttributes.Sample.Garden.Pages;
 using AIAttributes.Sample.Garden.Services;
 using AIAttributes.Sample.Garden.ViewModels;
 using Azure.AI.OpenAI;

@@ -1,13 +1,13 @@
 using AIAttributes.Sample.Garden.ViewModels;
 
-namespace AIAttributes.Sample.Garden;
+namespace AIAttributes.Sample.Garden.Pages;
 
-public partial class CartPage : ContentPage
+public partial class OrdersPage : ContentPage
 {
-    public CartPage(MainViewModel vm)
+    public OrdersPage(MainViewModel viewModel)
     {
-        BindingContext = vm;
         InitializeComponent();
+        BindingContext = viewModel;
     }
 
     private async void OnCloseClicked(object? sender, EventArgs e)

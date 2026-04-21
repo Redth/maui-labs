@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
-             x:Class="AIAttributes.Sample.Garden.MainPage"
+             x:Class="AIAttributes.Sample.Garden.Pages.MainPage"
              x:DataType="vm:MainViewModel"
              Title="Garden AI Chat"
              Shell.NavBarIsVisible="False"

@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
-             x:Class="AIAttributes.Sample.Garden.CartPage"
+             x:Class="AIAttributes.Sample.Garden.Pages.CartPage"
              x:DataType="vm:MainViewModel"
              Title="Cart"
              Shell.PresentationMode="ModalAnimated"
@@ -15,16 +15,18 @@
         <views:ShoppingListView />
 
         <!-- Dismiss button overlay — positioned in the cart's green header area -->
-        <Button Text="&#xF36A;"
-                FontFamily="FluentFilled"
-                FontSize="{StaticResource FontSizeSubtitle}"
-                TextColor="{StaticResource White}"
-                BackgroundColor="Transparent"
-                HorizontalOptions="End"
-                VerticalOptions="Start"
-                Padding="8,4"
+        <Border HorizontalOptions="End" VerticalOptions="Start"
+                BackgroundColor="Transparent" StrokeThickness="0"
                 SafeAreaEdges="Container"
-                Clicked="OnCloseClicked" />
+                Padding="8,4" Margin="4">
+            <Button Text="&#xF36A;"
+                    FontFamily="FluentFilled"
+                    FontSize="{StaticResource FontSizeSubtitle}"
+                    TextColor="{StaticResource White}"
+                    BackgroundColor="Transparent"
+                    Padding="8,4"
+                    Clicked="OnCloseClicked" />
+        </Border>
     </Grid>
 
 </ContentPage>

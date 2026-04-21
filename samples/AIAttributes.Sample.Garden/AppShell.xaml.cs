@@ -1,3 +1,5 @@
+using AIAttributes.Sample.Garden.Pages;
+
 namespace AIAttributes.Sample.Garden;
 
 public partial class AppShell : Shell
