@@ -77,7 +77,10 @@ namespace Sample
                     "Tool 'Do' could not resolve its source type 'global::Sample.Svc' from IServiceProvider. " +
                     "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
                 var __arg_name = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "name");
-                var __arg_cache = __provider.GetRequiredKeyedService<global::Sample.ICache>(null);
+                var __arg_cache = (global::Sample.ICache?)(__provider as global::Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider)?.GetKeyedService(typeof(global::Sample.ICache), null)
+                    ?? throw new global::System.InvalidOperationException(
+                        "Tool parameter 'cache' of type 'global::Sample.ICache' could not be resolved from IServiceProvider with key " + null + ". " +
+                        "Register the keyed service in your DI container, or ensure the IServiceProvider supports keyed services (IKeyedServiceProvider).");
                 var __result = __service.Do(__arg_name, __arg_cache);
                 return __result;
             }

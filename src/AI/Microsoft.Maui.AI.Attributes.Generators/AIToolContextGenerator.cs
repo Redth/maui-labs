@@ -808,7 +808,16 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 sb.AppendLine($"{indent}    \"Register the service in your DI container.\");");
                 break;
             case ParameterKind.FromKeyedServices:
-                sb.AppendLine($"{indent}var {local} = __provider.GetRequiredKeyedService<{p.TypeName}>({p.KeyedServiceKey ?? "null"});");
+                var keyLiteral = p.KeyedServiceKey ?? "null";
+                // Use (as IKeyedServiceProvider)?. pattern because the extension method GetKeyedService
+                // throws InvalidOperationException("KeyedServicesNotSupported") when the provider doesn't
+                // implement IKeyedServiceProvider (e.g. EmptyServiceProvider). By going through the
+                // interface directly, non-keyed providers yield null which our ?? throw catches with a
+                // contextual error message.
+                sb.AppendLine($"{indent}var {local} = ({p.TypeName}?)(__provider as global::Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider)?.GetKeyedService(typeof({p.TypeName}), {keyLiteral})");
+                sb.AppendLine($"{indent}    ?? throw new global::System.InvalidOperationException(");
+                sb.AppendLine($"{indent}        \"Tool parameter '{p.Name}' of type '{p.TypeName}' could not be resolved from IServiceProvider with key \" + {keyLiteral} + \". \" +");
+                sb.AppendLine($"{indent}        \"Register the keyed service in your DI container, or ensure the IServiceProvider supports keyed services (IKeyedServiceProvider).\");");
                 break;
             case ParameterKind.JsonArgument:
                 if (p.HasDefault)
