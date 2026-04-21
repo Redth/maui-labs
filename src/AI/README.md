@@ -167,9 +167,9 @@ The repository ships three focused samples under `samples/`. Each tells exactly 
 
 | Sample | Type | Demonstrates |
 |---|---|---|
-| [`AIAttributes.Sample.Hello`](../../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.Tools`. |
-| [`AIAttributes.Sample.DIParameters`](../../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
-| [`AIAttributes.Sample.Garden`](../../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
+| [`AIAttributes.Sample.Hello`](../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.Tools`. |
+| [`AIAttributes.Sample.DIParameters`](../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
+| [`AIAttributes.Sample.Garden`](../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
 
 ## AOT compatibility
 
