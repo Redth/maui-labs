@@ -172,7 +172,6 @@ public sealed partial class MainViewModel : ObservableObject
         {
             IsBusy = false;
             RefreshShoppingList();
-            RefreshArchive();
         }
     }
 
