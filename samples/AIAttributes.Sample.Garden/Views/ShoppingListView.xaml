@@ -29,8 +29,12 @@
                                 Stroke="{AppThemeBinding Light=#D5E5D2, Dark=#3A4A38}"
                                 StrokeThickness="1"
                                 StrokeShape="RoundRectangle 8"
-                                Padding="10,8"
-                                Opacity="{Binding IsPending, Converter={StaticResource BoolToDimOpacity}}">
+                                Padding="10,8">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsPending}" Value="True">
+                                    <Setter Property="Opacity" Value="0.35" />
+                                </DataTrigger>
+                            </Border.Triggers>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                                 <Label Text="{Binding Emoji}"
                                        FontSize="22"
