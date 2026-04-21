@@ -39,6 +39,7 @@ public sealed partial class MainViewModel : ObservableObject
     [AIToolSource(typeof(ProductCatalog))]
     [AIToolSource(typeof(CurrentCart))]
     [AIToolSource(typeof(IOrderArchive))]
+    [AIToolSource(typeof(MainViewModel))]
     private partial class GardenShopTools : AIToolContext { }
 
     private readonly IChatClient _chatClient;
@@ -71,9 +72,10 @@ public sealed partial class MainViewModel : ObservableObject
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
         "Add 5 packs of tomato seeds and a hand trowel to my list",
-        "Show me my list",
+        "Show me my list in compact mode",
         "Check out my list",
-        "List my past orders",
+        "Show me my past orders",
+        "Go back to the shop",
         "Re-order my last order",
     ];
 
@@ -97,6 +99,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private string _shoppingListTotal = $"Total: {0:C}";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNormalMode))]
+    [NotifyPropertyChangedFor(nameof(CompactModeLabel))]
+    private bool _isCompactMode;
+
+    public bool IsNormalMode => !IsCompactMode;
+    public string CompactModeLabel => IsCompactMode ? "Normal" : "Compact";
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
@@ -136,6 +146,10 @@ public sealed partial class MainViewModel : ObservableObject
                 - When the user says "check out", call checkout_list (which requires approval).
                 - After checkout clears the cart, the cart is EMPTY. If the user asks to add
                   items again, always call add_to_list — do not say items are already there.
+                - Use navigate_to_page to switch between the 'shop' and 'orders' pages when
+                  the user asks to see orders or go back to shopping.
+                - Use set_cart_view_mode to toggle between 'compact' and 'normal' cart display
+                  when the user asks for a different view.
                 - Be concise and friendly.
                 """)
         ];
@@ -219,6 +233,62 @@ public sealed partial class MainViewModel : ObservableObject
         _archive.Clear();
         RefreshArchive();
     }
+
+    [RelayCommand]
+    private void ToggleCompactMode() => IsCompactMode = !IsCompactMode;
+
+    // ─── ViewModel-level AI tools ───────────────────────────────────
+    // These demonstrate [ExportAIFunction] on a ViewModel — the AI can
+    // directly drive UI navigation and view state, not just service calls.
+
+    [ExportAIFunction("navigate_to_page",
+        Description = "Navigate to a page in the app. Use 'shop' for the shopping page or 'orders' for the past orders page.")]
+    public async Task<string> NavigateToPageAsync(
+        [System.ComponentModel.Description("The page to navigate to: 'shop' or 'orders'")] string page)
+    {
+        var route = page?.ToLowerInvariant() switch
+        {
+            "shop" => "//shop/MainPage",
+            "orders" => "//orders/OrdersPage",
+            _ => throw new ArgumentException($"Unknown page '{page}'. Valid pages: 'shop', 'orders'.")
+        };
+
+        var tcs = new TaskCompletionSource();
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try
+            {
+                await Shell.Current.GoToAsync(route);
+                tcs.SetResult();
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+        });
+        await tcs.Task;
+        return $"Navigated to {page}.";
+    }
+
+    [ExportAIFunction("set_cart_view_mode",
+        Description = "Change the shopping cart display mode. 'compact' shows a dense single-line list. 'normal' shows full cards with emoji and details.")]
+    public string SetCartViewMode(
+        [System.ComponentModel.Description("The view mode: 'compact' or 'normal'")] string mode)
+    {
+        IsCompactMode = mode?.ToLowerInvariant() switch
+        {
+            "compact" => true,
+            "normal" => false,
+            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'compact', 'normal'.")
+        };
+        return $"Cart view mode set to {(IsCompactMode ? "compact" : "normal")}.";
+    }
+
+    [ExportAIFunction("get_cart_view_mode",
+        Description = "Get the current cart display mode ('compact' or 'normal').")]
+    public string GetCartViewMode() => IsCompactMode ? "compact" : "normal";
+
+    // ─────────────────────────────────────────────────────────────────
 
     private void RefreshShoppingList()
     {

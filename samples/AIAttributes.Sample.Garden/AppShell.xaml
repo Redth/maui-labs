@@ -3,15 +3,25 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:pages="clr-namespace:AIAttributes.Sample.Garden"
        x:Class="AIAttributes.Sample.Garden.AppShell"
-       Title="Annotations Sample"
-       Shell.FlyoutBehavior="Disabled"
+       Title="Garden Shop"
+       Shell.FlyoutBehavior="Flyout"
        Shell.BackgroundColor="#5B8C5A"
        Shell.ForegroundColor="White"
-       Shell.TitleColor="White">
+       Shell.TitleColor="White"
+       FlyoutBackgroundColor="#E0EBDD">
 
-    <ShellContent
-        Title="Garden AI Chat"
-        ContentTemplate="{DataTemplate pages:MainPage}"
-        Route="MainPage" />
+    <FlyoutItem Title="🛒 Shop" Route="shop">
+        <ShellContent
+            Title="Garden AI Chat"
+            ContentTemplate="{DataTemplate pages:MainPage}"
+            Route="MainPage" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="📦 Orders" Route="orders">
+        <ShellContent
+            Title="Past Orders"
+            ContentTemplate="{DataTemplate pages:OrdersPage}"
+            Route="OrdersPage" />
+    </FlyoutItem>
 
 </Shell>

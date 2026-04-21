@@ -35,8 +35,9 @@ public static class MauiProgram
 
         builder.AddOpenAIServices();
 
-        builder.Services.AddTransient<MainViewModel>();
+        builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddTransient<MainPage>();
+        builder.Services.AddTransient<OrdersPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

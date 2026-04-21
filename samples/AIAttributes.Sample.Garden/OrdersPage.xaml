@@ -3,19 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
-             x:Class="AIAttributes.Sample.Garden.MainPage"
+             x:Class="AIAttributes.Sample.Garden.OrdersPage"
              x:DataType="vm:MainViewModel"
-             Title="Garden AI Chat"
+             Title="Past Orders"
              Shell.NavBarIsVisible="False">
 
-    <Grid ColumnDefinitions="*,320" ColumnSpacing="0">
-
-        <!-- Chat occupies the entire left column -->
-        <views:ChatView Grid.Column="0" />
-
-        <!-- Shopping list on the right -->
-        <views:ShoppingListView Grid.Column="1" />
-
-    </Grid>
+    <views:OrdersView />
 
 </ContentPage>

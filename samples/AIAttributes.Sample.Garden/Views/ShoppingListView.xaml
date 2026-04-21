@@ -12,15 +12,29 @@
                 BackgroundColor="#5B8C5A"
                 StrokeThickness="0"
                 Padding="16,0">
-            <Label Text="Cart"
-                   FontSize="16" FontAttributes="Bold"
-                   TextColor="White" VerticalOptions="Center" />
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Cart"
+                       FontSize="16" FontAttributes="Bold"
+                       TextColor="White" VerticalOptions="Center" />
+                <Button Grid.Column="1"
+                        Text="{Binding CompactModeLabel}"
+                        FontSize="10"
+                        Padding="8,2"
+                        HeightRequest="26"
+                        BackgroundColor="#4A7A4A"
+                        TextColor="White"
+                        CornerRadius="4"
+                        VerticalOptions="Center"
+                        Command="{Binding ToggleCompactModeCommand}" />
+            </Grid>
         </Border>
 
+        <!-- Normal mode: card layout with emoji + details -->
         <CollectionView Grid.Row="1"
                         ItemsSource="{Binding ShoppingList}"
                         SelectionMode="None"
-                        Margin="0,8,0,0">
+                        Margin="0,8,0,0"
+                        IsVisible="{Binding IsNormalMode}">
 
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
@@ -64,6 +78,42 @@
                            HorizontalTextAlignment="Center"
                            TextColor="{AppThemeBinding Light=#7A8A7A, Dark=#6A8068}" />
                 </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Compact mode: dense single-line rows -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding ShoppingList}"
+                        SelectionMode="None"
+                        Margin="0,4,0,0"
+                        IsVisible="{Binding IsCompactMode}">
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                    <Grid Padding="14,2">
+                        <Label FontSize="13"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light=#333, Dark=#DDD}">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{Binding Emoji}" />
+                                    <Span Text=" " />
+                                    <Span Text="{Binding Name}" FontAttributes="Bold" />
+                                    <Span Text="{Binding QuantityLine, StringFormat=' — {0}'}"
+                                          FontSize="11"
+                                          TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+
+            <CollectionView.EmptyView>
+                <Label Text="Cart is empty."
+                       FontSize="11" FontAttributes="Italic"
+                       Padding="14,8"
+                       TextColor="{AppThemeBinding Light=#7A8A7A, Dark=#6A8068}" />
             </CollectionView.EmptyView>
         </CollectionView>
 
