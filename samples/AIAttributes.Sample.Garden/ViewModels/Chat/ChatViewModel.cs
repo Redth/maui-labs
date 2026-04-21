@@ -183,15 +183,15 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
                 switch (content)
                 {
                     case ToolApprovalRequestContent approval:
-                    {
-                        var toolName = approval.ToolCall is FunctionCallContent fcc ? fcc.Name : "unknown";
-                        var args = approval.ToolCall is FunctionCallContent fc && fc.Arguments is not null
-                            ? string.Join(", ", fc.Arguments.Select(kv => $"{kv.Key}: {kv.Value}"))
-                            : "";
-                        AddMessage(ChatMessageKind.Tool, $"Approval required: {toolName}({args})", FluentIcons.LockClosed);
-                        _pendingApproval = approval;
-                        break;
-                    }
+                        {
+                            var toolName = approval.ToolCall is FunctionCallContent fcc ? fcc.Name : "unknown";
+                            var args = approval.ToolCall is FunctionCallContent fc && fc.Arguments is not null
+                                ? string.Join(", ", fc.Arguments.Select(kv => $"{kv.Key}: {kv.Value}"))
+                                : "";
+                            AddMessage(ChatMessageKind.Tool, $"Approval required: {toolName}({args})", FluentIcons.LockClosed);
+                            _pendingApproval = approval;
+                            break;
+                        }
 
                     case FunctionCallContent call:
                         AddMessage(ChatMessageKind.Tool, call.Name, FluentIcons.Wrench);

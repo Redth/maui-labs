@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using AIAttributes.Sample.Garden.Messages;
-using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -42,9 +41,15 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
     [NotifyPropertyChangedFor(nameof(IsNormalMode))]
     [NotifyPropertyChangedFor(nameof(IsCompactMode))]
     [NotifyPropertyChangedFor(nameof(CartModeLabel))]
-    [ExportAIFunction("get_cart_mode")]
-    [Description("Get the current cart display mode.")]
-    public partial CartMode CartMode { get; set; } = CartMode.Normal;
+    public partial CartMode CartMode
+    {
+        [ExportAIFunction("get_cart_mode")]
+        [Description("Get the current cart display mode.")]
+        get;
+        [ExportAIFunction("set_cart_mode")]
+        [Description("Change the shopping cart display mode. 'normal' shows full cards with icons and details. 'compact' shows dense single-line rows.")]
+        set;
+    } = CartMode.Normal;
 
     public bool IsNormalMode => CartMode == CartMode.Normal;
     public bool IsCompactMode => CartMode == CartMode.Compact;
@@ -104,22 +109,6 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
     {
         _currentCart.Clear();
         CartMode = CartMode.Normal;
-    }
-
-    // ─── AI tools for cart display ──────────────────────────────────
-
-    [ExportAIFunction("set_cart_mode")]
-    [Description("Change the shopping cart display mode. 'normal' shows full cards with icons and details. 'compact' shows dense single-line rows.")]
-    public string SetCartViewMode(
-        [Description("The view mode: 'normal' or 'compact'")] string mode)
-    {
-        CartMode = mode?.ToLowerInvariant() switch
-        {
-            "normal" => CartMode.Normal,
-            "compact" => CartMode.Compact,
-            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'normal', 'compact'.")
-        };
-        return $"Cart display mode set to {CartMode.ToString().ToLowerInvariant()}.";
     }
 
     // ─────────────────────────────────────────────────────────────────
