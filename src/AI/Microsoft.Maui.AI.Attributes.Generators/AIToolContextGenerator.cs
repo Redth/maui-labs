@@ -739,7 +739,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
 
         if (needsProvider)
         {
-            sb.AppendLine($"{indent}        var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);");
+            sb.AppendLine($"{indent}        var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(");
+            sb.AppendLine($"{indent}            \"Tool '{m.ToolName}' requires services (source type: {st.FullyQualifiedName}) but no IServiceProvider was supplied. \" +");
+            sb.AppendLine($"{indent}            \"Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).\");");
         }
         if (needsServiceForInstance)
         {

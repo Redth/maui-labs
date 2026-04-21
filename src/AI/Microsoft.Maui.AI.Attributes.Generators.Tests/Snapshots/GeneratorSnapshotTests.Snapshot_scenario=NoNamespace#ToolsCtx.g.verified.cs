@@ -71,7 +71,9 @@ public partial class ToolsCtx
             global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
             global::System.Threading.CancellationToken cancellationToken)
         {
-            var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
+            var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
+                "Tool 'Do' requires services (source type: global::Svc) but no IServiceProvider was supplied. " +
+                "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
             var __service = __provider.GetRequiredService<global::Svc>();
             var __arg_x = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "x");
             var __result = __service.Do(__arg_x);

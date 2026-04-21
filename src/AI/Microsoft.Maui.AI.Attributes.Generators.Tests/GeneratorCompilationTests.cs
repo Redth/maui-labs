@@ -71,11 +71,11 @@ public class GeneratorCompilationTests
         => AssertCleanCompilation(Inputs.StaticMethodWithFromServices);
 
     [Fact]
-    public void StaticMethodWithFromServices_StillUsesRequireServices()
+    public void StaticMethodWithFromServices_InlinesServiceProviderCheck()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodWithFromServices);
         var generated = output.SyntaxTrees.Last().ToString();
-        Assert.Contains("RequireServices(arguments)", generated);
+        Assert.Contains("arguments.Services ?? throw new", generated);
         Assert.Contains("GetRequiredService<global::Sample.ILogger>()", generated);
     }
 
@@ -84,11 +84,11 @@ public class GeneratorCompilationTests
         => AssertCleanCompilation(Inputs.StaticMethodNoDI);
 
     [Fact]
-    public void StaticMethodNoDI_DoesNotCallRequireServices()
+    public void StaticMethodNoDI_DoesNotInlineServiceProviderCheck()
     {
         var (_, _, output) = RunAndCompile(Inputs.StaticMethodNoDI);
         var generated = output.SyntaxTrees.Last().ToString();
-        Assert.DoesNotContain("RequireServices", generated);
+        Assert.DoesNotContain("arguments.Services", generated);
         Assert.DoesNotContain("__provider", generated);
     }
 

@@ -15,23 +15,6 @@ namespace Microsoft.Maui.AI.Attributes;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class AIToolMetadataServices
 {
-    /// <summary>
-    /// Returns the service provider supplied by the caller on
-    /// <see cref="AIFunctionArguments.Services"/>. Throws if it is not set.
-    /// </summary>
-    public static IServiceProvider RequireServices(AIFunctionArguments args)
-    {
-        var provider = args.Services;
-        if (provider is null)
-        {
-            throw new InvalidOperationException(
-                "This tool requires services but no IServiceProvider was supplied. Set " +
-                "AIFunctionArguments.Services before invoking the tool (ChatClientBuilder's " +
-                "UseFunctionInvocation().Build(sp) does this automatically), or author the " +
-                "backing method as static with no [FromServices] parameters.");
-        }
-        return provider;
-    }
 
     /// <summary>
     /// Reads a required argument from <see cref="AIFunctionArguments"/>, converting it to

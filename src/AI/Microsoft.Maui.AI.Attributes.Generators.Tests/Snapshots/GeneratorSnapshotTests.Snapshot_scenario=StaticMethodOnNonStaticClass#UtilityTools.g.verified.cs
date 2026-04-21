@@ -121,7 +121,9 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
+                var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
+                    "Tool 'echo_instance' requires services (source type: global::Sample.Utility) but no IServiceProvider was supplied. " +
+                    "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetRequiredService<global::Sample.Utility>();
                 var __arg_message = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "message");
                 var __result = __service.EchoInstance(__arg_message);

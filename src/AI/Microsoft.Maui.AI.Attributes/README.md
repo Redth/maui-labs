@@ -109,7 +109,7 @@ At compile time the generator classifies each parameter and emits the right bind
 
 For instance methods the host service is resolved via `provider.GetRequiredService<TService>()`. For static methods the call is emitted directly — no service lookup, no provider needed unless a `[FromServices]` parameter forces it.
 
-If a tool needs a provider and `arguments.Services` is null, `AIToolMetadataServices.RequireServices` throws `InvalidOperationException` with a message pointing you at `UseFunctionInvocation().Build(sp)` or making the method `static`.
+If a tool needs services and `arguments.Services` is null, the generated code throws an `InvalidOperationException` naming the specific tool and source type, pointing you at `UseFunctionInvocation().Build(sp)` or making the method `static`.
 
 ## Service lifetimes & scopes
 
@@ -135,20 +135,6 @@ _sessionClient = new ChatClientBuilder(_innerChatClient)
 ```
 
 Each tool invocation receives the session scope's provider through `AIFunctionArguments.Services`, so `AddScoped<GardenService>()` gets a fresh instance per session but stays consistent across tool calls within the session.
-
-## Project references
-
-This library ships as two projects:
-
-```xml
-<!-- The attributes and base types -->
-<ProjectReference Include="Microsoft.Maui.AI.Attributes.csproj" />
-
-<!-- The source generator (analyzer, not a runtime reference) -->
-<ProjectReference Include="Microsoft.Maui.AI.Attributes.Generators.csproj"
-                  OutputItemType="Analyzer"
-                  ReferenceOutputAssembly="false" />
-```
 
 ## Key types
 

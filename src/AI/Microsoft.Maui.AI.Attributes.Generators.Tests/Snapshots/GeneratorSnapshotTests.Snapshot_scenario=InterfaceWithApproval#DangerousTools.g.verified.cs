@@ -74,7 +74,9 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
+                var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
+                    "Tool 'safe_read' requires services (source type: global::Sample.IDangerousService) but no IServiceProvider was supplied. " +
+                    "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetRequiredService<global::Sample.IDangerousService>();
                 var __result = __service.Read();
                 return __result;
@@ -122,7 +124,9 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
+                var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
+                    "Tool 'dangerous_write' requires services (source type: global::Sample.IDangerousService) but no IServiceProvider was supplied. " +
+                    "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetRequiredService<global::Sample.IDangerousService>();
                 var __arg_data = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "data");
                 __service.Write(__arg_data);

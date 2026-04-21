@@ -74,7 +74,9 @@ namespace Sample
                 global::Microsoft.Extensions.AI.AIFunctionArguments arguments,
                 global::System.Threading.CancellationToken cancellationToken)
             {
-                var __provider = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.RequireServices(arguments);
+                var __provider = arguments.Services ?? throw new global::System.InvalidOperationException(
+                    "Tool 'checkout' requires services (source type: global::Sample.IArchive) but no IServiceProvider was supplied. " +
+                    "Set AIFunctionArguments.Services before invoking the tool (ChatClientBuilder.UseFunctionInvocation().Build(sp) does this automatically).");
                 var __service = __provider.GetRequiredService<global::Sample.IArchive>();
                 var __arg_cart = __provider.GetRequiredService<global::Sample.ICart>();
                 var __result = __service.Checkout(__arg_cart);
