@@ -1,25 +1,11 @@
 using AIAttributes.Sample.Garden.Models;
-using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
-/// Which approval-pending action is queued against a shopping-list item.
+/// View-model wrapper around a <see cref="ListItem"/> for display in the cart panel.
 /// </summary>
-public enum PendingAction
-{
-    None,
-    Checkout,
-    Cancel,
-    Remove,
-}
-
-/// <summary>
-/// View-model wrapper around a <see cref="ListItem"/> so the workspace
-/// can ghost items that are about to be removed/checked-out without
-/// mutating the immutable record on <see cref="Services.CurrentCart"/>.
-/// </summary>
-public sealed partial class ShoppingListItemViewModel(ListItem item) : ObservableObject
+public sealed class ShoppingListItemViewModel(ListItem item)
 {
     public ListItem Item { get; } = item;
 
@@ -28,19 +14,4 @@ public sealed partial class ShoppingListItemViewModel(ListItem item) : Observabl
     public string Emoji => Item.Product.Emoji;
     public int Quantity => Item.Quantity;
     public string QuantityLine => $"× {Item.Quantity}  ·  {Item.Subtotal:C}";
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPending))]
-    [NotifyPropertyChangedFor(nameof(PendingLabel))]
-    private PendingAction _pending;
-
-    public bool IsPending => Pending != PendingAction.None;
-
-    public string PendingLabel => Pending switch
-    {
-        PendingAction.Checkout => "🔒 Pending checkout",
-        PendingAction.Cancel   => "🔒 Pending cancel",
-        PendingAction.Remove   => "🔒 Pending removal",
-        _ => string.Empty,
-    };
 }

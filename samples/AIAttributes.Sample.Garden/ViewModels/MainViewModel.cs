@@ -222,59 +222,44 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void RefreshShoppingList()
     {
-        ShoppingList.Clear();
-        var items = _currentCart.Items;
-        foreach (var item in items)
-            ShoppingList.Add(new ShoppingListItemViewModel(item));
-        ShoppingListTotal = $"Total: {items.Sum(i => i.Subtotal):C}";
+        var source = _currentCart.Items;
+        SyncCollection(ShoppingList, source, v => v.Sku, i => i.Product.Sku, i => new ShoppingListItemViewModel(i));
+        ShoppingListTotal = $"Total: {source.Sum(i => i.Subtotal):C}";
     }
 
     private void RefreshArchive()
     {
-        PastOrders.Clear();
-        foreach (var o in _archive.Orders)
-            PastOrders.Add(new OrderViewModel(o));
+        var source = _archive.Orders;
+        SyncCollection(PastOrders, source, v => v.OrderId, o => o.Id, o => new OrderViewModel(o));
     }
-
-    private IEnumerable<ShoppingListItemViewModel> AllListItems => ShoppingList;
 
     /// <summary>
-    /// Marks list items affected by an in-flight approval so the panel can ghost them.
+    /// Syncs an <see cref="ObservableCollection{T}"/> with a source list by key,
+    /// adding/removing only the deltas so the UI doesn't flicker.
     /// </summary>
-    private void MarkPendingFromApproval(ToolApprovalRequestContent approval)
+    private static void SyncCollection<TVM, TModel>(
+        ObservableCollection<TVM> target,
+        IReadOnlyList<TModel> source,
+        Func<TVM, string> vmKey,
+        Func<TModel, string> modelKey,
+        Func<TModel, TVM> create)
     {
-        if (approval.ToolCall is not FunctionCallContent fcc)
-            return;
+        var sourceKeys = new HashSet<string>(source.Select(modelKey));
 
-        switch (fcc.Name)
+        // Remove items no longer in source (iterate backwards).
+        for (int i = target.Count - 1; i >= 0; i--)
         {
-            case "checkout_list":
-                foreach (var i in AllListItems) i.Pending = PendingAction.Checkout;
-                break;
-            case "cancel_list":
-                foreach (var i in AllListItems) i.Pending = PendingAction.Cancel;
-                break;
-            case "remove_from_list" when fcc.Arguments?.TryGetValue("skuOrName", out var raw) == true:
-            {
-                var query = raw?.ToString();
-                if (string.IsNullOrWhiteSpace(query))
-                    return;
-                var product = ProductCatalog.FindByName(query!);
-                if (product is null)
-                    return;
-                foreach (var i in AllListItems)
-                    i.Pending = string.Equals(i.Sku, product.Sku, StringComparison.OrdinalIgnoreCase)
-                        ? PendingAction.Remove
-                        : PendingAction.None;
-                break;
-            }
+            if (!sourceKeys.Contains(vmKey(target[i])))
+                target.RemoveAt(i);
         }
-    }
 
-    private void ClearPending()
-    {
-        foreach (var i in AllListItems)
-            i.Pending = PendingAction.None;
+        // Add new items that aren't already in the target.
+        var existing = new HashSet<string>(target.Select(vmKey));
+        foreach (var item in source)
+        {
+            if (!existing.Contains(modelKey(item)))
+                target.Add(create(item));
+        }
     }
 
     private void RefreshAvailableTools()
@@ -337,7 +322,6 @@ public sealed partial class MainViewModel : ObservableObject
             var name = _pendingApproval.ToolCall is FunctionCallContent fc2 ? fc2.Name?.TrimEnd('(', ')') : "tool";
             ApprovalText = $"🔒 {name} — approve?";
             IsApprovalPending = true;
-            MarkPendingFromApproval(_pendingApproval);
             return;
         }
 
@@ -353,7 +337,6 @@ public sealed partial class MainViewModel : ObservableObject
         var approval = _pendingApproval;
         _pendingApproval = null;
         IsApprovalPending = false;
-        ClearPending();
         IsBusy = true;
 
         try
