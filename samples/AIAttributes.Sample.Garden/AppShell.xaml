@@ -4,24 +4,14 @@
        xmlns:pages="clr-namespace:AIAttributes.Sample.Garden"
        x:Class="AIAttributes.Sample.Garden.AppShell"
        Title="Garden Shop"
-       Shell.FlyoutBehavior="Flyout"
        Shell.BackgroundColor="#5B8C5A"
        Shell.ForegroundColor="White"
        Shell.TitleColor="White"
-       FlyoutBackgroundColor="#E0EBDD">
+       Shell.NavBarIsVisible="False">
 
-    <FlyoutItem Title="🛒 Shop" Route="shop">
-        <ShellContent
-            Title="Garden AI Chat"
-            ContentTemplate="{DataTemplate pages:MainPage}"
-            Route="MainPage" />
-    </FlyoutItem>
-
-    <FlyoutItem Title="📦 Orders" Route="orders">
-        <ShellContent
-            Title="Past Orders"
-            ContentTemplate="{DataTemplate pages:OrdersPage}"
-            Route="OrdersPage" />
-    </FlyoutItem>
+    <!-- Single main page — responsive layout adapts to window width -->
+    <ShellContent Route="main"
+                  ContentTemplate="{DataTemplate pages:MainPage}"
+                  Shell.TabBarIsVisible="False" />
 
 </Shell>

@@ -6,8 +6,33 @@
              x:Class="AIAttributes.Sample.Garden.OrdersPage"
              x:DataType="vm:MainViewModel"
              Title="Past Orders"
+             Shell.PresentationMode="ModalAnimated"
              Shell.NavBarIsVisible="False">
 
-    <views:OrdersView />
+    <Grid RowDefinitions="56,*">
+        <!-- Modal header with close button -->
+        <Border Grid.Row="0"
+                BackgroundColor="#5B8C5A"
+                StrokeThickness="0"
+                Padding="16,0">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Text="✕"
+                        FontSize="18"
+                        Padding="8,4"
+                        BackgroundColor="Transparent"
+                        TextColor="White"
+                        VerticalOptions="Center"
+                        Clicked="OnCloseClicked" />
+                <Label Grid.Column="1"
+                       Text="Past Orders"
+                       FontSize="18" FontAttributes="Bold"
+                       TextColor="White"
+                       VerticalOptions="Center"
+                       HorizontalTextAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <views:OrdersView Grid.Row="1" />
+    </Grid>
 
 </ContentPage>

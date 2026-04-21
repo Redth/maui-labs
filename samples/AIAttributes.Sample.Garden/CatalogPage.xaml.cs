@@ -2,9 +2,9 @@ using AIAttributes.Sample.Garden.ViewModels;
 
 namespace AIAttributes.Sample.Garden;
 
-public partial class OrdersPage : ContentPage
+public partial class CatalogPage : ContentPage
 {
-    public OrdersPage(MainViewModel viewModel)
+    public CatalogPage(MainViewModel viewModel)
     {
         InitializeComponent();
         BindingContext = viewModel;

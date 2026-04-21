@@ -9,6 +9,11 @@ using Microsoft.Maui.AI.Attributes;
 namespace AIAttributes.Sample.Garden.ViewModels;
 
 /// <summary>
+/// Cart display modes: collapsed (summary bar), compact (dense rows), normal (full cards).
+/// </summary>
+public enum CartMode { Normal, Compact, Collapsed }
+
+/// <summary>
 /// View model for a single tool shown in the empty-state placeholder.
 /// </summary>
 public sealed record ToolInfoViewModel(
@@ -62,20 +67,35 @@ public sealed partial class MainViewModel : ObservableObject
             .Build(rootProvider);
         _currentCart = currentCart;
         _archive = archive;
+
+        // Build catalog grouped by category
+        var groups = ProductCatalog.All
+            .GroupBy(p => p.Category)
+            .Select(g =>
+            {
+                var group = new CatalogGroupViewModel(g.Key);
+                group.AddRange(g.Select(p => new CatalogItemViewModel(p)));
+                return group;
+            })
+            .ToList();
+        CatalogProducts = new(groups.SelectMany(g => g));
     }
 
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
     public ObservableCollection<ShoppingListItemViewModel> ShoppingList { get; } = [];
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
+    public ObservableCollection<CatalogItemViewModel> CatalogProducts { get; }
 
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
-        "Add 5 packs of tomato seeds and a hand trowel to my list",
-        "Show me my list in compact mode",
+        "Add 5 packs of tomato seeds and a hand trowel",
+        "Show compact cart",
+        "Collapse the cart",
         "Check out my list",
-        "Show me my past orders",
-        "Go back to the shop",
+        "Show me the catalog",
+        "Show my orders",
+        "Go back to shopping",
         "Re-order my last order",
     ];
 
@@ -100,13 +120,46 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _shoppingListTotal = $"Total: {0:C}";
 
+    // ─── Cart mode (3 states) ──────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNormalMode))]
-    [NotifyPropertyChangedFor(nameof(CompactModeLabel))]
-    private bool _isCompactMode;
+    [NotifyPropertyChangedFor(nameof(IsCompactMode))]
+    [NotifyPropertyChangedFor(nameof(IsCollapsedMode))]
+    [NotifyPropertyChangedFor(nameof(CartModeLabel))]
+    [NotifyPropertyChangedFor(nameof(CartSummary))]
+    private CartMode _cartMode = CartMode.Normal;
 
-    public bool IsNormalMode => !IsCompactMode;
-    public string CompactModeLabel => IsCompactMode ? "Normal" : "Compact";
+    public bool IsNormalMode => CartMode == CartMode.Normal;
+    public bool IsCompactMode => CartMode == CartMode.Compact;
+    public bool IsCollapsedMode => CartMode == CartMode.Collapsed;
+    public string CartModeLabel => CartMode switch
+    {
+        CartMode.Normal => "Compact",
+        CartMode.Compact => "Collapse",
+        CartMode.Collapsed => "Expand",
+        _ => "Toggle"
+    };
+    public string CartSummary
+    {
+        get
+        {
+            var items = _currentCart.Items;
+            var count = items.Sum(i => i.Quantity);
+            var total = items.Sum(i => i.Subtotal);
+            return $"{total:C} · {count} item{(count != 1 ? "s" : "")}";
+        }
+    }
+
+    // ─── Responsive layout ─────────────────────────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNarrowLayout))]
+    private bool _isWideLayout = true;
+
+    public bool IsNarrowLayout => !IsWideLayout;
+
+    // ─── Cart item count for badge ─────────────────────────────────
+    [ObservableProperty]
+    private string _cartBadge = "0";
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
@@ -146,17 +199,26 @@ public sealed partial class MainViewModel : ObservableObject
                 - When the user says "check out", call checkout_list (which requires approval).
                 - After checkout clears the cart, the cart is EMPTY. If the user asks to add
                   items again, always call add_to_list — do not say items are already there.
-                - Use navigate_to_page to switch between the 'shop' and 'orders' pages when
-                  the user asks to see orders or go back to shopping.
-                - Use set_cart_view_mode to toggle between 'compact' and 'normal' cart display
-                  when the user asks for a different view.
-                - Be concise and friendly.
+
+                NAVIGATION TOOLS:
+                - Use navigate_to_page("catalog") when the user wants to browse the full product catalog.
+                - Use navigate_to_page("orders") when the user wants to see their past orders.
+                - Use dismiss_page() to close any modal overlay and return to the main shop view.
+
+                CART DISPLAY TOOLS:
+                - Use set_cart_mode("normal") for the full card view with emoji and details.
+                - Use set_cart_mode("compact") for a dense single-line list.
+                - Use set_cart_mode("collapsed") to minimize the cart to just a summary bar.
+                - Use get_cart_mode() to check the current display mode.
+
+                Be concise and friendly.
                 """)
         ];
 
         Messages.Clear();
         _pendingApproval = null;
         IsApprovalPending = false;
+        CartMode = CartMode.Normal;
         RefreshShoppingList();
     }
 
@@ -235,22 +297,47 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleCompactMode() => IsCompactMode = !IsCompactMode;
+    private void CycleCartMode()
+    {
+        CartMode = CartMode switch
+        {
+            CartMode.Normal => CartMode.Compact,
+            CartMode.Compact => CartMode.Collapsed,
+            CartMode.Collapsed => CartMode.Normal,
+            _ => CartMode.Normal
+        };
+    }
+
+    [RelayCommand]
+    private void AddFromCatalog(string? sku)
+    {
+        if (string.IsNullOrWhiteSpace(sku))
+            return;
+        _currentCart.AddItem(sku);
+        RefreshShoppingList();
+    }
+
+    [RelayCommand]
+    private async Task ShowCartModalAsync()
+    {
+        // For narrow layout, navigate to a cart page (or just switch mode)
+        CartMode = CartMode.Normal;
+    }
 
     // ─── ViewModel-level AI tools ───────────────────────────────────
     // These demonstrate [ExportAIFunction] on a ViewModel — the AI can
     // directly drive UI navigation and view state, not just service calls.
 
     [ExportAIFunction("navigate_to_page",
-        Description = "Navigate to a page in the app. Use 'shop' for the shopping page or 'orders' for the past orders page.")]
+        Description = "Navigate to a page in the app. Use 'catalog' to browse products, 'orders' to see past orders. Pages open as modal overlays.")]
     public async Task<string> NavigateToPageAsync(
-        [System.ComponentModel.Description("The page to navigate to: 'shop' or 'orders'")] string page)
+        [System.ComponentModel.Description("The page to navigate to: 'catalog' or 'orders'")] string page)
     {
         var route = page?.ToLowerInvariant() switch
         {
-            "shop" => "//shop/MainPage",
-            "orders" => "//orders/OrdersPage",
-            _ => throw new ArgumentException($"Unknown page '{page}'. Valid pages: 'shop', 'orders'.")
+            "catalog" => "catalog",
+            "orders" => "orders",
+            _ => throw new ArgumentException($"Unknown page '{page}'. Valid pages: 'catalog', 'orders'.")
         };
 
         var tcs = new TaskCompletionSource();
@@ -267,26 +354,48 @@ public sealed partial class MainViewModel : ObservableObject
             }
         });
         await tcs.Task;
-        return $"Navigated to {page}.";
+        return $"Navigated to {page}. The {page} page is now showing as a modal overlay.";
     }
 
-    [ExportAIFunction("set_cart_view_mode",
-        Description = "Change the shopping cart display mode. 'compact' shows a dense single-line list. 'normal' shows full cards with emoji and details.")]
-    public string SetCartViewMode(
-        [System.ComponentModel.Description("The view mode: 'compact' or 'normal'")] string mode)
+    [ExportAIFunction("dismiss_page",
+        Description = "Close the current modal page (catalog or orders) and return to the main shop view.")]
+    public async Task<string> DismissPageAsync()
     {
-        IsCompactMode = mode?.ToLowerInvariant() switch
+        var tcs = new TaskCompletionSource();
+        MainThread.BeginInvokeOnMainThread(async () =>
         {
-            "compact" => true,
-            "normal" => false,
-            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'compact', 'normal'.")
-        };
-        return $"Cart view mode set to {(IsCompactMode ? "compact" : "normal")}.";
+            try
+            {
+                await Shell.Current.GoToAsync("..");
+                tcs.SetResult();
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+        });
+        await tcs.Task;
+        return "Returned to the main shop view.";
     }
 
-    [ExportAIFunction("get_cart_view_mode",
-        Description = "Get the current cart display mode ('compact' or 'normal').")]
-    public string GetCartViewMode() => IsCompactMode ? "compact" : "normal";
+    [ExportAIFunction("set_cart_mode",
+        Description = "Change the shopping cart display mode. 'normal' shows full cards with emoji. 'compact' shows dense single-line rows. 'collapsed' minimizes to just a summary bar showing total and item count.")]
+    public string SetCartViewMode(
+        [System.ComponentModel.Description("The view mode: 'normal', 'compact', or 'collapsed'")] string mode)
+    {
+        CartMode = mode?.ToLowerInvariant() switch
+        {
+            "normal" => CartMode.Normal,
+            "compact" => CartMode.Compact,
+            "collapsed" => CartMode.Collapsed,
+            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'normal', 'compact', 'collapsed'.")
+        };
+        return $"Cart display mode set to {CartMode.ToString().ToLowerInvariant()}.";
+    }
+
+    [ExportAIFunction("get_cart_mode",
+        Description = "Get the current cart display mode ('normal', 'compact', or 'collapsed').")]
+    public string GetCartViewMode() => CartMode.ToString().ToLowerInvariant();
 
     // ─────────────────────────────────────────────────────────────────
 
@@ -295,6 +404,8 @@ public sealed partial class MainViewModel : ObservableObject
         var source = _currentCart.Items;
         SyncCollection(ShoppingList, source, v => v.Sku, i => i.Product.Sku, i => new ShoppingListItemViewModel(i));
         ShoppingListTotal = $"Total: {source.Sum(i => i.Subtotal):C}";
+        CartBadge = source.Sum(i => i.Quantity).ToString();
+        OnPropertyChanged(nameof(CartSummary));
     }
 
     private void RefreshArchive()
