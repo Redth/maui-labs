@@ -20,18 +20,14 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static UtilityTools Default { get; } = new UtilityTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new Utility_Echo_Tool(),
-                    new Utility_EchoInstance_Tool(),
-                };
-            }
-        }
+            new Utility_Echo_Tool(),
+            new Utility_EchoInstance_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class Utility_Echo_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

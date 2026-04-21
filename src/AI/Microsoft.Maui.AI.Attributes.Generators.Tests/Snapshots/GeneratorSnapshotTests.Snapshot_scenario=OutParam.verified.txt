@@ -1,13 +1,7 @@
 {
   Diagnostics: [
     {
-      Location: /*
-    [ExportAIFunction]
-    public void Do(out int value) { value = 1; }
-                ^^
-}
-*/
- : (7,16)-(7,18),
+      Location: : (7,16)-(7,18),
       Message: [ExportAIFunction] method 'Sample.Svc.Do(out int)' has an unsupported signature: Parameters with ref, out, or in modifiers are not supported.,
       Severity: Error,
       Descriptor: {
@@ -20,13 +14,7 @@
       }
     },
     {
-      Location: /*
-
-[AIToolSource(typeof(Svc))]
- ^^^^^^^^^^^^^^^^^^^^^^^^^
-public partial class ToolsCtx : AIToolContext { }
-*/
- : (10,1)-(10,26),
+      Location: : (10,1)-(10,26),
       Message: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] members.,
       Severity: Warning,
       WarningLevel: 1,

@@ -20,17 +20,13 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static GreeterTools Default { get; } = new GreeterTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new GreeterService_Greet_Tool(),
-                };
-            }
-        }
+            new GreeterService_Greet_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class GreeterService_Greet_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

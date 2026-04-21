@@ -1,13 +1,7 @@
 {
   Diagnostics: [
     {
-      Location: /*
-    [ExportAIFunction]
-    public T Do<T>(T value) => value;
-             ^^
-}
-*/
- : (7,13)-(7,15),
+      Location: : (7,13)-(7,15),
       Message: [ExportAIFunction] method 'Sample.Svc.Do<T>(T)' has an unsupported signature: Generic methods are not supported.,
       Severity: Error,
       Descriptor: {
@@ -20,13 +14,7 @@
       }
     },
     {
-      Location: /*
-
-[AIToolSource(typeof(Svc))]
- ^^^^^^^^^^^^^^^^^^^^^^^^^
-public partial class ToolsCtx : AIToolContext { }
-*/
- : (10,1)-(10,26),
+      Location: : (10,1)-(10,26),
       Message: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] members.,
       Severity: Warning,
       WarningLevel: 1,

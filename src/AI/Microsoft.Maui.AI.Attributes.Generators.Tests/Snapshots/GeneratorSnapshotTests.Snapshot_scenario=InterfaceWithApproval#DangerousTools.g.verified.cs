@@ -20,18 +20,14 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static DangerousTools Default { get; } = new DangerousTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new IDangerousService_Read_Tool(),
-                    new global::Microsoft.Extensions.AI.ApprovalRequiredAIFunction(new IDangerousService_Write_Tool()),
-                };
-            }
-        }
+            new IDangerousService_Read_Tool(),
+            new global::Microsoft.Extensions.AI.ApprovalRequiredAIFunction(new IDangerousService_Write_Tool()),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class IDangerousService_Read_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

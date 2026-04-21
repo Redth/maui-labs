@@ -20,17 +20,13 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static PureTools Default { get; } = new PureTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new PureFunctions_Reverse_Tool(),
-                };
-            }
-        }
+            new PureFunctions_Reverse_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class PureFunctions_Reverse_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

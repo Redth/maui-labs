@@ -1,13 +1,7 @@
 {
   Diagnostics: [
     {
-      Location: /*
-    [ExportAIFunction]
-    public string Do(string name, Func<int, int> fn) => name;
-                                                 ^^
-}
-*/
- : (8,49)-(8,51),
+      Location: : (8,49)-(8,51),
       Message: Parameter 'fn' (global::System.Func<int, int>) on 'Sample.Svc.Do(string, System.Func<int, int>)' is unlikely to be JSON-serializable. Consider annotating it with [FromServices]/[FromKeyedServices] or using a supported type.,
       Severity: Warning,
       WarningLevel: 1,

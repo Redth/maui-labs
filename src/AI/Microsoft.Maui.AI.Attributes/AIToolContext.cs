@@ -15,9 +15,10 @@ namespace Microsoft.Maui.AI.Attributes;
 public abstract class AIToolContext
 {
     /// <summary>
-    /// Gets the AI tools defined by this context. The returned list is built once and does
-    /// not capture any <see cref="IServiceProvider"/>; tools whose backing method requires
-    /// services read them from <see cref="AIFunctionArguments.Services"/> at invocation time.
+    /// Gets the AI tools defined by this context. The returned list is cached and the same
+    /// instance is returned on every access. Tools do not capture any <see cref="IServiceProvider"/>;
+    /// tools whose backing method requires services read them from
+    /// <see cref="AIFunctionArguments.Services"/> at invocation time.
     /// </summary>
     /// <remarks>
     /// If any tool in this context binds to an instance method or a <c>[FromServices]</c>

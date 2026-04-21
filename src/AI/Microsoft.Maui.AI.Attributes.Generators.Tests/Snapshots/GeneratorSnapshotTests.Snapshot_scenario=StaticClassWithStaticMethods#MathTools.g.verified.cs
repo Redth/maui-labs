@@ -20,18 +20,14 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static MathTools Default { get; } = new MathTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new MathHelper_Add_Tool(),
-                    new MathHelper_Negate_Tool(),
-                };
-            }
-        }
+            new MathHelper_Add_Tool(),
+            new MathHelper_Negate_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class MathHelper_Add_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

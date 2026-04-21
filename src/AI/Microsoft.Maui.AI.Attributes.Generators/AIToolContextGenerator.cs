@@ -20,9 +20,8 @@ namespace Microsoft.Maui.AI.Attributes.Generators;
 /// The emitted class:
 /// <list type="bullet">
 /// <item>Overrides <c>Name</c>, <c>Description</c>, <c>JsonSchema</c>, <c>ReturnJsonSchema</c>.</item>
-/// <item>Resolves its backing service from <c>AIFunctionArguments.Services</c> (falling back to a
-/// captured provider) per invocation — no <c>AIFunctionFactory.Create</c>, no
-/// <c>MethodInfo.Invoke</c>.</item>
+/// <item>Resolves its backing service from <c>AIFunctionArguments.Services</c> per invocation — no
+/// <c>AIFunctionFactory.Create</c>, no <c>MethodInfo.Invoke</c>.</item>
 /// <item>Binds each parameter at compile time:
 /// <c>CancellationToken</c>/<c>IServiceProvider</c>/<c>AIFunctionArguments</c> get special cases;
 /// <c>[FromServices]</c>/<c>[FromKeyedServices]</c> parameters resolve from DI; everything else
@@ -487,9 +486,14 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
         return value switch
         {
-            string s => "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+            string s => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(s, quote: true),
             bool b => b ? "true" : "false",
-            char c => "'" + c + "'",
+            char c => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(c, quote: true),
+            float f => f.ToString("G9", System.Globalization.CultureInfo.InvariantCulture) + "f",
+            double d => d.ToString("G17", System.Globalization.CultureInfo.InvariantCulture) + "d",
+            decimal m => m.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
+            _ when type.TypeKind == TypeKind.Enum =>
+                $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})({value})",
             _ => value.ToString()!,
         };
     }
@@ -498,37 +502,34 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
     {
         var displayName = returnType.ToDisplayString();
         if (displayName == "void")
-            return new ReturnInfo(ReturnShape.Void, null, null);
+            return new ReturnInfo(ReturnShape.Void, null);
 
         if (returnType is INamedTypeSymbol named)
         {
             var defn = named.ConstructedFrom.ToDisplayString();
             if (defn == "System.Threading.Tasks.Task")
-                return new ReturnInfo(ReturnShape.Task, null, null);
+                return new ReturnInfo(ReturnShape.Task, null);
             if (defn == "System.Threading.Tasks.ValueTask")
-                return new ReturnInfo(ReturnShape.ValueTask, null, null);
+                return new ReturnInfo(ReturnShape.ValueTask, null);
             if (defn == "System.Threading.Tasks.Task<TResult>")
             {
                 var t = named.TypeArguments[0];
                 return new ReturnInfo(
                     ReturnShape.TaskOfT,
-                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    t);
+                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
             }
             if (defn == "System.Threading.Tasks.ValueTask<TResult>")
             {
                 var t = named.TypeArguments[0];
                 return new ReturnInfo(
                     ReturnShape.ValueTaskOfT,
-                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                    t);
+                    t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
             }
         }
 
         return new ReturnInfo(
             ReturnShape.Sync,
-            returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-            returnType);
+            returnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
     }
 
     private static bool InheritsFrom(INamedTypeSymbol symbol, string baseTypeFullName)
@@ -584,24 +585,20 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         sb.AppendLine($"{indent}    public static {model.ClassName} Default {{ get; }} = new {model.ClassName}();");
         sb.AppendLine();
 
-        // Tools property
-        sb.AppendLine($"{indent}    /// <inheritdoc />");
-        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools");
+        // Tools property — cached in a static field so repeated access returns the same instance.
+        sb.AppendLine($"{indent}    private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]");
         sb.AppendLine($"{indent}    {{");
-        sb.AppendLine($"{indent}        get");
-        sb.AppendLine($"{indent}        {{");
-        sb.AppendLine($"{indent}            return new global::Microsoft.Extensions.AI.AITool[]");
-        sb.AppendLine($"{indent}            {{");
         foreach (var st in model.SourceTypes)
         {
             foreach (var m in st.Methods)
             {
-                sb.AppendLine($"{indent}                {WrapApproval($"new {m.GeneratedClassName}()", m.ApprovalRequired)},");
+                sb.AppendLine($"{indent}        {WrapApproval($"new {m.GeneratedClassName}()", m.ApprovalRequired)},");
             }
         }
-        sb.AppendLine($"{indent}            }};");
-        sb.AppendLine($"{indent}        }}");
-        sb.AppendLine($"{indent}    }}");
+        sb.AppendLine($"{indent}    }};");
+        sb.AppendLine();
+        sb.AppendLine($"{indent}    /// <inheritdoc />");
+        sb.AppendLine($"{indent}    public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;");
 
         // Emit tool classes as nested private classes inside the context class — avoids
         // cross-context name collisions when the same service method is referenced from
@@ -844,7 +841,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
     }
 
     private static string Escape(string value)
-        => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+        => Microsoft.CodeAnalysis.CSharp.SymbolDisplay.FormatLiteral(value, quote: true);
 
     private static string EscapeOrNull(string? value)
         => value is null ? "null" : Escape(value);
@@ -875,7 +872,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         ValueTaskOfT,
     }
 
-    private sealed record ReturnInfo(ReturnShape Shape, string? TypeName, ITypeSymbol? TypeSymbol);
+    private sealed record ReturnInfo(ReturnShape Shape, string? TypeName);
 
     private sealed record ParameterModel(
         string Name,
@@ -930,11 +927,27 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         }
     }
 
+    private sealed record LocationInfo(string FilePath, TextSpan TextSpan, LinePositionSpan LineSpan)
+    {
+        public static LocationInfo? From(Location? location)
+        {
+            if (location is null || !location.IsInSource)
+                return null;
+            return new LocationInfo(
+                location.SourceTree!.FilePath,
+                location.SourceSpan,
+                location.GetLineSpan().Span);
+        }
+
+        public Location ToLocation()
+            => Microsoft.CodeAnalysis.Location.Create(FilePath, TextSpan, LineSpan);
+    }
+
     private sealed record DiagnosticInfo(
         string Id,
         DiagnosticSeverity Severity,
         string Message,
-        Location? Location)
+        LocationInfo? Location)
     {
         public Diagnostic ToDiagnostic()
         {
@@ -945,7 +958,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 "Microsoft.Maui.AI.Attributes",
                 Severity,
                 isEnabledByDefault: true);
-            return Diagnostic.Create(desc, Location ?? Microsoft.CodeAnalysis.Location.None);
+            return Diagnostic.Create(desc, Location?.ToLocation() ?? Microsoft.CodeAnalysis.Location.None);
         }
 
         public static DiagnosticInfo NoExportableMethods(string typeName, Location? location) =>
@@ -953,20 +966,20 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 "MAUIAI003",
                 DiagnosticSeverity.Warning,
                 $"[AIToolSource(typeof({typeName}))] references a type with no [ExportAIFunction] members.",
-                location);
+                LocationInfo.From(location));
 
         public static DiagnosticInfo UnserializableParameter(string methodName, string paramName, string typeName, Location? location) =>
             new(
                 "MAUIAI002",
                 DiagnosticSeverity.Warning,
                 $"Parameter '{paramName}' ({typeName}) on '{methodName}' is unlikely to be JSON-serializable. Consider annotating it with [FromServices]/[FromKeyedServices] or using a supported type.",
-                location);
+                LocationInfo.From(location));
 
         public static DiagnosticInfo UnsupportedSignature(string methodName, string reason, Location? location) =>
             new(
                 "MAUIAI004",
                 DiagnosticSeverity.Error,
                 $"[ExportAIFunction] method '{methodName}' has an unsupported signature: {reason}",
-                location);
+                LocationInfo.From(location));
     }
 }

@@ -20,17 +20,13 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static CtxB Default { get; } = new CtxB();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new Shared_Do_Tool(),
-                };
-            }
-        }
+            new Shared_Do_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class Shared_Do_Tool : global::Microsoft.Extensions.AI.AIFunction
         {

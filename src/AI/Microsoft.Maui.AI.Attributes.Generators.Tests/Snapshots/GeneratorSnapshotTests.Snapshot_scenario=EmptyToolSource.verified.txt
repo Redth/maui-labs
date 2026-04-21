@@ -1,13 +1,7 @@
 {
   Diagnostics: [
     {
-      Location: /*
-
-[AIToolSource(typeof(Svc))]
- ^^^^^^^^^^^^^^^^^^^^^^^^^
-public partial class ToolsCtx : AIToolContext { }
-*/
- : (6,1)-(6,26),
+      Location: : (6,1)-(6,26),
       Message: [AIToolSource(typeof(Sample.Svc))] references a type with no [ExportAIFunction] members.,
       Severity: Warning,
       WarningLevel: 1,

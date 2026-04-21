@@ -28,23 +28,13 @@ public class AIFunctionRegistrationTests
     [Fact]
     public void Default_context_instance_is_a_singleton()
     {
-        // SEMANTIC CHANGE: Previously tools were resolved through DI and registered as
-        // singleton AITool instances. The generator now emits a Tools property that returns
-        // fresh `new AITool[] { new Tool(), ... }` each call — tool instances are NOT
-        // shared across calls. What IS a singleton is the context itself (Default static).
-        // This test now verifies that, and that two .Tools accesses produce the same
-        // shape (same count and tool names in the same order).
         var first = TestToolContext.Default;
         var second = TestToolContext.Default;
         Assert.Same(first, second);
 
+        // Tools are cached — same list reference and same instances on repeated access.
         var toolsA = first.Tools;
         var toolsB = second.Tools;
-
-        Assert.Equal(toolsA.Count, toolsB.Count);
-        for (var i = 0; i < toolsA.Count; i++)
-        {
-            Assert.Equal(toolsA[i].Name, toolsB[i].Name);
-        }
+        Assert.Same(toolsA, toolsB);
     }
 }

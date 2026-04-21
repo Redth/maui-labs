@@ -20,17 +20,13 @@ namespace Sample
         /// <summary>Gets the default singleton instance of this tool context.</summary>
         public static ArchiveTools Default { get; } = new ArchiveTools();
 
-        /// <inheritdoc />
-        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools
+        private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            get
-            {
-                return new global::Microsoft.Extensions.AI.AITool[]
-                {
-                    new IArchive_Checkout_Tool(),
-                };
-            }
-        }
+            new IArchive_Checkout_Tool(),
+        };
+
+        /// <inheritdoc />
+        public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
         private sealed class IArchive_Checkout_Tool : global::Microsoft.Extensions.AI.AIFunction
         {
