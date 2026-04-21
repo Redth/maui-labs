@@ -4,7 +4,7 @@ namespace AIAttributes.Sample.Garden.Views;
 
 public partial class ChatView : ContentView
 {
-    private MainViewModel? _previousVm;
+    private ChatViewModel? _previousVm;
 
     public ChatView()
     {
@@ -17,7 +17,7 @@ public partial class ChatView : ContentView
         if (_previousVm is not null)
             _previousVm.MessageAdded -= OnMessageAdded;
 
-        _previousVm = BindingContext as MainViewModel;
+        _previousVm = BindingContext as ChatViewModel;
 
         if (_previousVm is not null)
             _previousVm.MessageAdded += OnMessageAdded;

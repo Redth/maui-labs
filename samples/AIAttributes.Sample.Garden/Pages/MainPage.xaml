@@ -80,6 +80,7 @@
 
         <!-- ═══ Chat — fills col 0, scrollbar at edge, content centered ═══ -->
         <views:ChatView Grid.Row="1" Grid.Column="0"
+                        BindingContext="{Binding Chat}"
                         HorizontalOptions="Fill" />
 
         <!-- ═══ Cart sidebar — col 1, visible on wide only ═══ -->

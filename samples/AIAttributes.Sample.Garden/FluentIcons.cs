@@ -36,4 +36,5 @@ static class FluentIcons
     public const string HandRight = "\uE6ED";
     public const string Temperature = "\uF7A8";
     public const string PaintBrush = "\uF59D";
+    public const string LockClosed = "\uE79E";
 }

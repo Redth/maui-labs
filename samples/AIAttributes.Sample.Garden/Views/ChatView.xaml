@@ -5,12 +5,12 @@
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Views.ChatView"
              x:Name="ThisView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:ChatViewModel">
 
     <Grid RowDefinitions="*,Auto" RowSpacing="0"
           SafeAreaEdges="SoftInput">
 
-        <!-- Chat messages — full width so scrollbar is at edge, content centered -->
+        <!-- Chat messages — full width so scrollbar is at edge, content padded -->
         <CollectionView Grid.Row="0"
                         x:Name="MessagesView"
                         AutomationId="MessagesView"
@@ -26,12 +26,11 @@
                 <local:ChatMessageTemplateSelector>
                     <local:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid HorizontalOptions="Fill">
+                            <Grid Padding="48,0,12,0" HorizontalOptions="Fill">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
                                         Padding="12,8"
-                                        Margin="12,0"
                                         HorizontalOptions="End"
-                                        MaximumWidthRequest="420"
+                                        MaximumWidthRequest="560"
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 12">
                                     <Label Text="{Binding Text}"
@@ -44,12 +43,11 @@
 
                     <local:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid HorizontalOptions="Fill">
+                            <Grid Padding="12,0,48,0" HorizontalOptions="Fill">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
                                         Padding="12,8"
-                                        Margin="12,0"
                                         HorizontalOptions="Start"
-                                        MaximumWidthRequest="420"
+                                        MaximumWidthRequest="560"
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 12">
                                     <Border.Shadow>

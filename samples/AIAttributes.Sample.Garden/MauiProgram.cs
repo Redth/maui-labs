@@ -45,6 +45,7 @@ public static class MauiProgram
 
         builder.AddOpenAIServices();
 
+        builder.Services.AddSingleton<ChatViewModel>();
         builder.Services.AddSingleton<MainViewModel>();
         builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<OrdersPage>();

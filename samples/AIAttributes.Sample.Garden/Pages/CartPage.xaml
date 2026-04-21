@@ -12,11 +12,10 @@
              BackgroundColor="{StaticResource Primary}">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Safe area spacer — colored green to match cart header -->
-        <BoxView Grid.Row="0"
-                 BackgroundColor="{StaticResource Primary}"
-                 SafeAreaEdges="Container"
-                 HeightRequest="0" />
+        <!-- Safe area spacer — uses a Grid (layout) so SafeAreaEdges works -->
+        <Grid Grid.Row="0"
+              BackgroundColor="{StaticResource Primary}"
+              SafeAreaEdges="Container" />
 
         <!-- Cart content with close button overlay -->
         <Grid Grid.Row="1">
