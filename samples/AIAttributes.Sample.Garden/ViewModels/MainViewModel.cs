@@ -18,15 +18,12 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
 {
     private readonly CurrentCart _currentCart;
     private readonly IOrderArchive _archive;
-    private readonly ChatViewModel _chat;
     private bool _initialized;
 
     public MainViewModel(
-        ChatViewModel chat,
         CurrentCart currentCart,
         IOrderArchive archive)
     {
-        _chat = chat;
         _currentCart = currentCart;
         _archive = archive;
 
@@ -50,14 +47,15 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
     public ObservableCollection<CatalogItemViewModel> CatalogProducts { get; }
     public IReadOnlyList<CatalogGroupViewModel> CatalogGroups { get; }
 
-    /// <summary>Called once from <see cref="Pages.MainPage.OnAppearing"/>.</summary>
+    /// <summary>
+    /// Called once from <see cref="Pages.MainPage.OnAppearing"/>.
+    /// </summary>
     public void Initialize()
     {
         if (_initialized)
             return;
         _initialized = true;
 
-        _chat.Initialize();
         StartNewSession();
         RefreshArchive();
     }
@@ -66,7 +64,7 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
     private void StartNewSession()
     {
         _currentCart.Clear();
-        _chat.StartNewSession();
+        WeakReferenceMessenger.Default.Send(new StartNewChatSessionMessage());
     }
 
     [RelayCommand]

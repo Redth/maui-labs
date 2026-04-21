@@ -71,7 +71,6 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
             return;
 
         _archive.Checkout(_currentCart);
-        // CurrentCart.Changed fires → Refresh() called automatically
     }
 
     [RelayCommand]
@@ -80,10 +79,11 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
         if (string.IsNullOrWhiteSpace(sku))
             return;
         _currentCart.AddItem(sku);
-        // CurrentCart.Changed fires → Refresh() called automatically
     }
 
-    /// <summary>Refresh the observable collections from the underlying cart model.</summary>
+    /// <summary>
+    /// Refresh the observable collections from the underlying cart model.
+    /// </summary>
     public void Refresh()
     {
         var source = _currentCart.Items;
@@ -92,12 +92,13 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
         HasItems = source.Count > 0;
     }
 
-    /// <summary>Clear cart and reset mode.</summary>
+    /// <summary>
+    /// Clear cart and reset mode.
+    /// </summary>
     public void Clear()
     {
         _currentCart.Clear();
         CartMode = CartMode.Normal;
-        // CurrentCart.Changed fires → Refresh() called automatically
     }
 
     // ─── AI tools for cart display ──────────────────────────────────

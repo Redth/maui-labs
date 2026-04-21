@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:local="clr-namespace:AIAttributes.Sample.Garden.Views"
+             xmlns:local="clr-namespace:AIAttributes.Sample.Garden"
+             xmlns:views="clr-namespace:AIAttributes.Sample.Garden.Views"
              xmlns:vm="clr-namespace:AIAttributes.Sample.Garden.ViewModels"
              x:Class="AIAttributes.Sample.Garden.Views.ChatView"
              x:Name="ThisView"
-             x:DataType="vm:ChatViewModel">
+             x:DataType="vm:ChatViewModel"
+             local:ViewModelBinder.Type="{x:Type vm:ChatViewModel}">
 
     <Grid RowDefinitions="*,Auto" RowSpacing="0"
           SafeAreaEdges="SoftInput">

@@ -81,7 +81,6 @@
 
         <!-- ═══ Chat — fills col 0, scrollbar at edge, content centered ═══ -->
         <views:ChatView Grid.Row="1" Grid.Column="0"
-                        local:ViewModelBinder.Type="{x:Type vm:ChatViewModel}"
                         HorizontalOptions="Fill" />
 
         <!-- ═══ Cart sidebar — col 1, visible on wide only ═══ -->

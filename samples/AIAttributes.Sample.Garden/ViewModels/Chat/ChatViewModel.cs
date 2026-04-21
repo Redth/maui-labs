@@ -14,7 +14,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// Owns the AI chat loop, message history, tool invocation, and approval flow.
 /// Designed to be reusable — any page can host a ChatView bound to this VM.
 /// </summary>
-public sealed partial class ChatViewModel : ObservableObject
+public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNewChatSessionMessage>
 {
     /// <summary>
     /// Source-generated tool context that merges all tool sources into one.
@@ -37,21 +37,27 @@ public sealed partial class ChatViewModel : ObservableObject
     private ToolApprovalRequestContent? _pendingApproval;
     private CancellationTokenSource _cts = new();
 
-    public ChatViewModel(
-        IServiceProvider rootProvider,
-        IChatClient innerChatClient)
+    public ChatViewModel(IServiceProvider rootProvider, IChatClient innerChatClient)
     {
         _chatClient = new ChatClientBuilder(innerChatClient)
             .UseFunctionInvocation()
             .Build(rootProvider);
+
+        WeakReferenceMessenger.Default.Register(this);
+
+        RefreshAvailableTools();
     }
 
+    void IRecipient<StartNewChatSessionMessage>.Receive(StartNewChatSessionMessage message)
+        => StartNewSession();
+
     public ObservableCollection<ChatMessageViewModel> Messages { get; } = [];
+
     public ObservableCollection<ToolInfoViewModel> AvailableTools { get; } = [];
 
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
-        "Add 5 packs of tomato seeds and a hand trowel",
+        "Add 5 packs of tomato seeds and a trowel",
         "Show compact cart",
         "Check out my list",
         "Show me the catalog",
@@ -77,11 +83,6 @@ public sealed partial class ChatViewModel : ObservableObject
 
     [ObservableProperty]
     private string _approvalText = "";
-
-    public void Initialize()
-    {
-        RefreshAvailableTools();
-    }
 
     public void StartNewSession()
     {
