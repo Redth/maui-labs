@@ -18,5 +18,5 @@ public sealed partial class ChatMessageViewModel(ChatMessageKind kind, string te
     public bool HasIcon => Icon is not null;
 
     [ObservableProperty]
-    private string _text = text;
+    public partial string Text { get; set; } = text;
 }

@@ -68,21 +68,21 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotBusy))]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     public bool IsNotBusy => !IsBusy;
 
     [ObservableProperty]
-    private string? _inputText;
+    public partial string? InputText { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInputVisible))]
-    private bool _isApprovalPending;
+    public partial bool IsApprovalPending { get; set; }
 
     public bool IsInputVisible => !IsApprovalPending;
 
     [ObservableProperty]
-    private string _approvalText = "";
+    public partial string ApprovalText { get; set; } = "";
 
     public void StartNewSession()
     {

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using AIAttributes.Sample.Garden.Messages;
 using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
@@ -32,17 +33,18 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
     public ObservableCollection<CartItemViewModel> Items { get; } = [];
 
     [ObservableProperty]
-    private string _cartTotal = $"Total: {0:C}";
+    public partial string CartTotal { get; set; } = $"Total: {0:C}";
 
     [ObservableProperty]
-    private bool _hasItems;
+    public partial bool HasItems { get; set; }
 
-    // ─── Display mode ───────────────────────────────────────────────
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNormalMode))]
     [NotifyPropertyChangedFor(nameof(IsCompactMode))]
     [NotifyPropertyChangedFor(nameof(CartModeLabel))]
-    private CartMode _cartMode = CartMode.Normal;
+    [ExportAIFunction("get_cart_mode")]
+    [Description("Get the current cart display mode.")]
+    public partial CartMode CartMode { get; set; } = CartMode.Normal;
 
     public bool IsNormalMode => CartMode == CartMode.Normal;
     public bool IsCompactMode => CartMode == CartMode.Compact;
@@ -78,6 +80,7 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
     {
         if (string.IsNullOrWhiteSpace(sku))
             return;
+
         _currentCart.AddItem(sku);
     }
 
@@ -87,7 +90,9 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
     public void Refresh()
     {
         var source = _currentCart.Items;
+
         SyncCollection(Items, source, v => v.Sku, i => i.Product.Sku, i => new CartItemViewModel(i));
+
         CartTotal = $"Total: {source.Sum(i => i.Subtotal):C}";
         HasItems = source.Count > 0;
     }
@@ -103,10 +108,10 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
 
     // ─── AI tools for cart display ──────────────────────────────────
 
-    [ExportAIFunction("set_cart_mode",
-        Description = "Change the shopping cart display mode. 'normal' shows full cards with icons and details. 'compact' shows dense single-line rows.")]
+    [ExportAIFunction("set_cart_mode")]
+    [Description("Change the shopping cart display mode. 'normal' shows full cards with icons and details. 'compact' shows dense single-line rows.")]
     public string SetCartViewMode(
-        [System.ComponentModel.Description("The view mode: 'normal' or 'compact'")] string mode)
+        [Description("The view mode: 'normal' or 'compact'")] string mode)
     {
         CartMode = mode?.ToLowerInvariant() switch
         {
@@ -116,10 +121,6 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
         };
         return $"Cart display mode set to {CartMode.ToString().ToLowerInvariant()}.";
     }
-
-    [ExportAIFunction("get_cart_mode",
-        Description = "Get the current cart display mode ('normal' or 'compact').")]
-    public string GetCartViewMode() => CartMode.ToString().ToLowerInvariant();
 
     // ─────────────────────────────────────────────────────────────────
 
