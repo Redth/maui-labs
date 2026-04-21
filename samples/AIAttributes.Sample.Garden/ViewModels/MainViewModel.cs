@@ -28,24 +28,9 @@ public sealed partial class MainViewModel : ObservableObject, IRecipient<ChatTur
         _archive = archive;
 
         WeakReferenceMessenger.Default.Register(this);
-
-        // Build catalog grouped by category
-        var groups = ProductCatalog.All
-            .GroupBy(p => p.Category)
-            .Select(g =>
-            {
-                var group = new CatalogGroupViewModel(g.Key);
-                group.AddRange(g.Select(p => new CatalogItemViewModel(p)));
-                return group;
-            })
-            .ToList();
-        CatalogProducts = new(groups.SelectMany(g => g));
-        CatalogGroups = groups;
     }
 
     public ObservableCollection<OrderViewModel> PastOrders { get; } = [];
-    public ObservableCollection<CatalogItemViewModel> CatalogProducts { get; }
-    public IReadOnlyList<CatalogGroupViewModel> CatalogGroups { get; }
 
     /// <summary>
     /// Called once from <see cref="Pages.MainPage.OnAppearing"/>.
