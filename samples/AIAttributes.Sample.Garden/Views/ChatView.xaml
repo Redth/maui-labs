@@ -7,38 +7,15 @@
              x:Name="ThisView"
              x:DataType="vm:MainViewModel">
 
-    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="0">
+    <Grid RowDefinitions="*,Auto" RowSpacing="0">
 
-        <!-- Header — same height as the garden panel header (56px). -->
-        <Border Grid.Row="0"
-                BackgroundColor="#5B8C5A"
-                Padding="16,14"
-                HeightRequest="56"
-                StrokeThickness="0">
-            <Grid ColumnDefinitions="*,Auto">
-                <Label Text="Sage 🌿"
-                       FontSize="20" FontAttributes="Bold"
-                       TextColor="White" VerticalOptions="Center" />
-                <Button Grid.Column="1"
-                        Text="New Chat"
-                        AutomationId="NewChatButton"
-                        Command="{Binding StartNewSessionCommand}"
-                        BackgroundColor="#E3F2E3"
-                        TextColor="#5B8C5A"
-                        FontSize="13"
-                        FontAttributes="Bold"
-                        CornerRadius="14"
-                        Padding="12,4"
-                        VerticalOptions="Center" />
-            </Grid>
-        </Border>
-
-        <!-- Chat messages -->
-        <CollectionView Grid.Row="1"
+        <!-- Chat messages — full width so scrollbar is at edge, content centered -->
+        <CollectionView Grid.Row="0"
                         x:Name="MessagesView"
                         AutomationId="MessagesView"
                         ItemsSource="{Binding Messages}"
                         Margin="0,8,0,0"
+                        BackgroundColor="Transparent"
                         VerticalOptions="Fill">
             <CollectionView.ItemsLayout>
                 <LinearItemsLayout Orientation="Vertical" ItemSpacing="6" />
@@ -48,49 +25,58 @@
                 <local:ChatMessageTemplateSelector>
                     <local:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Border BackgroundColor="#E8C9A8"
-                                    Padding="12,8"
-                                    Margin="12,0"
-                                    HorizontalOptions="End"
-                                    MaximumWidthRequest="320"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                <Label Text="{Binding Text}"
-                                       FontSize="14"
-                                       TextColor="#3A2A1A" />
-                            </Border>
+                            <Grid HorizontalOptions="Fill">
+                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
+                                        Padding="12,8"
+                                        Margin="12,0"
+                                        HorizontalOptions="End"
+                                        MaximumWidthRequest="420"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12">
+                                    <Label Text="{Binding Text}"
+                                           FontSize="{StaticResource FontSizeBody}"
+                                           TextColor="{AppThemeBinding Light={StaticResource UserBubbleTextLight}, Dark={StaticResource UserBubbleTextDark}}" />
+                                </Border>
+                            </Grid>
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.UserTemplate>
 
                     <local:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Border BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#2A2A2A}"
-                                    Padding="12,8"
-                                    Margin="12,0"
-                                    HorizontalOptions="Start"
-                                    MaximumWidthRequest="320"
-                                    StrokeThickness="0"
-                                    StrokeShape="RoundRectangle 12">
-                                <Label Text="{Binding Text}" FontSize="14" />
-                            </Border>
+                            <Grid HorizontalOptions="Fill">
+                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
+                                        Padding="12,8"
+                                        Margin="12,0"
+                                        HorizontalOptions="Start"
+                                        MaximumWidthRequest="420"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,1" Radius="3" Opacity="0.08" />
+                                    </Border.Shadow>
+                                    <Label Text="{Binding Text}" FontSize="{StaticResource FontSizeBody}" />
+                                </Border>
+                            </Grid>
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.AssistantTemplate>
 
                     <local:ChatMessageTemplateSelector.ToolTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Label Text="{Binding Text}"
-                                   FontSize="12"
-                                   TextColor="Gray"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
                                    FontAttributes="Italic"
-                                   Padding="20,2" />
+                                   Padding="20,2"
+                                   MaximumWidthRequest="840"
+                                   HorizontalOptions="Center" />
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.ToolTemplate>
 
                     <local:ChatMessageTemplateSelector.SystemTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Label Text="{Binding Text}"
-                                   FontSize="12"
-                                   TextColor="#5B8C5A"
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   TextColor="{StaticResource Primary}"
                                    FontAttributes="Bold"
                                    HorizontalOptions="Center"
                                    Padding="8,4" />
@@ -100,42 +86,35 @@
                     <local:ChatMessageTemplateSelector.ErrorTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Label Text="{Binding Text}"
-                                   FontSize="12"
-                                   TextColor="Red"
-                                   Padding="20,2" />
+                                   FontSize="{StaticResource FontSizeCaption}"
+                                   TextColor="{StaticResource Danger}"
+                                   Padding="20,2"
+                                   MaximumWidthRequest="840"
+                                   HorizontalOptions="Center" />
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.ErrorTemplate>
                 </local:ChatMessageTemplateSelector>
             </CollectionView.ItemTemplate>
 
-            <!--
-                 Empty view shown when a fresh session has no messages yet.
-                 Welcomes the user and lists the tools registered in DI.
-            -->
+            <!-- Empty view — welcome screen -->
             <CollectionView.EmptyView>
-                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                <Grid Padding="24" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12"
+                      MaximumWidthRequest="840" HorizontalOptions="Center">
                     <Label Grid.Row="0"
                            Text="🛒"
-                           FontSize="56"
+                           FontSize="{StaticResource FontSizeHero}"
                            HorizontalOptions="Center" />
                     <Label Grid.Row="1"
                            Text="Welcome to the garden shop"
-                           FontSize="20"
+                           FontSize="{StaticResource FontSizeTitle}"
                            FontAttributes="Bold"
                            HorizontalTextAlignment="Center" />
                     <Label Grid.Row="2"
                            Text="Tap a chip below to get started, or browse the catalog. The assistant can use these tools:"
-                           FontSize="13"
+                           FontSize="{StaticResource FontSizeBody}"
                            HorizontalTextAlignment="Center"
                            LineBreakMode="WordWrap"
-                           TextColor="{AppThemeBinding Light=#5A6A5A, Dark=#8AA08A}" />
-
-                    <!--
-                        FlexLayout wrap re-flows children correctly on parent
-                        resize (both shrink AND grow), unlike GridItemsLayout
-                        which caches its measured span. Each card has a fixed
-                        width so columns snap cleanly as the window changes.
-                    -->
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
                     <ScrollView Grid.Row="3" VerticalScrollBarVisibility="Default">
                         <FlexLayout BindableLayout.ItemsSource="{Binding AvailableTools}"
                                     Wrap="Wrap"
@@ -147,19 +126,19 @@
                                     <Border Margin="4"
                                             Padding="10,8"
                                             WidthRequest="220"
-                                            BackgroundColor="{AppThemeBinding Light=White, Dark=#263026}"
-                                            Stroke="{AppThemeBinding Light=#CFE0CD, Dark=#3A4A3A}"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource ToolCardBackgroundLight}, Dark={StaticResource ToolCardBackgroundDark}}"
+                                            Stroke="{AppThemeBinding Light={StaticResource ToolCardStrokeLight}, Dark={StaticResource ToolCardStrokeDark}}"
                                             StrokeThickness="1"
                                             StrokeShape="RoundRectangle 8">
                                         <VerticalStackLayout Spacing="2">
                                             <Label Text="{Binding Name}"
                                                    FontAttributes="Bold"
-                                                   FontSize="14"
-                                                   TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
+                                                   FontSize="{StaticResource FontSizeBody}"
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}" />
                                             <Label Text="{Binding Description}"
-                                                   FontSize="11"
+                                                   FontSize="{StaticResource FontSizeCaption}"
                                                    LineBreakMode="WordWrap"
-                                                   TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                                   TextColor="{AppThemeBinding Light={StaticResource TextMetaLight}, Dark={StaticResource TextMetaDark}}" />
                                         </VerticalStackLayout>
                                     </Border>
                                 </DataTemplate>
@@ -170,96 +149,138 @@
             </CollectionView.EmptyView>
         </CollectionView>
 
-        <!-- Input area (with suggestion chips always visible above). -->
-        <VerticalStackLayout Grid.Row="2"
+        <!-- Input area — full width container, content centered -->
+        <VerticalStackLayout Grid.Row="1"
                              IsVisible="{Binding IsInputVisible}"
                              Spacing="0"
-                             BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}">
+                             BackgroundColor="Transparent"
+                             MaximumWidthRequest="840"
+                             HorizontalOptions="Center">
 
-            <!-- Persistent chip rail. One-tap prompts that drive a tomato walkthrough. -->
-            <ScrollView Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never"
-                        Padding="12,8,12,0">
-                <HorizontalStackLayout BindableLayout.ItemsSource="{Binding SuggestionPrompts}"
-                                       Spacing="6">
-                    <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="x:String">
-                            <Border BackgroundColor="{AppThemeBinding Light=#E8F2E6, Dark=#2E3A2C}"
-                                    Stroke="{AppThemeBinding Light=#B8D4B4, Dark=#3A4A3A}"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 16"
-                                    Padding="0">
-                                <Button Text="{Binding}"
-                                        FontSize="12"
-                                        TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}"
-                                        BackgroundColor="Transparent"
-                                        BorderWidth="0"
-                                        Padding="12,6"
-                                        Command="{Binding Source={x:Reference ThisView}, Path=BindingContext.RunSuggestionCommand}"
-                                        CommandParameter="{Binding}" />
-                            </Border>
-                        </DataTemplate>
-                    </BindableLayout.ItemTemplate>
-                </HorizontalStackLayout>
-            </ScrollView>
+            <!-- Suggestion chips with fade edges -->
+            <Grid Padding="0,8,0,0">
+                <ScrollView Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never"
+                            Padding="24,0">
+                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding SuggestionPrompts}"
+                                           Spacing="6">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource ChipBackgroundLight}, Dark={StaticResource ChipBackgroundDark}}"
+                                        Stroke="{AppThemeBinding Light={StaticResource ChipStrokeLight}, Dark={StaticResource ChipStrokeDark}}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 16"
+                                        Padding="0">
+                                    <Button Text="{Binding}"
+                                            FontSize="{StaticResource FontSizeCaption}"
+                                            TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
+                                            BackgroundColor="Transparent"
+                                            BorderWidth="0"
+                                            Padding="12,6"
+                                            Command="{Binding Source={x:Reference ThisView}, Path=BindingContext.RunSuggestionCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </HorizontalStackLayout>
+                </ScrollView>
 
+                <!-- Left fade -->
+                <BoxView HorizontalOptions="Start"
+                         WidthRequest="24"
+                         InputTransparent="True"
+                         Background="{AppThemeBinding
+                             Light={LinearGradientBrush StartPoint='0,0.5', EndPoint='1,0.5',
+                                 {GradientStop Color='#F2F5F0', Offset=0},
+                                 {GradientStop Color='#00F2F5F0', Offset=1}},
+                             Dark={LinearGradientBrush StartPoint='0,0.5', EndPoint='1,0.5',
+                                 {GradientStop Color='#1A1A18', Offset=0},
+                                 {GradientStop Color='#001A1A18', Offset=1}}}" />
+
+                <!-- Right fade -->
+                <BoxView HorizontalOptions="End"
+                         WidthRequest="24"
+                         InputTransparent="True"
+                         Background="{AppThemeBinding
+                             Light={LinearGradientBrush StartPoint='0,0.5', EndPoint='1,0.5',
+                                 {GradientStop Color='#00F2F5F0', Offset=0},
+                                 {GradientStop Color='#F2F5F0', Offset=1}},
+                             Dark={LinearGradientBrush StartPoint='0,0.5', EndPoint='1,0.5',
+                                 {GradientStop Color='#001A1A18', Offset=0},
+                                 {GradientStop Color='#1A1A18', Offset=1}}}" />
+            </Grid>
+
+            <!-- Text entry row — borderless entry inside our own border -->
             <Grid Padding="12,8,12,12"
                   ColumnDefinitions="*,Auto"
                   ColumnSpacing="8">
-                <Entry AutomationId="ChatInput"
-                       Text="{Binding InputText}"
-                       IsEnabled="{Binding IsNotBusy}"
-                       Placeholder="Ask about products..."
-                       ReturnType="Send"
-                       ReturnCommand="{Binding SendCommand}"
-                       FontSize="14" />
+                <Border StrokeShape="RoundRectangle 20"
+                        Stroke="{AppThemeBinding Light={StaticResource InputStrokeLight}, Dark={StaticResource InputStrokeDark}}"
+                        StrokeThickness="1"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource InputBackgroundLight}, Dark={StaticResource InputBackgroundDark}}"
+                        Padding="0">
+                    <Entry AutomationId="ChatInput"
+                           Text="{Binding InputText}"
+                           IsEnabled="{Binding IsNotBusy}"
+                           Placeholder="Ask about products..."
+                           ReturnType="Send"
+                           ReturnCommand="{Binding SendCommand}"
+                           FontSize="{StaticResource FontSizeBody}"
+                           BackgroundColor="Transparent"
+                           Margin="16,0" />
+                </Border>
                 <Button Grid.Column="1"
                         Text="Send"
                         AutomationId="SendButton"
                         Command="{Binding SendCommand}"
                         IsEnabled="{Binding IsNotBusy}"
-                        BackgroundColor="#5B8C5A"
-                        TextColor="White"
-                        FontSize="14"
-                        CornerRadius="8"
+                        BackgroundColor="{StaticResource Primary}"
+                        TextColor="{StaticResource White}"
+                        FontSize="{StaticResource FontSizeBody}"
+                        CornerRadius="20"
                         Padding="16,8"
                         VerticalOptions="Center" />
             </Grid>
         </VerticalStackLayout>
 
         <!-- Approval area -->
-        <Grid Grid.Row="2"
-              Padding="12,8,12,12"
-              ColumnDefinitions="*,Auto,Auto"
-              ColumnSpacing="8"
-              IsVisible="{Binding IsApprovalPending}"
-              BackgroundColor="{AppThemeBinding Light=#FFF8E1, Dark=#3E3520}">
-            <Label Text="{Binding ApprovalText}"
-                   FontSize="14"
-                   FontAttributes="Bold"
-                   VerticalOptions="Center"
-                   LineBreakMode="TailTruncation" />
-            <Button Grid.Column="1"
-                    Text="✅ Approve"
-                    AutomationId="ApproveButton"
-                    Command="{Binding ApproveCommand}"
-                    BackgroundColor="#5B8C5A"
-                    TextColor="White"
-                    FontSize="14"
-                    CornerRadius="8"
-                    Padding="16,8"
-                    VerticalOptions="Center" />
-            <Button Grid.Column="2"
-                    Text="❌ Reject"
-                    AutomationId="RejectButton"
-                    Command="{Binding RejectCommand}"
-                    BackgroundColor="#C62828"
-                    TextColor="White"
-                    FontSize="14"
-                    CornerRadius="8"
-                    Padding="16,8"
-                    VerticalOptions="Center" />
-        </Grid>
+        <Border Grid.Row="1"
+                Padding="12,8,12,12"
+                IsVisible="{Binding IsApprovalPending}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource ApprovalBackgroundLight}, Dark={StaticResource ApprovalBackgroundDark}}"
+                Margin="12,8"
+                StrokeShape="RoundRectangle 12"
+                StrokeThickness="0"
+                MaximumWidthRequest="840"
+                HorizontalOptions="Center">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <Label Text="{Binding ApprovalText}"
+                       FontSize="{StaticResource FontSizeBody}"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       LineBreakMode="TailTruncation" />
+                <Button Grid.Column="1"
+                        Text="✅ Approve"
+                        AutomationId="ApproveButton"
+                        Command="{Binding ApproveCommand}"
+                        BackgroundColor="{StaticResource Primary}"
+                        TextColor="{StaticResource White}"
+                        FontSize="{StaticResource FontSizeBody}"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        VerticalOptions="Center" />
+                <Button Grid.Column="2"
+                        Text="❌ Reject"
+                        AutomationId="RejectButton"
+                        Command="{Binding RejectCommand}"
+                        BackgroundColor="{StaticResource Danger}"
+                        TextColor="{StaticResource White}"
+                        FontSize="{StaticResource FontSizeBody}"
+                        CornerRadius="8"
+                        Padding="16,8"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
 
     </Grid>
 

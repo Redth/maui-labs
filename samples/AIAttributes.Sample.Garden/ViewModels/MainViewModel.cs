@@ -11,7 +11,7 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// <summary>
 /// Cart display modes: collapsed (summary bar), compact (dense rows), normal (full cards).
 /// </summary>
-public enum CartMode { Normal, Compact, Collapsed }
+public enum CartMode { Normal, Compact }
 
 /// <summary>
 /// View model for a single tool shown in the empty-state placeholder.
@@ -91,7 +91,6 @@ public sealed partial class MainViewModel : ObservableObject
     [
         "Add 5 packs of tomato seeds and a hand trowel",
         "Show compact cart",
-        "Collapse the cart",
         "Check out my list",
         "Show me the catalog",
         "Show my orders",
@@ -124,31 +123,20 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNormalMode))]
     [NotifyPropertyChangedFor(nameof(IsCompactMode))]
-    [NotifyPropertyChangedFor(nameof(IsCollapsedMode))]
     [NotifyPropertyChangedFor(nameof(CartModeLabel))]
-    [NotifyPropertyChangedFor(nameof(CartSummary))]
     private CartMode _cartMode = CartMode.Normal;
 
     public bool IsNormalMode => CartMode == CartMode.Normal;
     public bool IsCompactMode => CartMode == CartMode.Compact;
-    public bool IsCollapsedMode => CartMode == CartMode.Collapsed;
     public string CartModeLabel => CartMode switch
     {
         CartMode.Normal => "Compact",
-        CartMode.Compact => "Collapse",
-        CartMode.Collapsed => "Expand",
+        CartMode.Compact => "Normal",
         _ => "Toggle"
     };
-    public string CartSummary
-    {
-        get
-        {
-            var items = _currentCart.Items;
-            var count = items.Sum(i => i.Quantity);
-            var total = items.Sum(i => i.Subtotal);
-            return $"{total:C} · {count} item{(count != 1 ? "s" : "")}";
-        }
-    }
+
+    [ObservableProperty]
+    private bool _hasCartItems;
 
     // ─── Cart item count for badge ─────────────────────────────────
 
@@ -199,7 +187,6 @@ public sealed partial class MainViewModel : ObservableObject
                 CART DISPLAY TOOLS:
                 - Use set_cart_mode("normal") for the full card view with emoji and details.
                 - Use set_cart_mode("compact") for a dense single-line list.
-                - Use set_cart_mode("collapsed") to minimize the cart to just a summary bar.
                 - Use get_cart_mode() to check the current display mode.
 
                 Be concise and friendly.
@@ -293,8 +280,7 @@ public sealed partial class MainViewModel : ObservableObject
         CartMode = CartMode switch
         {
             CartMode.Normal => CartMode.Compact,
-            CartMode.Compact => CartMode.Collapsed,
-            CartMode.Collapsed => CartMode.Normal,
+            CartMode.Compact => CartMode.Normal,
             _ => CartMode.Normal
         };
     }
@@ -370,16 +356,15 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     [ExportAIFunction("set_cart_mode",
-        Description = "Change the shopping cart display mode. 'normal' shows full cards with emoji. 'compact' shows dense single-line rows. 'collapsed' minimizes to just a summary bar showing total and item count.")]
+        Description = "Change the shopping cart display mode. 'normal' shows full cards with emoji. 'compact' shows dense single-line rows.")]
     public string SetCartViewMode(
-        [System.ComponentModel.Description("The view mode: 'normal', 'compact', or 'collapsed'")] string mode)
+        [System.ComponentModel.Description("The view mode: 'normal' or 'compact'")] string mode)
     {
         CartMode = mode?.ToLowerInvariant() switch
         {
             "normal" => CartMode.Normal,
             "compact" => CartMode.Compact,
-            "collapsed" => CartMode.Collapsed,
-            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'normal', 'compact', 'collapsed'.")
+            _ => throw new ArgumentException($"Unknown mode '{mode}'. Valid modes: 'normal', 'compact'.")
         };
         return $"Cart display mode set to {CartMode.ToString().ToLowerInvariant()}.";
     }
@@ -395,7 +380,7 @@ public sealed partial class MainViewModel : ObservableObject
         var source = _currentCart.Items;
         SyncCollection(ShoppingList, source, v => v.Sku, i => i.Product.Sku, i => new ShoppingListItemViewModel(i));
         ShoppingListTotal = $"Total: {source.Sum(i => i.Subtotal):C}";
-        OnPropertyChanged(nameof(CartSummary));
+        HasCartItems = source.Count > 0;
     }
 
     private void RefreshArchive()

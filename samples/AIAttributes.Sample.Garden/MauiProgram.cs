@@ -24,6 +24,14 @@ public static class MauiProgram
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             });
 
+        // Remove native Entry border so our custom Border wrapper is the only visible frame.
+#if IOS || MACCATALYST
+        Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("NoBorder", (handler, _) =>
+        {
+            handler.PlatformView.BorderStyle = UIKit.UITextBorderStyle.None;
+        });
+#endif
+
         builder.Configuration.AddUserSecrets();
 
 #if DEBUG

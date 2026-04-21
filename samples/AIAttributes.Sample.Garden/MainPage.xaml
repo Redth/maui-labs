@@ -7,16 +7,106 @@
              x:DataType="vm:MainViewModel"
              Title="Garden AI Chat"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{AppThemeBinding Light=#FAFAF5, Dark=#1A1A18}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundLight}, Dark={StaticResource PageBackgroundDark}}">
 
-    <Grid RowDefinitions="Auto,*" RowSpacing="0">
-        <!-- Living cart strip at the top — morphs height based on CartMode -->
-        <views:CartStripView Grid.Row="0" />
+    <Grid RowDefinitions="56,*" ColumnDefinitions="*,Auto" ColumnSpacing="0" RowSpacing="0">
 
-        <!-- Chat fills below, centered on wide screens -->
-        <views:ChatView Grid.Row="1"
-                        HorizontalOptions="Fill"
-                        MaximumWidthRequest="840" />
+        <!-- ═══ Green header background — spans both columns ═══ -->
+        <Border Grid.Row="0" Grid.ColumnSpan="2"
+                BackgroundColor="{StaticResource Primary}"
+                StrokeThickness="0" />
+
+        <!-- Header content — in col 0 only so New Chat aligns with chat/cart boundary -->
+        <Grid Grid.Row="0" Grid.Column="0"
+              ColumnDefinitions="*,Auto"
+              Padding="16,0" ColumnSpacing="12">
+            <Label Text="Sage 🌿"
+                   FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
+                   TextColor="{StaticResource White}" VerticalOptions="Center" />
+            <Button Grid.Column="1"
+                    Text="New Chat"
+                    AutomationId="NewChatButton"
+                    Command="{Binding StartNewSessionCommand}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
+                    TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource TextAccentDark}}"
+                    FontSize="{StaticResource FontSizeBody}"
+                    FontAttributes="Bold"
+                    CornerRadius="14"
+                    Padding="12,4"
+                    VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ═══ Chat — fills col 0, scrollbar at edge, content centered ═══ -->
+        <views:ChatView Grid.Row="1" Grid.Column="0"
+                        HorizontalOptions="Fill" />
+
+        <!-- ═══ Cart sidebar — col 1, visible on wide only ═══ -->
+        <views:ShoppingListView Grid.Row="1" Grid.Column="1"
+                                x:Name="CartSidebar"
+                                WidthRequest="300"
+                                Margin="0,12,12,12">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="SidebarWide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="800" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Property="IsVisible" Value="True" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="SidebarNarrow">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Property="IsVisible" Value="False" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+        </views:ShoppingListView>
+
+        <!-- ═══ Cart FAB — overlaid on col 0, visible on narrow only ═══ -->
+        <Border Grid.Row="1" Grid.Column="0"
+                x:Name="CartFab"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="0,0,16,80"
+                WidthRequest="56" HeightRequest="56"
+                BackgroundColor="{StaticResource Primary}"
+                StrokeThickness="0"
+                StrokeShape="RoundRectangle 28">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="FabWide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="800" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Property="IsVisible" Value="False" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="FabNarrow">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Property="IsVisible" Value="True" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="2,4" Radius="8" Opacity="0.3" />
+            </Border.Shadow>
+            <Label Text="🛒" FontSize="{StaticResource FontSizeDisplay}"
+                   HorizontalOptions="Center" VerticalOptions="Center" />
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding CycleCartModeCommand}" />
+            </Border.GestureRecognizers>
+        </Border>
+
     </Grid>
 
 </ContentPage>
