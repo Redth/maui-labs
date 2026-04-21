@@ -38,7 +38,7 @@
                 <Button x:Name="CartHeaderBtn"
                         Text="&#xF26B;"
                         FontFamily="FluentFilled"
-                        FontSize="{StaticResource FontSizeSubtitle}"
+                        FontSize="{StaticResource FontSizeTitle}"
                         TextColor="{StaticResource White}"
                         BackgroundColor="Transparent"
                         Padding="8,4"
@@ -84,10 +84,17 @@
                         HorizontalOptions="Fill" />
 
         <!-- ═══ Cart sidebar — col 1, visible on wide only ═══ -->
-        <views:ShoppingListView Grid.Row="1" Grid.Column="1"
-                                x:Name="CartSidebar"
-                                WidthRequest="300"
-                                Margin="0,12,12,12">
+        <Border Grid.Row="1" Grid.Column="1"
+                x:Name="CartSidebar"
+                WidthRequest="300"
+                Margin="0,12,12,12"
+                BackgroundColor="{AppThemeBinding Light={StaticResource InputBackgroundLight}, Dark={StaticResource InputBackgroundDark}}"
+                StrokeShape="RoundRectangle 16"
+                Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
+                StrokeThickness="1">
+            <Border.Shadow>
+                <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.12" />
+            </Border.Shadow>
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup>
                     <VisualState x:Name="SidebarWide">
@@ -108,7 +115,42 @@
                     </VisualState>
                 </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
-        </views:ShoppingListView>
+
+            <Grid RowDefinitions="Auto,*" RowSpacing="0">
+                <!-- Green sidebar header -->
+                <Grid Padding="14,10"
+                      ColumnDefinitions="*,Auto"
+                      ColumnSpacing="8"
+                      BackgroundColor="{StaticResource Primary}">
+                    <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                        <Label Text="&#xF26B;"
+                               FontFamily="FluentFilled"
+                               FontSize="{StaticResource FontSizeBody}"
+                               TextColor="{StaticResource White}" VerticalOptions="Center" />
+                        <Label Text="Cart"
+                               FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
+                               TextColor="{StaticResource White}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Border Grid.Column="1"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 13"
+                            Padding="0"
+                            HeightRequest="26">
+                        <Button Text="{Binding CartModeLabel}"
+                                FontSize="{StaticResource FontSizeCaption}" Padding="14,0"
+                                BackgroundColor="Transparent"
+                                TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
+                                FontAttributes="Bold"
+                                BorderWidth="0"
+                                VerticalOptions="Center"
+                                Command="{Binding CycleCartModeCommand}" />
+                    </Border>
+                </Grid>
+                <!-- Headerless cart content -->
+                <views:ShoppingListView Grid.Row="1" />
+            </Grid>
+        </Border>
 
     </Grid>
 

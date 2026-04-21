@@ -23,7 +23,7 @@
                 <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
                     <Button Text="&#xF36A;"
                             FontFamily="FluentFilled"
-                            FontSize="{StaticResource FontSizeSubtitle}"
+                            FontSize="{StaticResource FontSizeTitle}"
                             Padding="8,4"
                             BackgroundColor="Transparent"
                             TextColor="{StaticResource White}"
@@ -31,10 +31,10 @@
                             Clicked="OnCloseClicked" />
                     <Label Text="&#xF26B;"
                            FontFamily="FluentFilled"
-                           FontSize="{StaticResource FontSizeSubtitle}"
+                           FontSize="{StaticResource FontSizeTitle}"
                            TextColor="{StaticResource White}" VerticalOptions="Center" />
                     <Label Text="Cart"
-                           FontSize="{StaticResource FontSizeSubtitle}" FontAttributes="Bold"
+                           FontSize="{StaticResource FontSizeTitle}" FontAttributes="Bold"
                            TextColor="{StaticResource White}"
                            VerticalOptions="Center" />
                 </HorizontalStackLayout>

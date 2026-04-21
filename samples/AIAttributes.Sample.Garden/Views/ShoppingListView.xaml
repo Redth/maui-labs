@@ -6,147 +6,106 @@
              x:DataType="vm:MainViewModel"
              BackgroundColor="Transparent">
 
-    <!-- Floating bubble card with rounded corners and shadow -->
-    <Border BackgroundColor="{AppThemeBinding Light={StaticResource InputBackgroundLight}, Dark={StaticResource InputBackgroundDark}}"
-            StrokeShape="RoundRectangle 16"
-            Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
-            StrokeThickness="1">
-        <Border.Shadow>
-            <Shadow Brush="Black" Offset="0,2" Radius="8" Opacity="0.12" />
-        </Border.Shadow>
+    <Grid RowDefinitions="*,Auto" RowSpacing="0">
 
-        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="0">
-
-            <!-- Sidebar-only mini header — icon + title + mode pill -->
-            <Grid Padding="14,10"
-                  ColumnDefinitions="*,Auto"
-                  ColumnSpacing="8">
-                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                    <Label Text="&#xF26B;"
-                           FontFamily="FluentFilled"
-                           FontSize="{StaticResource FontSizeBody}"
-                           TextColor="{StaticResource Primary}"
-                           VerticalOptions="Center" />
-                    <Label Text="Cart"
-                           FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
-                           VerticalOptions="Center" />
-                </HorizontalStackLayout>
-                <Border Grid.Column="1"
-                        BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
-                        StrokeThickness="0"
-                        StrokeShape="RoundRectangle 13"
-                        Padding="0"
-                        HeightRequest="26">
-                    <Button Text="{Binding CartModeLabel}"
-                            FontSize="{StaticResource FontSizeCaption}" Padding="14,0"
-                            BackgroundColor="Transparent"
-                            TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
-                            FontAttributes="Bold"
-                            BorderWidth="0"
-                            VerticalOptions="Center"
-                            Command="{Binding CycleCartModeCommand}" />
-                </Border>
-            </Grid>
-
-            <!-- Normal mode: card layout -->
-            <CollectionView Grid.Row="1"
-                            ItemsSource="{Binding ShoppingList}"
-                            SelectionMode="None"
-                            BackgroundColor="Transparent"
-                            IsVisible="{Binding IsNormalMode}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
-                        <Grid Padding="12,4">
-                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
-                                    Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
-                                    StrokeThickness="1"
-                                    StrokeShape="RoundRectangle 10"
-                                    Padding="10,8">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                    <Label Text="{Binding Emoji}"
-                                           FontFamily="FluentFilled"
-                                           FontSize="{StaticResource FontSizeTitle}"
-                                           TextColor="{StaticResource Primary}"
-                                           VerticalOptions="Center" />
-                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                        <Label Text="{Binding Name}"
-                                               FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold" />
-                                        <Label Text="{Binding QuantityLine}"
-                                               FontSize="{StaticResource FontSizeCaption}"
-                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                                    </VerticalStackLayout>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyView>
-                    <VerticalStackLayout Padding="24" Spacing="6"
-                                         HorizontalOptions="Center"
-                                         VerticalOptions="Center">
-                        <Label Text="&#xE769;" FontFamily="FluentFilled"
-                               FontSize="{StaticResource FontSizeDisplay}" HorizontalOptions="Center"
-                               TextColor="{StaticResource Primary}" />
-                        <Label Text="Your cart is empty."
-                               FontSize="{StaticResource FontSizeBody}" HorizontalTextAlignment="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                        <Label Text="Ask Sage to add seeds, soil, or tools."
-                               FontSize="{StaticResource FontSizeCaption}" HorizontalTextAlignment="Center"
-                               TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}" />
-                    </VerticalStackLayout>
-                </CollectionView.EmptyView>
-            </CollectionView>
-
-            <!-- Compact mode: dense rows -->
-            <CollectionView Grid.Row="1"
-                            ItemsSource="{Binding ShoppingList}"
-                            SelectionMode="None"
-                            BackgroundColor="Transparent"
-                            IsVisible="{Binding IsCompactMode}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
-                        <Grid Padding="14,3" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
-                            <Label Text="{Binding Emoji}"
-                                   FontFamily="FluentFilled"
-                                   FontSize="{StaticResource FontSizeBody}"
-                                   TextColor="{StaticResource Primary}"
-                                   VerticalOptions="Center" />
-                            <Label Grid.Column="1"
-                                   Text="{Binding Name}"
-                                   FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
-                                   VerticalOptions="Center" />
-                            <Label Grid.Column="3"
-                                   Text="{Binding QuantityLine}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   VerticalOptions="Center"
-                                   TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyView>
-                    <Label Text="Cart is empty."
-                           FontSize="{StaticResource FontSizeCaption}" FontAttributes="Italic"
-                           Padding="14,8"
+        <!-- Normal mode: card layout -->
+        <CollectionView Grid.Row="0"
+                        ItemsSource="{Binding ShoppingList}"
+                        SelectionMode="None"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsNormalMode}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                    <Grid Padding="12,4">
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource SurfaceLight}, Dark={StaticResource SurfaceDark}}"
+                                Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 10"
+                                Padding="10,8">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Label Text="{Binding Emoji}"
+                                       FontFamily="FluentFilled"
+                                       FontSize="{StaticResource FontSizeTitle}"
+                                       TextColor="{StaticResource Primary}"
+                                       VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="{Binding Name}"
+                                           FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold" />
+                                    <Label Text="{Binding QuantityLine}"
+                                           FontSize="{StaticResource FontSizeCaption}"
+                                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Padding="24" Spacing="6"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center">
+                    <Label Text="&#xE769;" FontFamily="FluentFilled"
+                           FontSize="{StaticResource FontSizeDisplay}" HorizontalOptions="Center"
+                           TextColor="{StaticResource Primary}" />
+                    <Label Text="Your cart is empty."
+                           FontSize="{StaticResource FontSizeBody}" HorizontalTextAlignment="Center"
+                           TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                    <Label Text="Ask Sage to add seeds, soil, or tools."
+                           FontSize="{StaticResource FontSizeCaption}" HorizontalTextAlignment="Center"
                            TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}" />
-                </CollectionView.EmptyView>
-            </CollectionView>
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+        </CollectionView>
 
-            <!-- Checkout footer — hidden when cart is empty -->
-            <Border Grid.Row="2"
-                    BackgroundColor="Transparent"
-                    StrokeThickness="0"
-                    Padding="12,10"
-                    IsVisible="{Binding HasCartItems}">
-                <Button HorizontalOptions="Fill"
-                        Text="{Binding ShoppingListTotal, StringFormat='Checkout — {0}'}"
-                        FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
-                        Padding="16,8"
-                        BackgroundColor="{StaticResource Primary}"
-                        TextColor="{StaticResource White}"
-                        CornerRadius="10"
-                        Command="{Binding CheckoutCartCommand}" />
-            </Border>
-        </Grid>
-    </Border>
+        <!-- Compact mode: dense rows -->
+        <CollectionView Grid.Row="0"
+                        ItemsSource="{Binding ShoppingList}"
+                        SelectionMode="None"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsCompactMode}">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:ShoppingListItemViewModel">
+                    <Grid Padding="14,3" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="6">
+                        <Label Text="{Binding Emoji}"
+                               FontFamily="FluentFilled"
+                               FontSize="{StaticResource FontSizeBody}"
+                               TextColor="{StaticResource Primary}"
+                               VerticalOptions="Center" />
+                        <Label Grid.Column="1"
+                               Text="{Binding Name}"
+                               FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
+                               VerticalOptions="Center" />
+                        <Label Grid.Column="3"
+                               Text="{Binding QuantityLine}"
+                               FontSize="{StaticResource FontSizeCaption}"
+                               VerticalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <Label Text="Cart is empty."
+                       FontSize="{StaticResource FontSizeCaption}" FontAttributes="Italic"
+                       Padding="14,8"
+                       TextColor="{AppThemeBinding Light={StaticResource TextTertiaryLight}, Dark={StaticResource TextTertiaryDark}}" />
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <!-- Checkout footer — hidden when cart is empty -->
+        <Border Grid.Row="1"
+                BackgroundColor="Transparent"
+                StrokeThickness="0"
+                Padding="12,10"
+                IsVisible="{Binding HasCartItems}">
+            <Button HorizontalOptions="Fill"
+                    Text="{Binding ShoppingListTotal, StringFormat='Checkout — {0}'}"
+                    FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
+                    Padding="16,8"
+                    BackgroundColor="{StaticResource Primary}"
+                    TextColor="{StaticResource White}"
+                    CornerRadius="10"
+                    Command="{Binding CheckoutCartCommand}" />
+        </Border>
+    </Grid>
 
 </ContentView>

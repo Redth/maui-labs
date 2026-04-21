@@ -26,7 +26,7 @@
                 <local:ChatMessageTemplateSelector>
                     <local:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid Padding="48,0,12,0" HorizontalOptions="Fill">
+                            <Grid HorizontalOptions="Center" MaximumWidthRequest="720" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
                                         Padding="12,8"
                                         HorizontalOptions="End"
@@ -43,7 +43,7 @@
 
                     <local:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Grid Padding="12,0,48,0" HorizontalOptions="Fill">
+                            <Grid HorizontalOptions="Center" MaximumWidthRequest="720" Padding="16,0">
                                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
                                         Padding="12,8"
                                         HorizontalOptions="Start"
