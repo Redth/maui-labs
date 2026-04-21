@@ -150,16 +150,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    // ─── Responsive layout ─────────────────────────────────────────
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsNarrowLayout))]
-    private bool _isWideLayout = true;
-
-    public bool IsNarrowLayout => !IsWideLayout;
-
     // ─── Cart item count for badge ─────────────────────────────────
-    [ObservableProperty]
-    private string _cartBadge = "0";
 
     /// <summary>Raised whenever a new message is appended, so views can scroll.</summary>
     public event Action<ChatMessageViewModel>? MessageAdded;
@@ -404,7 +395,6 @@ public sealed partial class MainViewModel : ObservableObject
         var source = _currentCart.Items;
         SyncCollection(ShoppingList, source, v => v.Sku, i => i.Product.Sku, i => new ShoppingListItemViewModel(i));
         ShoppingListTotal = $"Total: {source.Sum(i => i.Subtotal):C}";
-        CartBadge = source.Sum(i => i.Quantity).ToString();
         OnPropertyChanged(nameof(CartSummary));
     }
 

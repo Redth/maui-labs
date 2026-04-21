@@ -134,23 +134,15 @@
                 BackgroundColor="{AppThemeBinding Light=#E8F2E6, Dark=#22301F}"
                 StrokeThickness="0"
                 Padding="14,10">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <Button Text="Checkout"
-                        FontSize="12"
-                        Padding="12,4"
-                        BackgroundColor="#5B8C5A"
-                        TextColor="White"
-                        CornerRadius="6"
-                        Command="{Binding CheckoutCartCommand}"
-                        VerticalOptions="Center" />
-                <Label Grid.Column="2"
-                       Text="{Binding ShoppingListTotal}"
-                       FontSize="13"
-                       FontAttributes="Bold"
-                       HorizontalOptions="End"
-                       VerticalOptions="Center"
-                       TextColor="{AppThemeBinding Light=#3A5A3A, Dark=#B4D4B4}" />
-            </Grid>
+            <Button HorizontalOptions="End"
+                    Text="{Binding ShoppingListTotal, StringFormat='Checkout — {0}'}"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    Padding="16,6"
+                    BackgroundColor="#5B8C5A"
+                    TextColor="White"
+                    CornerRadius="6"
+                    Command="{Binding CheckoutCartCommand}" />
         </Border>
     </Grid>
 

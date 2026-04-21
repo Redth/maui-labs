@@ -16,7 +16,7 @@
                 HeightRequest="56"
                 StrokeThickness="0">
             <Grid ColumnDefinitions="*,Auto">
-                <Label Text="Garden Shop AI"
+                <Label Text="Sage 🌿"
                        FontSize="20" FontAttributes="Bold"
                        TextColor="White" VerticalOptions="Center" />
                 <Button Grid.Column="1"
@@ -48,7 +48,7 @@
                 <local:ChatMessageTemplateSelector>
                     <local:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Border BackgroundColor="#DCF8C6"
+                            <Border BackgroundColor="#E8C9A8"
                                     Padding="12,8"
                                     Margin="12,0"
                                     HorizontalOptions="End"
@@ -57,7 +57,7 @@
                                     StrokeShape="RoundRectangle 12">
                                 <Label Text="{Binding Text}"
                                        FontSize="14"
-                                       TextColor="Black" />
+                                       TextColor="#3A2A1A" />
                             </Border>
                         </DataTemplate>
                     </local:ChatMessageTemplateSelector.UserTemplate>

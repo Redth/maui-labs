@@ -6,60 +6,17 @@
              x:Class="AIAttributes.Sample.Garden.MainPage"
              x:DataType="vm:MainViewModel"
              Title="Garden AI Chat"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light=#FAFAF5, Dark=#1A1A18}">
 
-    <Grid>
-        <!-- Wide layout: 2-column (chat + cart panel) -->
-        <Grid x:Name="WideLayout"
-              ColumnDefinitions="2*,*"
-              ColumnSpacing="0"
-              IsVisible="{Binding IsWideLayout}">
-            <views:ChatView Grid.Column="0" />
-            <views:ShoppingListView Grid.Column="1" />
-        </Grid>
+    <Grid RowDefinitions="Auto,*" RowSpacing="0">
+        <!-- Living cart strip at the top — morphs height based on CartMode -->
+        <views:CartStripView Grid.Row="0" />
 
-        <!-- Narrow layout: full-screen chat + floating cart badge -->
-        <Grid x:Name="NarrowLayout"
-              IsVisible="{Binding IsNarrowLayout}">
-            <views:ChatView />
-
-            <!-- Floating cart button -->
-            <Border HorizontalOptions="End"
-                    VerticalOptions="End"
-                    Margin="0,0,16,16"
-                    BackgroundColor="#5B8C5A"
-                    StrokeThickness="0"
-                    StrokeShape="RoundRectangle 28"
-                    WidthRequest="56"
-                    HeightRequest="56"
-                    Shadow="{OnPlatform Default={Shadow Brush='#40000000', Offset='0,2', Radius=6}}">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding CycleCartModeCommand}" />
-                </Border.GestureRecognizers>
-                <Grid>
-                    <Label Text="🛒"
-                           FontSize="24"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                    <!-- Badge -->
-                    <Border HorizontalOptions="End"
-                            VerticalOptions="Start"
-                            Margin="0,-4,-4,0"
-                            BackgroundColor="#C62828"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 10"
-                            WidthRequest="20"
-                            HeightRequest="20"
-                            IsVisible="{Binding CartBadge, Converter={StaticResource BadgeVisibleConverter}}">
-                        <Label Text="{Binding CartBadge}"
-                               FontSize="10"
-                               TextColor="White"
-                               HorizontalOptions="Center"
-                               VerticalOptions="Center" />
-                    </Border>
-                </Grid>
-            </Border>
-        </Grid>
+        <!-- Chat fills below, centered on wide screens -->
+        <views:ChatView Grid.Row="1"
+                        HorizontalOptions="Fill"
+                        MaximumWidthRequest="840" />
     </Grid>
 
 </ContentPage>
