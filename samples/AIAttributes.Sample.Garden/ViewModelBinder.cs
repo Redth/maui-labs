@@ -26,8 +26,6 @@ public static class ViewModelBinder
 
     private static void TryResolve(Element element, Type vmType)
     {
-        if (element.BindingContext is not null)
-            return;
         if (element.Handler?.MauiContext?.Services?.GetService(vmType) is { } vm)
             element.BindingContext = vm;
     }
