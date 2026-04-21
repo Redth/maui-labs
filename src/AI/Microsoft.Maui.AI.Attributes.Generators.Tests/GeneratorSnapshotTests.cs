@@ -71,6 +71,7 @@ public class GeneratorSnapshotTests
     [InlineData(nameof(Inputs.InternalContextClass))]
     [InlineData(nameof(Inputs.StaticClassWithFromServicesAndProperty))]
     [InlineData(nameof(Inputs.InterfaceWithApproval))]
+    [InlineData(nameof(Inputs.AccessorLevelExportAIFunction))]
     public Task Snapshot(string scenario)
     {
         var source = Inputs.Get(scenario);

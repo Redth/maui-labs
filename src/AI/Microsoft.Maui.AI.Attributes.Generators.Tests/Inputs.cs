@@ -746,6 +746,30 @@ internal static class Inputs
         public partial class DangerousTools : AIToolContext { }
         """;
 
+    public const string AccessorLevelExportAIFunction = """
+        using System.ComponentModel;
+        using Microsoft.Maui.AI.Attributes;
+
+        namespace Sample;
+
+        public class DisplaySettings
+        {
+            public string Mode
+            {
+                [ExportAIFunction("get_display_mode")]
+                [Description("Gets the current display mode.")]
+                get;
+
+                [ExportAIFunction("set_display_mode")]
+                [Description("Sets the display mode.")]
+                set;
+            } = "normal";
+        }
+
+        [AIToolSource(typeof(DisplaySettings))]
+        public partial class ToolsCtx : AIToolContext { }
+        """;
+
     public static string Get(string name) => name switch
     {
         nameof(SimpleInstanceMethod) => SimpleInstanceMethod,
@@ -791,6 +815,7 @@ internal static class Inputs
         nameof(InternalContextClass) => InternalContextClass,
         nameof(StaticClassWithFromServicesAndProperty) => StaticClassWithFromServicesAndProperty,
         nameof(InterfaceWithApproval) => InterfaceWithApproval,
+        nameof(AccessorLevelExportAIFunction) => AccessorLevelExportAIFunction,
         _ => throw new KeyNotFoundException(name),
     };
 }

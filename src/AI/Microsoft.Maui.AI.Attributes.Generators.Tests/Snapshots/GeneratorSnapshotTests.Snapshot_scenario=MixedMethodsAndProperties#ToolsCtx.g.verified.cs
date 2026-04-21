@@ -23,7 +23,7 @@ namespace Sample
         private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
             new Store_Find_Tool(),
-            new Store_Items_Tool(),
+            new Store_Items_Get_Tool(),
         };
 
         /// <inheritdoc />
@@ -76,7 +76,7 @@ namespace Sample
             }
         }
 
-        private sealed class Store_Items_Tool : global::Microsoft.Extensions.AI.AIFunction
+        private sealed class Store_Items_Get_Tool : global::Microsoft.Extensions.AI.AIFunction
         {
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);

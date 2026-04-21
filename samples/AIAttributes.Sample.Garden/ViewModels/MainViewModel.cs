@@ -12,15 +12,9 @@ namespace AIAttributes.Sample.Garden.ViewModels;
 /// Owns page navigation and the new-session action.
 /// All domain views resolve their own VMs via <see cref="ViewModelBinder"/>.
 /// </summary>
-public sealed partial class MainViewModel : ObservableObject
+public sealed partial class MainViewModel(CurrentCart currentCart) : ObservableObject
 {
-    private readonly CurrentCart _currentCart;
     private bool _initialized;
-
-    public MainViewModel(CurrentCart currentCart)
-    {
-        _currentCart = currentCart;
-    }
 
     /// <summary>
     /// Called once from <see cref="Pages.MainPage.OnAppearing"/>.
@@ -37,7 +31,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void StartNewSession()
     {
-        _currentCart.Clear();
+        currentCart.Clear();
         WeakReferenceMessenger.Default.Send(new StartNewChatSessionMessage());
     }
 

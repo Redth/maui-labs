@@ -23,7 +23,7 @@ namespace Sample
         private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
             new DataAccess_Query_Tool(),
-            new DataAccess_Records_Tool(),
+            new DataAccess_Records_Get_Tool(),
         };
 
         /// <inheritdoc />
@@ -83,7 +83,7 @@ namespace Sample
             }
         }
 
-        private sealed class DataAccess_Records_Tool : global::Microsoft.Extensions.AI.AIFunction
+        private sealed class DataAccess_Records_Get_Tool : global::Microsoft.Extensions.AI.AIFunction
         {
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);

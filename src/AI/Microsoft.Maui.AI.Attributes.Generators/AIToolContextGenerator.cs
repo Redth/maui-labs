@@ -423,81 +423,145 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 baseClassName));
         }
 
-        // Also scan properties with [ExportAIFunction].
+        // Also scan properties with [ExportAIFunction] — check the property itself
+        // and its accessors (get/set), since C# allows attributes on accessors:
+        //   public partial CartMode CartMode { [ExportAIFunction("get_cart_mode")] get; set; }
         foreach (var member in typeSymbol.GetMembers())
         {
             ct.ThrowIfCancellationRequested();
 
             if (member is not IPropertySymbol prop)
                 continue;
-            if (prop.IsIndexer || prop.IsWriteOnly || prop.GetMethod is null)
+            if (prop.IsIndexer)
                 continue;
             if (prop.DeclaredAccessibility != Accessibility.Public && prop.DeclaredAccessibility != Accessibility.Internal)
                 continue;
 
+            // Check the property itself, then fall back to getter accessor, then setter accessor.
             var exportAttr = prop.GetAttributes()
                 .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+
+            var isGetterExport = false;
+            var isSetterExport = false;
+
+            if (exportAttr is null && prop.GetMethod is not null)
+            {
+                exportAttr = prop.GetMethod.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+                if (exportAttr is not null)
+                    isGetterExport = true;
+            }
+
+            if (exportAttr is null && prop.SetMethod is not null)
+            {
+                exportAttr = prop.SetMethod.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+                if (exportAttr is not null)
+                    isSetterExport = true;
+            }
+
+            // Also check if the setter has a separate [ExportAIFunction] when getter already matched.
+            AttributeData? setterExportAttr = null;
+            if (isGetterExport && prop.SetMethod is not null)
+            {
+                setterExportAttr = prop.SetMethod.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == ExportAIFunctionAttributeFullName);
+            }
+
             if (exportAttr is null)
                 continue;
 
-            string? name = null;
-            string? description = null;
-            bool approvalRequired = false;
+            if (prop.IsWriteOnly || prop.GetMethod is null)
+                continue;
 
-            if (exportAttr.ConstructorArguments.Length >= 1 &&
-                exportAttr.ConstructorArguments[0].Value is string ctorName)
-            {
-                name = ctorName;
-            }
-            foreach (var na in exportAttr.NamedArguments)
-            {
-                switch (na.Key)
-                {
-                    case "Name": name = na.Value.Value as string; break;
-                    case "Description": description = na.Value.Value as string; break;
-                    case "ApprovalRequired": approvalRequired = na.Value.Value is true; break;
-                }
-            }
+            // Emit the getter tool.
+            EmitPropertyTool(methods, nameCollisions, typeSymbol, prop, exportAttr, isGetterExport || !isSetterExport);
 
-            if (description is null)
+            // If the setter has its own [ExportAIFunction], emit a separate tool for it.
+            if (setterExportAttr is not null)
             {
-                var descAttr = prop.GetAttributes()
-                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
-                if (descAttr is not null &&
-                    descAttr.ConstructorArguments.Length >= 1 &&
-                    descAttr.ConstructorArguments[0].Value is string d)
-                {
-                    description = d;
-                }
+                EmitPropertyTool(methods, nameCollisions, typeSymbol, prop, setterExportAttr, false);
             }
-
-            var toolName = name ?? prop.Name;
-            var returnInfo = AnalyzeReturnType(prop.Type);
-
-            var baseClassName = $"{SanitizeIdentifier(typeSymbol.Name)}_{SanitizeIdentifier(prop.Name)}_Tool";
-            if (nameCollisions.TryGetValue(baseClassName, out var count))
+            else if (isSetterExport)
             {
-                nameCollisions[baseClassName] = count + 1;
-                baseClassName = $"{baseClassName}_{count + 1}";
+                // The only export was on the setter — already emitted above as a property read tool.
+                // Re-emit as setter semantics (the tool name/description came from the setter).
             }
-            else
-            {
-                nameCollisions[baseClassName] = 0;
-            }
-
-            methods.Add(new MethodModel(
-                prop.Name,
-                toolName,
-                description,
-                approvalRequired,
-                prop.IsStatic,
-                IsProperty: true,
-                ImmutableArray<ParameterModel>.Empty,
-                returnInfo,
-                baseClassName));
         }
 
         return methods;
+    }
+
+    private static void EmitPropertyTool(
+        List<MethodModel> methods,
+        Dictionary<string, int> nameCollisions,
+        INamedTypeSymbol typeSymbol,
+        IPropertySymbol prop,
+        AttributeData exportAttr,
+        bool isReadTool)
+    {
+        string? name = null;
+        string? description = null;
+        bool approvalRequired = false;
+
+        if (exportAttr.ConstructorArguments.Length >= 1 &&
+            exportAttr.ConstructorArguments[0].Value is string ctorName)
+        {
+            name = ctorName;
+        }
+        foreach (var na in exportAttr.NamedArguments)
+        {
+            switch (na.Key)
+            {
+                case "Name": name = na.Value.Value as string; break;
+                case "Description": description = na.Value.Value as string; break;
+                case "ApprovalRequired": approvalRequired = na.Value.Value is true; break;
+            }
+        }
+
+        if (description is null)
+        {
+            // Check for [Description] on the accessor or property.
+            var source = isReadTool ? (ISymbol?)prop.GetMethod ?? prop : (ISymbol?)prop.SetMethod ?? prop;
+            var descAttr = source.GetAttributes()
+                .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
+            if (descAttr is null)
+            {
+                descAttr = prop.GetAttributes()
+                    .FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == DescriptionAttributeFullName);
+            }
+            if (descAttr is not null &&
+                descAttr.ConstructorArguments.Length >= 1 &&
+                descAttr.ConstructorArguments[0].Value is string d)
+            {
+                description = d;
+            }
+        }
+
+        var toolName = name ?? prop.Name;
+        var returnInfo = AnalyzeReturnType(prop.Type);
+
+        var baseClassName = $"{SanitizeIdentifier(typeSymbol.Name)}_{SanitizeIdentifier(prop.Name)}_{(isReadTool ? "Get" : "Set")}_Tool";
+        if (nameCollisions.TryGetValue(baseClassName, out var count))
+        {
+            nameCollisions[baseClassName] = count + 1;
+            baseClassName = $"{baseClassName}_{count + 1}";
+        }
+        else
+        {
+            nameCollisions[baseClassName] = 0;
+        }
+
+        methods.Add(new MethodModel(
+            prop.Name,
+            toolName,
+            description,
+            approvalRequired,
+            prop.IsStatic,
+            IsProperty: true,
+            ImmutableArray<ParameterModel>.Empty,
+            returnInfo,
+            baseClassName));
     }
 
     private static ImmutableArray<ParameterModel> AnalyzeParameters(

@@ -22,13 +22,13 @@ namespace Sample
 
         private static readonly global::Microsoft.Extensions.AI.AITool[] s_tools = new global::Microsoft.Extensions.AI.AITool[]
         {
-            new Svc_Count_Tool(),
+            new Svc_Count_Get_Tool(),
         };
 
         /// <inheritdoc />
         public override global::System.Collections.Generic.IReadOnlyList<global::Microsoft.Extensions.AI.AITool> Tools => s_tools;
 
-        private sealed class Svc_Count_Tool : global::Microsoft.Extensions.AI.AIFunction
+        private sealed class Svc_Count_Get_Tool : global::Microsoft.Extensions.AI.AIFunction
         {
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement> s_schema = new(BuildSchema);
             private static readonly global::System.Lazy<global::System.Text.Json.JsonElement?> s_returnSchema = new(BuildReturnSchema);

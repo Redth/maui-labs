@@ -301,6 +301,16 @@ public class GeneratorCompilationTests
     [InlineData(nameof(Inputs.NestedNamespace))]
     [InlineData(nameof(Inputs.StaticProperty))]
     [InlineData(nameof(Inputs.InstanceProperty))]
+    [InlineData(nameof(Inputs.AccessorLevelExportAIFunction))]
     public void AllValidInputs_CompileCleanly(string scenario)
         => AssertCleanCompilation(Inputs.Get(scenario));
+
+    [Fact]
+    public void AccessorLevelExportAIFunction_EmitsTwoTools()
+    {
+        var (_, _, output) = RunAndCompile(Inputs.AccessorLevelExportAIFunction);
+        var generated = GetGeneratedSource(output, "ToolsCtx");
+        Assert.Contains("get_display_mode", generated);
+        Assert.Contains("set_display_mode", generated);
+    }
 }
