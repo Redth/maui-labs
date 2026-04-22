@@ -1,10 +1,10 @@
 # Microsoft.Maui.AI.Attributes
 
-Source-generated AI tool discovery for .NET 10. Decorate methods with `[ExportAIFunction]`, group them into a tool context with `[AIToolSource]`, and ask the context for its tools — no DI registration ceremony, no runtime reflection on the hot path.
+Source-generated AI tool discovery for .NET 10. Decorate methods or property accessors with `[ExportAIFunction]`, then either group them into an explicit tool context with `[AIToolSource]` or use the auto-generated assembly-wide context — no DI registration ceremony, no runtime reflection on the hot path.
 
 ## How it works
 
-### 1. Annotate your methods
+### 1. Annotate your methods or property accessors
 
 ```csharp
 using System.ComponentModel;
@@ -22,14 +22,14 @@ public class PlantCatalogService
 }
 ```
 
-- `[ExportAIFunction]` marks a method as an AI-callable tool.
+- `[ExportAIFunction]` marks a method, property getter, or property setter as an AI-callable tool.
 - `[ExportAIFunction("custom_name")]` overrides the tool name (defaults to method name).
 - `[ExportAIFunction(ApprovalRequired = true)]` wraps the tool so it requires user approval before executing.
 - `[Description]` on the method and parameters provides AI-visible documentation.
 
-Methods may be **instance** (resolved from DI) or **static** (no DI required — see below).
+Methods may be **instance** (resolved from DI) or **static** (no DI required — see below). Property getters surface as zero-argument tools; property setters surface as a single `value` argument in the generated schema.
 
-### 2. Define a tool context
+### 2. Define a tool context (optional)
 
 ```csharp
 using Microsoft.Maui.AI.Attributes;
@@ -41,7 +41,21 @@ public partial class GardenTools : AIToolContext { }
 
 The **source generator** scans each `[AIToolSource]` type for `[ExportAIFunction]` methods at compile time and emits a sealed `AIFunction` subclass per method, plus a `Default` singleton instance and a `Tools` method on the context. No reflection on the invocation path. AOT-friendly.
 
-### 3. Get the tools
+An explicit context is still the best choice when you want to **curate a subset of tools**, keep a **stable public name**, or separate tools by feature area.
+
+### 3. Or use the assembly-wide auto context
+
+If you skip the partial class entirely, the generator now also emits an **assembly-wide tool context** that collects every `[ExportAIFunction]` in the current project.
+
+For an assembly named `MyApp`, the generated type is:
+
+```csharp
+IReadOnlyList<AITool> tools = MyAppToolContext.Default.Tools;
+```
+
+The exact class name is `<AssemblyName>ToolContext` in your root namespace, with dots removed from the assembly name. This is a great fit for small apps, prototypes, and quick demos where "all exported tools in this assembly" is the behavior you want.
+
+### 4. Get the tools
 
 ```csharp
 // Headline pattern — no DI registration needed.
@@ -50,7 +64,7 @@ IReadOnlyList<AITool> tools = GardenTools.Default.Tools;
 
 That's the whole API. `Default` is a static singleton; `Tools` returns the same `AITool[]` every time. Pass it straight into any chat client.
 
-### 4. Wire tools into an `IChatClient`
+### 5. Wire tools into an `IChatClient`
 
 ```csharp
 var tools = GardenTools.Default.Tools;
@@ -94,18 +108,42 @@ var result = await tool.InvokeAsync(
 
 A static method is free to resolve its own dependencies internally if it wants — but the *tool* surface stays DI-free.
 
+## Property getters and setters
+
+Accessor-level exports are useful when the AI should read or change app state without forcing you to add wrapper methods:
+
+```csharp
+public partial class CartViewModel
+{
+    public string CartMode
+    {
+        [ExportAIFunction("get_cart_mode")]
+        [Description("Gets the current cart display mode.")]
+        get;
+
+        [ExportAIFunction("set_cart_mode")]
+        [Description("Sets the current cart display mode to values like 'normal' or 'compact'.")]
+        set;
+    } = "normal";
+}
+```
+
+The generated getter tool has no JSON inputs. The setter tool emits a required `value` parameter and assigns it directly to the property, which makes this pattern a good fit for toggles, preferences, and view-model state.
+
 ## Dependency injection & parameter binding
 
 At compile time the generator classifies each parameter and emits the right binding code:
 
-| Parameter shape | Binding |
-|---|---|
-| `CancellationToken` | Flows from the function-invocation pipeline. Not in the tool schema. |
-| `IServiceProvider` | The provider on `AIFunctionArguments.Services`. Not in schema. |
-| `AIFunctionArguments` | The raw argument bag. Not in schema. |
-| `[FromServices] IMyThing x` | `provider.GetService<IMyThing>()` with null check. Not in schema. |
-| `[FromKeyedServices("k")] IMyThing x` | `(IKeyedServiceProvider).GetKeyedService(typeof(IMyThing), "k")` with null check. Not in schema. |
-| Everything else (`string`, records, enums, …) | Bound from the JSON argument dictionary. |
+| Parameter shape | Binding | In schema? |
+|---|---|---|
+| `CancellationToken` | Flows from the function-invocation pipeline. | [ ] |
+| `IServiceProvider` | The provider on `AIFunctionArguments.Services`. | [ ] |
+| `AIFunctionArguments` | The raw argument bag. | [ ] |
+| `[FromServices] IMyThing x` | `provider.GetService<IMyThing>()` with null check. | [ ] |
+| `[FromKeyedServices("k")] IMyThing x` | `(IKeyedServiceProvider).GetKeyedService(typeof(IMyThing), "k")` with null check. | [ ] |
+| Everything else (`string`, records, enums, …) | Bound from the JSON argument dictionary. | [x] |
+
+For accessor-based setter tools, the generated `value` argument also falls into the last row above, so it is included in the schema and required unless the target property type or binding rules say otherwise.
 
 For instance methods the host service is resolved via `provider.GetRequiredService<TService>()`. For static methods the call is emitted directly — no service lookup, no provider needed unless a `[FromServices]` parameter forces it.
 
@@ -169,7 +207,7 @@ The repository ships three focused samples under `samples/`. Each tells exactly 
 |---|---|---|
 | [`AIAttributes.Sample.Hello`](../../samples/AIAttributes.Sample.Hello) | Console | Smallest end-to-end. One DI service + one static service, both surfaced through `Default.Tools`. |
 | [`AIAttributes.Sample.DIParameters`](../../samples/AIAttributes.Sample.DIParameters) | Console | Every parameter binding shape: `[FromServices]`, `[FromKeyedServices]`, plain records, `CancellationToken`. |
-| [`AIAttributes.Sample.Garden`](../../samples/AIAttributes.Sample.Garden) | MAUI | Scoped lifetime per chat session, approval-required tools, DevFlow integration. |
+| [`AIAttributes.Sample.Garden`](../../samples/AIAttributes.Sample.Garden) | MAUI | Static + instance + interface + transient view-model tool sources, approval-required tools, modal navigation, cart-mode property tools, and DevFlow integration. |
 
 ## AOT compatibility
 
@@ -202,7 +240,7 @@ This library aims to match the runtime behavior of `AIFunctionFactory.Create(Met
 - **`AIContent`-typed returns** are returned as-is without JSON serialization, matching the default `MarshalResult` behavior in `AIFunctionFactory`.
 - **Struct defaults** (`Guid`, `StructWithDefaultCtor`) are passed as CLR `default(T)`, matching the `= default` behavior observed by `AIFunctionFactory`.
 
-### Intentional behavioral differences
+### Known behavioral differences
 
 | # | Area | `AIFunctionFactory.Create` | `Microsoft.Maui.AI.Attributes` | Why |
 |---|------|----------------------------|--------------------------------|-----|
