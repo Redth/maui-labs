@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using AIAttributes.Sample.Garden.Messages;
-using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;

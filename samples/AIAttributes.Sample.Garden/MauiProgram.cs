@@ -6,7 +6,6 @@ using AIAttributes.Sample.Garden.ViewModels;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.DevFlow.Agent;
 

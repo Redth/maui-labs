@@ -57,6 +57,24 @@ internal sealed class CounterState
     public int Count { get; set; }
 }
 
+internal enum DisplayMode
+{
+    Normal,
+    Compact,
+}
+
+internal sealed class DisplayModeToolService
+{
+    public DisplayMode Mode
+    {
+        [ExportAIFunction("get_display_mode")]
+        get;
+
+        [ExportAIFunction("set_display_mode")]
+        set;
+    } = DisplayMode.Normal;
+}
+
 internal sealed class TransientCounterToolService(CounterState state)
 {
     private static int _instanceNumber;
@@ -75,6 +93,9 @@ internal partial class ContactsToolContext : AIToolContext { }
 
 [AIToolSource(typeof(TransientCounterToolService))]
 internal partial class TransientCounterToolContext : AIToolContext { }
+
+[AIToolSource(typeof(DisplayModeToolService))]
+internal partial class DisplayModeToolContext : AIToolContext { }
 
 public class DIParameterBindingTests
 {
@@ -162,5 +183,24 @@ public class DIParameterBindingTests
         Assert.Contains("count:1", result1?.ToString());
         Assert.Contains("count:2", result2?.ToString());
         Assert.NotEqual(result1?.ToString(), result2?.ToString());
+    }
+
+    [Fact]
+    public async Task Exported_property_setter_updates_the_service_state()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<DisplayModeToolService>();
+        using var provider = services.BuildServiceProvider();
+
+        var setTool = (AIFunction)DisplayModeToolContext.Default.Tools.First(t => t.Name == "set_display_mode");
+        var getTool = (AIFunction)DisplayModeToolContext.Default.Tools.First(t => t.Name == "get_display_mode");
+
+        var result = await setTool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["value"] = "compact" }) { Services = provider });
+        var state = provider.GetRequiredService<DisplayModeToolService>();
+        var readback = await getTool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?>()) { Services = provider });
+
+        Assert.Equal(DisplayMode.Compact, state.Mode);
+        Assert.Equal("Compact", result?.ToString());
+        Assert.Equal("Compact", readback?.ToString());
     }
 }

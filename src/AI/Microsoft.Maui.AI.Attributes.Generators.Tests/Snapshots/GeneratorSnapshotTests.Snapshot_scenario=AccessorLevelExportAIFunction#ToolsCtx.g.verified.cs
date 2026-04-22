@@ -97,8 +97,8 @@ namespace Sample
                 var serviceType = typeof(global::Sample.DisplaySettings);
                 var prop = serviceType.GetProperty("Mode", global::System.Reflection.BindingFlags.Public | global::System.Reflection.BindingFlags.NonPublic | global::System.Reflection.BindingFlags.Instance)
                     ?? throw new global::System.InvalidOperationException("Could not locate target property global::Sample.DisplaySettings.Mode.");
-                return prop.GetMethod
-                    ?? throw new global::System.InvalidOperationException("Property global::Sample.DisplaySettings.Mode has no getter.");
+                return prop.SetMethod
+                    ?? throw new global::System.InvalidOperationException("Property global::Sample.DisplaySettings.Mode has no setter.");
             }
 
             private static readonly global::System.Collections.Generic.HashSet<string> s_schemaExcludedParameters = new()
@@ -130,7 +130,8 @@ namespace Sample
                 var __service = __provider.GetService<global::Sample.DisplaySettings>() ?? throw new global::System.InvalidOperationException(
                     "Tool 'set_display_mode' could not resolve its source type 'global::Sample.DisplaySettings' from IServiceProvider. " +
                     "Register the service in your DI container, or use ChatClientBuilder.UseFunctionInvocation().Build(sp) to supply a configured IServiceProvider.");
-                var __result = __service.Mode;
+                var __arg_value = global::Microsoft.Maui.AI.Attributes.AIToolMetadataServices.GetRequiredArg<string>(arguments, "value");
+                var __result = (__service.Mode = __arg_value);
                 return __result;
             }
         }

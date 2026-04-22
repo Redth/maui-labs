@@ -411,16 +411,17 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
                 nameCollisions[baseClassName] = 0;
             }
 
-            methods.Add(new MethodModel(
-                method.Name,
-                toolName,
-                description,
-                approvalRequired,
-                method.IsStatic,
-                IsProperty: false,
-                parameters,
-                returnInfo,
-                baseClassName));
+        methods.Add(new MethodModel(
+            method.Name,
+            toolName,
+            description,
+            approvalRequired,
+            method.IsStatic,
+            IsProperty: false,
+            IsPropertySetter: false,
+            parameters,
+            returnInfo,
+            baseClassName));
         }
 
         // Also scan properties with [ExportAIFunction] — check the property itself
@@ -552,6 +553,20 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             nameCollisions[baseClassName] = 0;
         }
 
+        var parameters = isReadTool || prop.SetMethod is null
+            ? ImmutableArray<ParameterModel>.Empty
+            : ImmutableArray.Create(new ParameterModel(
+                "value",
+                prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                prop.Type.WithNullableAnnotation(NullableAnnotation.NotAnnotated)
+                    .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+                IsJsonBindable(prop.Type) ? ParameterKind.JsonArgument : ParameterKind.Unknown,
+                KeyedServiceKey: null,
+                IsNullable: prop.Type.NullableAnnotation == NullableAnnotation.Annotated || prop.Type.IsReferenceType,
+                HasDefault: false,
+                DefaultLiteral: null,
+                Description: "The new value to assign."));
+
         methods.Add(new MethodModel(
             prop.Name,
             toolName,
@@ -559,7 +574,8 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             approvalRequired,
             prop.IsStatic,
             IsProperty: true,
-            ImmutableArray<ParameterModel>.Empty,
+            IsPropertySetter: !isReadTool,
+            parameters,
             returnInfo,
             baseClassName));
     }
@@ -873,8 +889,16 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
             sb.AppendLine($"{indent}        var serviceType = typeof({st.FullyQualifiedName});");
             sb.AppendLine($"{indent}        var prop = serviceType.GetProperty({Escape(m.MethodName)}, {bindingFlags})");
             sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Could not locate target property {st.FullyQualifiedName}.{m.MethodName}.")});");
-            sb.AppendLine($"{indent}        return prop.GetMethod");
-            sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Property {st.FullyQualifiedName}.{m.MethodName} has no getter.")});");
+            if (m.IsPropertySetter)
+            {
+                sb.AppendLine($"{indent}        return prop.SetMethod");
+                sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Property {st.FullyQualifiedName}.{m.MethodName} has no setter.")});");
+            }
+            else
+            {
+                sb.AppendLine($"{indent}        return prop.GetMethod");
+                sb.AppendLine($"{indent}            ?? throw new global::System.InvalidOperationException({Escape($"Property {st.FullyQualifiedName}.{m.MethodName} has no getter.")});");
+            }
             sb.AppendLine($"{indent}    }}");
         }
         else
@@ -959,7 +983,9 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         // Call & await — static members call via the type; instance members go through __service.
         var receiver = m.IsStatic ? st.FullyQualifiedName : "__service";
         var callExpr = m.IsProperty
-            ? $"{receiver}.{m.MethodName}"
+            ? (m.IsPropertySetter
+                ? $"({receiver}.{m.MethodName} = {argNames.Single()})"
+                : $"{receiver}.{m.MethodName}")
             : $"{receiver}.{m.MethodName}({string.Join(", ", argNames)})";
         switch (m.ReturnInfo.Shape)
         {
@@ -1102,6 +1128,7 @@ public sealed class AIToolContextGenerator : IIncrementalGenerator
         bool ApprovalRequired,
         bool IsStatic,
         bool IsProperty,
+        bool IsPropertySetter,
         ImmutableArray<ParameterModel> Parameters,
         ReturnInfo ReturnInfo,
         string GeneratedClassName);

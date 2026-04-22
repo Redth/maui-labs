@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using AIAttributes.Sample.Garden.Messages;
-using AIAttributes.Sample.Garden.Models;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -60,11 +59,11 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
     public IReadOnlyList<string> SuggestionPrompts { get; } =
     [
         "Add 5 packs of tomato seeds and a trowel",
-        "Show compact cart",
-        "Check out my list",
-        "Show me the catalog",
-        "Show my orders",
-        "Go back to shopping",
+        "I want 10 seeds",
+        "Switch cart display mode",
+        "Checkout my shopping list",
+        "Open the catalog",
+        "Go to my past orders",
         "Re-order my last order",
     ];
 
@@ -103,6 +102,7 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
                 - Always use tools to perform actions. Never assume you know the cart state
                   from previous messages — call show_list to check.
                 - Use search_products to discover items by name or category.
+                - Use recommend_bundle when the user asks for a starter kit, gift set, or curated bundle idea.
                 - When the user says "check out", call checkout_list (which requires approval).
                 - After checkout clears the cart, the cart is EMPTY. If the user asks to add
                   items again, always call add_to_list — do not say items are already there.

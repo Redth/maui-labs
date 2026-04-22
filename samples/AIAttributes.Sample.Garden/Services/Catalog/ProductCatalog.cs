@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using AIAttributes.Sample.Garden;
 using AIAttributes.Sample.Garden.Models;
 using Microsoft.Maui.AI.Attributes;
 
