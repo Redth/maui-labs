@@ -29,8 +29,7 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="vm:OrderViewModel">
                 <Border Margin="12,6"
-                        MaximumWidthRequest="600"
-                        HorizontalOptions="Center"
+                        HorizontalOptions="Fill"
                         BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                         Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
                         StrokeThickness="1"
