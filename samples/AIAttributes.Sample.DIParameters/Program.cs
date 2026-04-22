@@ -1,4 +1,5 @@
 using System.ClientModel;
+using AIAttributes;
 using AIAttributes.Sample.DIParameters;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.AI;
@@ -78,7 +79,7 @@ var chat = new ChatClientBuilder(root.GetRequiredService<IChatClient>())
     .UseFunctionInvocation()
     .Build(root);
 
-var tools = TranslatorTools.Default.Tools;
+var tools = AIAttributesSampleDIParametersToolContext.Default.Tools;
 var options = new ChatOptions { Tools = [.. tools] };
 
 Console.WriteLine($"{tools.Count} tool(s) registered:");
