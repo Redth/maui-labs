@@ -29,16 +29,18 @@
                     <views:ChatMessageTemplateSelector.UserTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Grid HorizontalOptions="Fill" Padding="16,0">
-                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
-                                        Padding="12,8"
-                                        HorizontalOptions="End"
-                                        MaximumWidthRequest="560"
-                                        StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 12">
-                                    <Label Text="{Binding Text}"
-                                           FontSize="{StaticResource FontSizeBody}"
-                                           TextColor="{AppThemeBinding Light={StaticResource UserBubbleTextLight}, Dark={StaticResource UserBubbleTextDark}}" />
-                                </Border>
+                                <Grid MaximumWidthRequest="840" HorizontalOptions="Center">
+                                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource UserBubbleLight}, Dark={StaticResource UserBubbleDark}}"
+                                            Padding="12,8"
+                                            HorizontalOptions="End"
+                                            MaximumWidthRequest="560"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 12">
+                                        <Label Text="{Binding Text}"
+                                               FontSize="{StaticResource FontSizeBody}"
+                                               TextColor="{AppThemeBinding Light={StaticResource UserBubbleTextLight}, Dark={StaticResource UserBubbleTextDark}}" />
+                                    </Border>
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </views:ChatMessageTemplateSelector.UserTemplate>
@@ -46,61 +48,70 @@
                     <views:ChatMessageTemplateSelector.AssistantTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
                             <Grid HorizontalOptions="Fill" Padding="16,0">
-                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
-                                        Padding="12,8"
-                                        HorizontalOptions="Start"
-                                        MaximumWidthRequest="560"
-                                        StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 12">
-                                    <Border.Shadow>
-                                        <Shadow Brush="Black" Offset="0,1" Radius="3" Opacity="0.08" />
-                                    </Border.Shadow>
-                                    <Label Text="{Binding Text}" FontSize="{StaticResource FontSizeBody}" />
-                                </Border>
+                                <Grid MaximumWidthRequest="840" HorizontalOptions="Center">
+                                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource AssistantBubbleLight}, Dark={StaticResource AssistantBubbleDark}}"
+                                            Padding="12,8"
+                                            HorizontalOptions="Start"
+                                            MaximumWidthRequest="560"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 12">
+                                        <Border.Shadow>
+                                            <Shadow Brush="Black" Offset="0,1" Radius="3" Opacity="0.08" />
+                                        </Border.Shadow>
+                                        <Label Text="{Binding Text}" FontSize="{StaticResource FontSizeBody}" />
+                                    </Border>
+                                </Grid>
                             </Grid>
                         </DataTemplate>
                     </views:ChatMessageTemplateSelector.AssistantTemplate>
 
                     <views:ChatMessageTemplateSelector.ToolTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <HorizontalStackLayout Spacing="4"
-                                                   Padding="20,2"
-                                                   MaximumWidthRequest="840"
-                                                   HorizontalOptions="Center">
-                                <Label Text="{Binding Icon}"
-                                       FontFamily="FluentFilled"
-                                       FontSize="{StaticResource FontSizeCaption}"
-                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
-                                       IsVisible="{Binding HasIcon}"
-                                       VerticalOptions="Center" />
-                                <Label Text="{Binding Text}"
-                                       FontSize="{StaticResource FontSizeCaption}"
-                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
-                                       FontAttributes="Italic"
-                                       VerticalOptions="Center" />
-                            </HorizontalStackLayout>
+                            <Grid HorizontalOptions="Fill" Padding="16,0">
+                                <Grid MaximumWidthRequest="840" HorizontalOptions="Center">
+                                    <HorizontalStackLayout Spacing="4" Padding="4,2">
+                                        <Label Text="{Binding Icon}"
+                                               FontFamily="FluentFilled"
+                                               FontSize="{StaticResource FontSizeCaption}"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                                               IsVisible="{Binding HasIcon}"
+                                               VerticalOptions="Center" />
+                                        <Label Text="{Binding Text}"
+                                               FontSize="{StaticResource FontSizeCaption}"
+                                               TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"
+                                               FontAttributes="Italic"
+                                               VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                            </Grid>
                         </DataTemplate>
                     </views:ChatMessageTemplateSelector.ToolTemplate>
 
                     <views:ChatMessageTemplateSelector.SystemTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Label Text="{Binding Text}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   TextColor="{StaticResource Primary}"
-                                   FontAttributes="Bold"
-                                   HorizontalOptions="Center"
-                                   Padding="8,4" />
+                            <Grid HorizontalOptions="Fill" Padding="16,0">
+                                <Grid MaximumWidthRequest="840" HorizontalOptions="Center">
+                                    <Label Text="{Binding Text}"
+                                           FontSize="{StaticResource FontSizeCaption}"
+                                           TextColor="{StaticResource Primary}"
+                                           FontAttributes="Bold"
+                                           HorizontalOptions="Center"
+                                           Padding="8,4" />
+                                </Grid>
+                            </Grid>
                         </DataTemplate>
                     </views:ChatMessageTemplateSelector.SystemTemplate>
 
                     <views:ChatMessageTemplateSelector.ErrorTemplate>
                         <DataTemplate x:DataType="vm:ChatMessageViewModel">
-                            <Label Text="{Binding Text}"
-                                   FontSize="{StaticResource FontSizeCaption}"
-                                   TextColor="{StaticResource Danger}"
-                                   Padding="20,2"
-                                   MaximumWidthRequest="840"
-                                   HorizontalOptions="Center" />
+                            <Grid HorizontalOptions="Fill" Padding="16,0">
+                                <Grid MaximumWidthRequest="840" HorizontalOptions="Center">
+                                    <Label Text="{Binding Text}"
+                                           FontSize="{StaticResource FontSizeCaption}"
+                                           TextColor="{StaticResource Danger}"
+                                           Padding="4,2" />
+                                </Grid>
+                            </Grid>
                         </DataTemplate>
                     </views:ChatMessageTemplateSelector.ErrorTemplate>
                 </views:ChatMessageTemplateSelector>
