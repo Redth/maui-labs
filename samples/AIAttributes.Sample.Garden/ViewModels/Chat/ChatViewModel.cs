@@ -23,6 +23,7 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
     ///   <item><b>Static class</b> — ProductCatalog: tools on a plain static class.</item>
     ///   <item><b>Instance class</b> — CurrentCart: tools on a DI-registered instance.</item>
     ///   <item><b>Interface</b> — IOrderArchive: tools declared on the interface.</item>
+    ///   <item><b>Transient view-model</b> — CatalogViewModel: stateless action tools that write through to singleton services.</item>
     /// </list>
     /// </summary>
     [AIToolSource(typeof(ProductCatalog))]
@@ -30,6 +31,7 @@ public sealed partial class ChatViewModel : ObservableObject, IRecipient<StartNe
     [AIToolSource(typeof(IOrderArchive))]
     [AIToolSource(typeof(MainViewModel))]
     [AIToolSource(typeof(CartViewModel))]
+    [AIToolSource(typeof(CatalogViewModel))]
     private partial class GardenShopTools : AIToolContext { }
 
     private readonly IChatClient _chatClient;

@@ -43,28 +43,16 @@
                         TextColor="{StaticResource White}"
                         BackgroundColor="Transparent"
                         Padding="8,4"
+                        IsVisible="False"
                         VerticalOptions="Center"
                         Command="{Binding ShowCartCommand}">
-                    <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup>
-                            <VisualState x:Name="CartBtnWide">
-                                <VisualState.StateTriggers>
-                                    <AdaptiveTrigger MinWindowWidth="800" />
-                                </VisualState.StateTriggers>
-                                <VisualState.Setters>
-                                    <Setter Property="IsVisible" Value="False" />
-                                </VisualState.Setters>
-                            </VisualState>
-                            <VisualState x:Name="CartBtnNarrow">
-                                <VisualState.StateTriggers>
-                                    <AdaptiveTrigger MinWindowWidth="0" />
-                                </VisualState.StateTriggers>
-                                <VisualState.Setters>
-                                    <Setter Property="IsVisible" Value="True" />
-                                </VisualState.Setters>
-                            </VisualState>
-                        </VisualStateGroup>
-                    </VisualStateManager.VisualStateGroups>
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button"
+                                     Binding="{Binding Source={x:Reference CartSidebar}, Path=IsVisible}"
+                                     Value="False">
+                            <Setter Property="IsVisible" Value="True" />
+                        </DataTrigger>
+                    </Button.Triggers>
                 </Button>
                 <Button Text="New Chat"
                         AutomationId="NewChatButton"
@@ -116,42 +104,7 @@
                 </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
 
-            <Grid RowDefinitions="Auto,*" RowSpacing="0"
-                  x:DataType="vm:CartViewModel"
-                  local:ViewModelBinder.Type="{x:Type vm:CartViewModel}">
-                <!-- Green sidebar header -->
-                <Grid Padding="14,10"
-                      ColumnDefinitions="*,Auto"
-                      ColumnSpacing="8"
-                      BackgroundColor="{StaticResource Primary}">
-                    <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
-                        <Label Text="&#xF26B;"
-                               FontFamily="FluentFilled"
-                               FontSize="{StaticResource FontSizeBody}"
-                               TextColor="{StaticResource White}" VerticalOptions="Center" />
-                        <Label Text="Cart"
-                               FontSize="{StaticResource FontSizeBody}" FontAttributes="Bold"
-                               TextColor="{StaticResource White}" VerticalOptions="Center" />
-                    </HorizontalStackLayout>
-                    <Border Grid.Column="1"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource PillBackgroundLight}, Dark={StaticResource PillBackgroundDark}}"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 13"
-                            Padding="0"
-                            HeightRequest="26">
-                        <Button Text="{Binding CartModeLabel}"
-                                FontSize="{StaticResource FontSizeCaption}" Padding="14,0"
-                                BackgroundColor="Transparent"
-                                TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}"
-                                FontAttributes="Bold"
-                                BorderWidth="0"
-                                VerticalOptions="Center"
-                                Command="{Binding CycleCartModeCommand}" />
-                    </Border>
-                </Grid>
-                <!-- Headerless cart content -->
-                <views:CartView Grid.Row="1" />
-            </Grid>
+            <views:CartPane />
         </Border>
 
     </Grid>

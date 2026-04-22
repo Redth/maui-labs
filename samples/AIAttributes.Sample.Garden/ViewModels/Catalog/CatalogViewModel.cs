@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using AIAttributes.Sample.Garden.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Maui.AI.Attributes;
 
 namespace AIAttributes.Sample.Garden.ViewModels;
 
@@ -35,10 +37,13 @@ public sealed partial class CatalogViewModel : ObservableObject
     public IReadOnlyList<CatalogGroupViewModel> Groups { get; }
 
     [RelayCommand]
-    private void AddToCart(string? sku)
+    [ExportAIFunction("add_catalog_item_to_cart")]
+    [Description("Add a product from the catalog to the cart by SKU or product name.")]
+    public void AddToCart(
+        [Description("The catalog product SKU or name to add to the cart.")] string? sku)
     {
         if (string.IsNullOrWhiteSpace(sku))
-            return;
+            throw new ArgumentException("A product SKU or name is required.", nameof(sku));
 
         _currentCart.AddItem(sku);
     }

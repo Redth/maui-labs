@@ -1,5 +1,4 @@
 using AIAttributes.Sample.Garden.Messages;
-using AIAttributes.Sample.Garden.ViewModels;
 using CommunityToolkit.Mvvm.Messaging;
 
 namespace AIAttributes.Sample.Garden.Views;

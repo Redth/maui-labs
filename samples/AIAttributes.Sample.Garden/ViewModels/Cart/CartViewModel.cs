@@ -25,6 +25,7 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
         _archive = archive;
 
         WeakReferenceMessenger.Default.Register(this);
+        Refresh();
     }
 
     void IRecipient<CartChangedMessage>.Receive(CartChangedMessage message) => Refresh();
@@ -120,17 +121,36 @@ public sealed partial class CartViewModel : ObservableObject, IRecipient<CartCha
         Func<TModel, string> modelKey,
         Func<TModel, TVM> create)
     {
-        var sourceKeys = new HashSet<string>(source.Select(modelKey));
-        for (int i = target.Count - 1; i >= 0; i--)
+        for (int sourceIndex = 0; sourceIndex < source.Count; sourceIndex++)
         {
-            if (!sourceKeys.Contains(vmKey(target[i])))
-                target.RemoveAt(i);
+            var model = source[sourceIndex];
+            var key = modelKey(model);
+            var existingIndex = -1;
+
+            for (int targetIndex = 0; targetIndex < target.Count; targetIndex++)
+            {
+                if (vmKey(target[targetIndex]) == key)
+                {
+                    existingIndex = targetIndex;
+                    break;
+                }
+            }
+
+            var viewModel = create(model);
+
+            if (existingIndex < 0)
+            {
+                target.Insert(sourceIndex, viewModel);
+                continue;
+            }
+
+            if (existingIndex != sourceIndex)
+                target.Move(existingIndex, sourceIndex);
+
+            target[sourceIndex] = viewModel;
         }
-        var existing = new HashSet<string>(target.Select(vmKey));
-        foreach (var item in source)
-        {
-            if (!existing.Contains(modelKey(item)))
-                target.Add(create(item));
-        }
+
+        while (target.Count > source.Count)
+            target.RemoveAt(target.Count - 1);
     }
 }

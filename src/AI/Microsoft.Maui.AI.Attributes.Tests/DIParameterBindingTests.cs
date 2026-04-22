@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,8 +52,29 @@ internal sealed class ContactsToolService
     public string Translate([FromServices] TranslatorBase t, string text) => t.Translate(text);
 }
 
+internal sealed class CounterState
+{
+    public int Count { get; set; }
+}
+
+internal sealed class TransientCounterToolService(CounterState state)
+{
+    private static int _instanceNumber;
+    private readonly int _instanceId = Interlocked.Increment(ref _instanceNumber);
+
+    [ExportAIFunction("transient_increment_tool")]
+    public string Increment(string name)
+    {
+        state.Count++;
+        return $"instance:{_instanceId};count:{state.Count};name:{name}";
+    }
+}
+
 [AIToolSource(typeof(ContactsToolService))]
 internal partial class ContactsToolContext : AIToolContext { }
+
+[AIToolSource(typeof(TransientCounterToolService))]
+internal partial class TransientCounterToolContext : AIToolContext { }
 
 public class DIParameterBindingTests
 {
@@ -122,5 +144,23 @@ public class DIParameterBindingTests
         var tool = (AIFunction)ContactsToolContext.Default.Tools.First(t => t.Name == "from_keyed_tool");
         await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
             tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "x" }) { Services = provider }).AsTask());
+    }
+
+    [Fact]
+    public async Task Transient_tool_source_can_write_through_to_singleton_state()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<CounterState>();
+        services.AddTransient<TransientCounterToolService>();
+        using var provider = services.BuildServiceProvider();
+
+        var tool = (AIFunction)TransientCounterToolContext.Default.Tools.First(t => t.Name == "transient_increment_tool");
+
+        var result1 = await tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "first" }) { Services = provider });
+        var result2 = await tool.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["name"] = "second" }) { Services = provider });
+
+        Assert.Contains("count:1", result1?.ToString());
+        Assert.Contains("count:2", result2?.ToString());
+        Assert.NotEqual(result1?.ToString(), result2?.ToString());
     }
 }
