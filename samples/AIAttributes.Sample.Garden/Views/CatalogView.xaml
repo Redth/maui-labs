@@ -21,6 +21,8 @@
                        FontSize="{StaticResource FontSizeTitle}"
                        FontAttributes="Bold"
                        Padding="16,16,16,6"
+                       MaximumWidthRequest="840"
+                       HorizontalOptions="Fill"
                        TextColor="{AppThemeBinding Light={StaticResource TextAccentLight}, Dark={StaticResource TextAccentDark}}" />
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
@@ -28,6 +30,8 @@
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="vm:CatalogItemViewModel">
                 <Border Margin="12,4"
+                        MaximumWidthRequest="840"
+                        HorizontalOptions="Fill"
                         BackgroundColor="{AppThemeBinding Light={StaticResource CardBackgroundLight}, Dark={StaticResource CardBackgroundDark}}"
                         Stroke="{AppThemeBinding Light={StaticResource CardStrokeLight}, Dark={StaticResource CardStrokeDark}}"
                         StrokeThickness="1"
